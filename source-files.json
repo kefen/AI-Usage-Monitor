@@ -1,0 +1,23 @@
+[
+  ".gitignore", ".gitattributes", ".github/workflows/ci.yml",
+  "test/listener-errors.test.ps1",
+  "tools/screenshots.mjs", "docs/screenshots/sidebar-demo.png", "docs/screenshots/windows-install.png", "docs/screenshots/windows-status.png", "docs/screenshots/windows-settings.png", "docs/screenshots/chrome-panel.png",
+  "LICENSE", "README.md", "SECURITY.md", "CONTRIBUTING.md", "CHANGELOG.md", "RELEASE-CHECKLIST.md", "RELEASE-REVIEW.md",
+  "browser/README.md", "browser/Register-Mac.mjs", "browser/native-host.command", "test/browser-native.mjs", "test/browser-ui.mjs", "test/display-settings.test.mjs",
+  "THIRD_PARTY_NOTICES.md", "package.json", "versions.json", "dependency-pins.json",
+  "runtime-files.json", "source-files.json", "Build-Windows.ps1", "build_release.py",
+  "native/BrowserHost.cs", "native/DisplayOptions.cs", "browser/native-host.mjs", "browser/Register-Windows.ps1", "browser/manifest.json", "browser/background.js", "browser/panel.html", "browser/panel.css", "browser/panel.js", "browser/icon-32.png", "browser/icon-128.png", "src/browser-snapshot.mjs", "src/display-settings.mjs", "test/browser.test.mjs",
+  "Start.cmd", "Start.ps1", "Stop.cmd", "Check.cmd", "Diagnose.cmd", "Console.cmd",
+  "Background.ps1", "Background.vbs", "Install.ps1", "Uninstall.cmd", "Uninstall.ps1", "Lifecycle.ps1", "RestartSafety.ps1",
+  "native/TrayHost.cs", "native/Preferences.cs", "native/Installer.cs", "native/Theme.cs", "native/LaunchWindow.cs", "native/SetupWindow.cs", "native/app.manifest",
+  "tools/BrandAssets.cs", "assets/cqs.ico", "assets/cqs.icns", "assets/cqs-128.png", "assets/cqs-256.png", "assets/cqs-1024.png", "assets/tray-light.ico", "assets/tray-dark.ico", "assets/tray-template.png",
+  "mac/QuotaSidebar.swift", "mac/Build.command", "mac/Info.plist", "test/visual-contract.test.mjs", "test/NativeVisualTest.cs",
+  "mac/launch.mjs", "mac/trust.json", "mac/Launcher.applescript", "mac/Install.command", "mac/Stop.command", "mac/Uninstall.command",
+  "vendor/codex-quota/codex-cdp.ps1", "vendor/codex-quota/LICENSE",
+  "src/cli.mjs", "src/core.mjs", "src/rpc.mjs", "src/cdp.mjs", "src/usage.mjs", "src/settings.mjs", "src/status.mjs", "src/renderer-expression.mjs", "src/widget.js", "src/version.mjs",
+  "test/background-stop.test.mjs", "test/cdp.test.mjs", "test/core.test.mjs", "test/daily-selection.test.mjs", "test/release-contract.test.mjs",
+  "test/renderer-expression.test.mjs", "test/rpc.test.mjs", "test/settings.test.mjs", "test/status.test.mjs", "test/usage.test.mjs",
+  "test/fake-server.mjs", "test/install.test.ps1", "test/lifecycle.test.ps1", "test/restart.test.ps1", "test/rollback.test.ps1",
+  "test/native-host.mjs", "test/native-start.ps1", "test/native-monitor.mjs", "test/PreferencesTest.cs", "test/package-extract.mjs",
+  "test/ui.mjs", "test/rail-ui.mjs", "test/cdp-live.mjs", "test/webview/index.html"
+]

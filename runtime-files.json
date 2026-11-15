@@ -1,0 +1,12 @@
+[
+  "Start.cmd", "Start.ps1", "RestartSafety.ps1", "Check.cmd", "Diagnose.cmd",
+  "Uninstall.cmd", "Uninstall.ps1", "package.json", "versions.json", "runtime-files.json",
+  "README.md", "LICENSE", "SECURITY.md", "Lifecycle.ps1", "Background.ps1",
+  "Background.vbs", "Stop.cmd", "Console.cmd", "CodexMeter.exe",
+  "runtime/node.exe", "runtime/LICENSE", "THIRD_PARTY_NOTICES.md",
+  "BrowserHost.exe", "browser/native-host.mjs", "browser/Register-Windows.ps1", "src/browser-snapshot.mjs", "src/display-settings.mjs",
+  "assets/cqs.ico", "assets/cqs-128.png", "assets/tray-light.ico", "assets/tray-dark.ico",
+  "vendor/codex-quota/codex-cdp.ps1", "vendor/codex-quota/LICENSE",
+  "src/cli.mjs", "src/core.mjs", "src/rpc.mjs", "src/cdp.mjs", "src/usage.mjs",
+  "src/settings.mjs", "src/status.mjs", "src/renderer-expression.mjs", "src/widget.js", "src/version.mjs"
+]

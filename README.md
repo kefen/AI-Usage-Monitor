@@ -39,7 +39,7 @@ Author: **CHUNG**. Original blue winking-terminal identity.
 
 从本仓库的 **Releases** 选择对应平台的预发布版本：
 
-- Windows：下载 `Windows-0.9.2-beta.1-x64-Setup.exe` 结尾的安装包。
+- Windows：下载 `Windows-0.9.3-beta.1-x64-Setup.exe` 结尾的安装包。
 - Chrome：下载 `Chrome-0.1.1.zip`，按照 [浏览器安装说明](browser/README.md) 配置本地辅助程序。
 - macOS Apple Silicon：仅下载源码用于开发与验证，没有可直接安装的已验收版本。
 
@@ -50,11 +50,11 @@ Windows 设置中的“侧栏内容”控制显示项；会员日期需要单独
 
 | 平台 | 独立版本 | 发布范围 |
 | --- | --- | --- |
-| Windows 10/11 x64 | 0.9.2-beta.1 | 本地候选安装包，公开发布待确认 |
+| Windows 10/11 x64 | 0.9.3-beta.1 | 本地候选安装包，公开发布待确认 |
 | macOS Apple Silicon | 0.2.2-alpha.1 | 仅实验源码，实机验收前不分发安装包 |
 | Chrome MV3 | 0.1.1 | 扩展候选包，依赖本机监控与辅助程序 |
 
-桌面版本号集中在 `versions.json`；建议 Git 标签分别为 `windows/v0.9.2-beta.1`
+桌面版本号集中在 `versions.json`；建议 Git 标签分别为 `windows/v0.9.3-beta.1`
 和 `macos/v0.2.2-alpha.1`。共享 `src/`，Windows 启动器在根目录和 `native/`，
 Mac 启动器在 `mac/`。架构不同的安装包不可混用。
 
@@ -137,4 +137,3 @@ Windows 上的静态检查和共享逻辑测试不能替代这些验收，见 [R
 仓库名为 `codex-quota-sidebar`，作者 CHUNG，采用 MIT 许可。
 CI 配置仅测试/构建，没有自动发布或自动更新执行逻辑。
 请从正式仓库的对应标签核验源码和校验值，第三方许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
-

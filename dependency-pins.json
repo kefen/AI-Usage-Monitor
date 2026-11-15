@@ -1,0 +1,9 @@
+{
+  "nodeVersion": "24.16.0",
+  "files": {
+    "runtime/node.exe": "b3094d0b49f9ad602262a9921551737bb97637c05dd357a06ae98188d7290aa3",
+    "runtime/LICENSE": "4573185d56580da2b890ba34a85a409257640f1c5632eade4300137266194d18",
+    "vendor/codex-quota/codex-cdp.ps1": "3e0b2d5a3ff8d6785f7c548e1ed65a0c71c7d3f0437c2fa483840e2a1496d8d2"
+  },
+  "upstreamHelperCommit": "54e3e15c898b65d66db4ecffec1725c4d8e9275d"
+}

@@ -1,0 +1,13 @@
+import {readFile,mkdir} from 'node:fs/promises';
+import {createRequire} from 'node:module';
+import {fileURLToPath} from 'node:url';
+const {chromium}=createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE||'playwright');
+const out=new URL('../docs/screenshots/',import.meta.url);await mkdir(out,{recursive:true});
+const browser=await chromium.launch({headless:true,executablePath:process.env.TEST_BROWSER_PATH});
+try{
+  const page=await browser.newPage({viewport:{width:600,height:680},deviceScaleFactor:2});
+  await page.setContent(`<meta charset="utf-8"><style>*{box-sizing:border-box}body{margin:0;font:14px 'Microsoft YaHei',Arial;color:#242830;background:#f7f8fa}header{height:76px;padding:20px 24px;background:white;border-bottom:1px solid #dce2e9}h1{font-size:18px;font-weight:400;margin:0 0 5px}small{font-size:11px;color:#667085}aside{display:flex;width:100%;height:604px}nav{display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px;width:52px;flex-shrink:0;background:#f1f3f6}.list{flex:1;min-height:0}.bottom{height:56px;width:36px}.bottom button{width:30px;height:30px;border:1px solid #d2d9e4;background:white;border-radius:50%;color:#7d8795}.sidebar-navigation{padding:28px;width:240px;background:#fafbfc;border-right:1px solid #e3e7ec}.item{padding:14px 0;color:#637083;border-bottom:1px solid #edf0f4}.workspace{padding:30px 24px;flex:1}.workspace p{font-size:12px;line-height:1.9;color:#738094}h2{font-size:15px;font-weight:400;margin:0 0 18px}</style><header><h1>Codex Quota Sidebar</h1><small>CHUNG / 侧栏组件演示 / 示例数据，非个人账号</small></header><aside class="app-shell-left-panel"><nav data-app-navigation-rail><div class="list"></div><div class="bottom"><button aria-label="Sample account">C</button></div></nav><div class="sidebar-navigation" data-slate-sidebar-content><h2>示例项目</h2><div class="item">项目 A</div><div class="item">项目 B</div><div class="item">项目 C</div></div><div class="workspace"><h2>本地用量概览</h2><p>左侧为真实组件渲染。<br>周余与 Token 分开统计。<br>日期按数据来源标记。<br>套餐和续费日期手动填写。</p></div></aside>`);
+  await page.evaluate(await readFile(new URL('../src/widget.js',import.meta.url),'utf8'));
+  await page.evaluate(()=>window.__localCodexMeter.receive({fetchedAt:Date.now(),planBadge:'Pro',buckets:[{id:'codex',windows:[{minutes:300,remaining:75,resetsAt:Date.now()/1000+7200},{minutes:10080,remaining:88,resetsAt:Date.now()/1000+172800}]}],membership:{kind:'renewal',date:'2026-12-15',estimated:true},usage:{fetchedAt:Date.now(),lifetime:12345678,dailySelected:{date:new Date().toISOString().slice(0,10),value:12345},week:{value:456789,days:3,complete:false},weeks:[]}}));
+  await page.screenshot({path:fileURLToPath(new URL('sidebar-demo.png',out))});
+}finally{await browser.close();}

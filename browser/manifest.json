@@ -1,0 +1,10 @@
+{
+  "manifest_version":3,"name":"Codex Quota Sidebar","version":"0.1.1","author":"CHUNG",
+  "description":"Read local Codex quota snapshots in a browser side panel. Unofficial companion by CHUNG.",
+  "permissions":["sidePanel","nativeMessaging"],
+  "background":{"service_worker":"background.js"},
+  "action":{"default_title":"Codex Quota Sidebar"},
+  "side_panel":{"default_path":"panel.html"},
+  "icons":{"32":"icon-32.png","128":"icon-128.png"},
+  "content_security_policy":{"extension_pages":"script-src 'self'; object-src 'none'; connect-src 'none'"}
+}
