@@ -10,4 +10,30 @@ try{
   await page.evaluate(await readFile(new URL('../src/widget.js',import.meta.url),'utf8'));
   await page.evaluate(()=>window.__localCodexMeter.receive({language:'en',fetchedAt:Date.now(),planBadge:'Pro',buckets:[{id:'codex',windows:[{minutes:300,remaining:75,resetsAt:Date.now()/1000+7200},{minutes:10080,remaining:88,resetsAt:Date.now()/1000+172800}]}],membership:{kind:'renewal',date:'2026-12-15',estimated:true},usage:{fetchedAt:Date.now(),lifetime:12345678,dailySelected:{date:new Date().toISOString().slice(0,10),value:12345},week:{value:456789,days:3,complete:false},weeks:[]}}));
   await page.screenshot({path:fileURLToPath(new URL('sidebar-demo.png',out))});
+  await page.setViewportSize({width:1120,height:760});
+  await page.evaluate(()=>{
+    const sheet=document.createElement('style');
+    sheet.textContent=`
+      body{font-family:"Segoe UI",Arial,sans-serif;background:white}
+      header{height:56px;padding:16px 22px;display:flex;align-items:center;justify-content:space-between}
+      header h1{font-size:14px;margin:0}header small{font-size:11px}
+      aside{height:664px}nav{width:58px;background:#f3f4f6}
+      .sidebar-navigation{width:246px;padding:22px 18px;background:#fafafa}
+      .sidebar-navigation h2{font-size:13px;color:#666;margin-top:28px}
+      .item{border:0;font-size:13px;padding:10px 8px}.item.active{background:#edf0f4;border-radius:6px;color:#232830}
+      .workspace{position:relative;padding:28px 32px;display:flex;flex-direction:column}
+      .workspace .topline{font-size:12px;color:#6b7280}
+      .workspace .welcome{flex:1;display:flex;align-items:center;justify-content:center;padding-bottom:65px}
+      .workspace h2{font-size:27px;color:#232830}
+      .composer{border:1px solid #dce0e6;border-radius:8px;padding:16px 18px;margin-bottom:16px;height:132px;background:white}
+      .composer .placeholder{font-size:14px;color:#969ca6}.composer .actions{margin-top:52px;display:flex;justify-content:space-between;font-size:12px;color:#667085}
+      footer{height:40px;padding:12px 22px;background:#f5f7fa;border-top:1px solid #e0e5ec;font-size:11px;color:#687386}
+    `;
+    document.head.append(sheet);
+    document.querySelector('header').innerHTML='<h1>Codex / Workspace</h1><small>Codex Quota Sidebar by KEFEN</small>';
+    document.querySelector('.sidebar-navigation').innerHTML='<div class="item active">+ New chat</div><div class="item">Search</div><h2>Projects</h2><div class="item">Sample workspace</div><h2>Recent chats</h2><div class="item">Example task</div><div class="item">Design review</div>';
+    document.querySelector('.workspace').innerHTML='<div class="topline">Sample workspace</div><div class="welcome"><h2>What should we build?</h2></div><div class="composer"><div class="placeholder">Ask Codex...</div><div class="actions"><span>+ &nbsp; Local computer</span><span>Send &uarr;</span></div></div>';
+    const footer=document.createElement('footer');footer.textContent='Generated Codex-style demonstration | Actual sidebar component, synthetic data | Not a live Codex screenshot';document.body.append(footer);
+  });
+  await page.screenshot({path:fileURLToPath(new URL('codex-sidebar-overview.png',out))});
 }finally{await browser.close();}

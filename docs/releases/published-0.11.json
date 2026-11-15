@@ -1,0 +1,70 @@
+{
+  "verifiedOn": "2026-11-15",
+  "sourceCommit": "c8ceb7c1ab9029a6a3a53f5701b74faecbf579c5",
+  "releaseRun": "https://github.com/kefen/codex-quota-sidebar/actions/runs/43709255492",
+  "releases": [
+    {
+      "tag": "windows/v0.11.0-beta.1",
+      "url": "https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.11.0-beta.1",
+      "prerelease": true,
+      "assets": [
+        {
+          "name": "Codex-Quota-Sidebar-source-windows-0.11.0-beta.1-macos-0.3.0-alpha.1.zip",
+          "bytes": 508152,
+          "sha256": "00382163b5a1c3c30311bdf90eac649d93c9c812a21bfec53c105e084e2b7681",
+          "url": "https://github.com/kefen/codex-quota-sidebar/releases/download/windows/v0.11.0-beta.1/Codex-Quota-Sidebar-source-windows-0.11.0-beta.1-macos-0.3.0-alpha.1.zip"
+        },
+        {
+          "name": "Codex-Quota-Sidebar-Windows-0.11.0-beta.1-x64-Setup.exe",
+          "bytes": 34752512,
+          "sha256": "669a5d29cf050705b38ec4b46443082bf66218e1298702ad1f00a847f3ad230a",
+          "url": "https://github.com/kefen/codex-quota-sidebar/releases/download/windows/v0.11.0-beta.1/Codex-Quota-Sidebar-Windows-0.11.0-beta.1-x64-Setup.exe"
+        },
+        {
+          "name": "SHA256SUMS-windows-v0.11.0-beta.1.txt",
+          "bytes": 261,
+          "sha256": "b1e721f159d1faf94f79e57eee6571980e7fd0b144d7ff9ebf057443c77de7f7",
+          "url": "https://github.com/kefen/codex-quota-sidebar/releases/download/windows/v0.11.0-beta.1/SHA256SUMS-windows-v0.11.0-beta.1.txt"
+        }
+      ]
+    },
+    {
+      "tag": "macos/v0.3.0-alpha.1",
+      "url": "https://github.com/kefen/codex-quota-sidebar/releases/tag/macos/v0.3.0-alpha.1",
+      "prerelease": true,
+      "assets": [
+        {
+          "name": "Codex-Quota-Sidebar-source-windows-0.11.0-beta.1-macos-0.3.0-alpha.1.zip",
+          "bytes": 508152,
+          "sha256": "00382163b5a1c3c30311bdf90eac649d93c9c812a21bfec53c105e084e2b7681",
+          "url": "https://github.com/kefen/codex-quota-sidebar/releases/download/macos/v0.3.0-alpha.1/Codex-Quota-Sidebar-source-windows-0.11.0-beta.1-macos-0.3.0-alpha.1.zip"
+        },
+        {
+          "name": "SHA256SUMS-macos-v0.3.0-alpha.1.txt",
+          "bytes": 139,
+          "sha256": "4aca282d558a0d926af0dfdd050b6d93a62d2ad7875596c059ef8ef9fd89961b",
+          "url": "https://github.com/kefen/codex-quota-sidebar/releases/download/macos/v0.3.0-alpha.1/SHA256SUMS-macos-v0.3.0-alpha.1.txt"
+        }
+      ]
+    },
+    {
+      "tag": "chrome/v0.2.0",
+      "url": "https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.2.0",
+      "prerelease": true,
+      "assets": [
+        {
+          "name": "Codex-Quota-Sidebar-Chrome-0.2.0.zip",
+          "bytes": 17446,
+          "sha256": "7ab9813ac17f9f6d8575b197b2c3d23ee24b6ff172428e11249fe02ae929035f",
+          "url": "https://github.com/kefen/codex-quota-sidebar/releases/download/chrome/v0.2.0/Codex-Quota-Sidebar-Chrome-0.2.0.zip"
+        },
+        {
+          "name": "SHA256SUMS-chrome-v0.2.0.txt",
+          "bytes": 103,
+          "sha256": "b743cc9c9236b310b47431b58e0895193d0166de280a51c7175e9cf9b859b909",
+          "url": "https://github.com/kefen/codex-quota-sidebar/releases/download/chrome/v0.2.0/SHA256SUMS-chrome-v0.2.0.txt"
+        }
+      ]
+    }
+  ]
+}

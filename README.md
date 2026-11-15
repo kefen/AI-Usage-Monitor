@@ -18,7 +18,10 @@ full Codex application. Native window chrome depends on Windows settings.
 ![Windows usage overview](docs/screenshots/windows-status.png)
 
 ### Inline sidebar
-![Sidebar component](docs/screenshots/sidebar-demo.png)
+![Sidebar in a generated Codex-style workspace](docs/screenshots/codex-sidebar-overview.png)
+
+Generated Codex-style demonstration using the actual sidebar component and
+synthetic data. Not a capture of the live Codex application or a real account.
 
 ### Chrome companion
 ![Chrome side panel](docs/screenshots/chrome-panel.png)

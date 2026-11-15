@@ -2,6 +2,8 @@
   ".gitignore", ".gitattributes", ".github/workflows/ci.yml", ".github/workflows/publish-accepted.yml",
   "docs/USER-GUIDE.md", "docs/RELEASES.md", "docs/releases/accepted-0.11.json", "tools/publish-accepted.mjs",
   "docs/screenshots/setup-environment.png", "docs/screenshots/setup-location.png", "docs/screenshots/connection-consent.png", "docs/screenshots/restart-confirmation.png",
+  "docs/screenshots/codex-sidebar-overview.png",
+  "docs/releases/published-0.11.json",
   "ui/strings.json", "native/Locale.cs", "native/UsageOverview.cs", "mac/Localization.swift",
   "tools/sync-locales.mjs", "tools/locale-gaps.mjs", "browser/strings.js", "test/locales.test.mjs", "test/UsageOverviewTest.cs",
   "test/listener-errors.test.ps1",

@@ -10,6 +10,9 @@ Author: KEFEN. Windows acceptance confirmed by the user on 2026-11-15.
 
 All are prereleases. Versions are retained from the accepted candidate, not
 renamed to stable. No functional code changes accompany publication.
+All three releases are published. Assets were downloaded again and SHA256
+verified locally; see [the published asset record](releases/published-0.11.json).
+Later documentation screenshots on main do not replace immutable release files.
 GitHub release assets are built from the tagged source by the accepted-release
 workflow, so binary hashes can differ from local test builds. Each release
 includes the corresponding SHA256 file. No signing/notarization claim is made.

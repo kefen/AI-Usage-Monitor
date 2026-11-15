@@ -69,10 +69,12 @@ The narrow desktop rail shows selected items next to Codex navigation. Hover
 for complete dates, exact values, freshness and provenance. The following image
 demonstrates the actual component in a **test shell**, not the full Codex app.
 
-![Inline component in a test shell](screenshots/sidebar-demo.png)
+![Actual sidebar component in a generated Codex-style workspace](screenshots/codex-sidebar-overview.png)
 
-A current privacy-reviewed screenshot from the user's real Codex window is
-pending; this illustration is not represented as that screenshot.
+This generated demonstration shows placement and appearance with synthetic
+data. It is not a live Codex screenshot and does not expose user conversations,
+project names or account details. The narrow sidebar itself is rendered by
+this project's actual component.
 
 ## 7. Settings And Daily Use
 
