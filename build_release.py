@@ -50,7 +50,7 @@ def main():
     for name,data in source:
         if any(needle in data for needle in forbidden) or re.search(rb'[A-Za-z]:[\\/]+Users[\\/]+[A-Za-z0-9_]+',data) or re.search(rb'\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}',data):raise ValueError(f'Private data marker: {name}')
     archive(DIST/f'Codex-Quota-Sidebar-source-windows-{VERSIONS["windows"]}-macos-{VERSIONS["macos"]}.zip',source)
-    extension_names=['manifest.json','background.js','panel.html','panel.css','panel.js','icon-32.png','icon-128.png']
+    extension_names=['manifest.json','background.js','panel.html','panel.css','panel.js','strings.js','icon-32.png','icon-128.png']
     extension_version=json.loads((ROOT/'browser/manifest.json').read_text())['version']
     archive(DIST/f'Codex-Quota-Sidebar-Chrome-{extension_version}.zip',[(name,(ROOT/'browser'/name).read_bytes()) for name in extension_names])
     if not opts.source_only:

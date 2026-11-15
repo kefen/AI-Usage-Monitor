@@ -1,0 +1,9 @@
+{
+  "acceptedOn": "2026-11-15",
+  "windows": "0.11.0-beta.1",
+  "chrome": "0.2.0",
+  "macos": "0.3.0-alpha.1",
+  "windowsUserAccepted": true,
+  "macosSourceOnly": true,
+  "prerelease": true
+}

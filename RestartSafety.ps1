@@ -1,3 +1,10 @@
+function Initialize-MeterRestartDialog {
+    Add-Type -AssemblyName System.Windows.Forms
+    # Windows PowerShell 5.1 Add-Type -Path rejects EXE files, even managed assemblies.
+    $assembly=[Reflection.Assembly]::LoadFrom((Join-Path $PSScriptRoot 'CodexMeter.exe'))
+    $null=$assembly.GetType('MeterRestartDialog',$true)
+}
+
 function Get-ApprovedMeterStopId($Expected, $Actual, [bool]$Confirmed) {
     if (-not $Confirmed -or $null -eq $Expected -or $null -eq $Actual) { return $null }
     if ([int]$Expected.pid -le 0 -or [int]$Expected.pid -ne [int]$Actual.Id) { return $null }

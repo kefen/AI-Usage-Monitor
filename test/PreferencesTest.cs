@@ -4,13 +4,16 @@ using System.Drawing;
 using System.Windows.Forms;
 internal static class PreferencesTest {
     [STAThread] static int Main(string[] args){
-        Application.EnableVisualStyles();string root=args[0];Directory.CreateDirectory(root);
+        Application.EnableVisualStyles();Locale.Set("en");string root=args[0];Directory.CreateDirectory(root);
         foreach(string action in new[]{"save","cancel","skip"}){
             string previous=File.Exists(Path.Combine(root,"membership.json"))?File.ReadAllText(Path.Combine(root,"membership.json")):"";
             using(var timer=new Timer{Interval=300}){
                 timer.Tick+=(s,e)=>{
                     if(Application.OpenForms.Count==0)return;
                     timer.Stop();var form=Application.OpenForms[0];
+                    var selectedPlan=(ComboBox)form.Controls.Find("plan",true)[0];
+                    int before=selectedPlan.SelectedIndex;
+                    foreach(string language in new[]{"zh-CN","zh-TW","en"}){Locale.Set(language);if(selectedPlan.SelectedIndex!=before||String.IsNullOrEmpty(selectedPlan.Text))throw new Exception("Language switch lost plan selection");}
                     if(action=="save"){
                         ((CheckBox)form.Controls.Find("membershipEnabled",true)[0]).Checked=true;
                         ((DateTimePicker)form.Controls.Find("purchaseDate",true)[0]).Value=new DateTime(2026,1,31);

@@ -7,9 +7,11 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var window: NSWindow!
     var statusItem: NSStatusItem!
     var body = NSStackView()
-    var headline = NSTextField(labelWithString: "正在连接")
-    var detail = NSTextField(wrappingLabelWithString: "等待客户端与数据同步")
+    var headline = NSTextField(labelWithString: CqsLocale.t("Connecting"))
+    var detail = NSTextField(wrappingLabelWithString: CqsLocale.t("Waiting for client and data."))
     var rows: [NSTextField] = []
+    var metricFields: [NSTextField] = []
+    let languagePicker = NSPopUpButton()
     var retry: NSButton!
     var child: Process?
     var log: FileHandle?
@@ -26,7 +28,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var stage = "starting"
     var startedAt = Date.distantFuture
     var errorText = ""
-    let enabled = NSButton(checkboxWithTitle: "显示会员日期", target: nil, action: nil)
+    let enabled = NSButton(checkboxWithTitle: CqsLocale.t("Show Codex renewal date"), target: nil, action: nil)
     let plan = NSPopUpButton()
     let purchase = NSDatePicker()
     let mode = NSPopUpButton()
@@ -51,8 +53,9 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         do { try FileManager.default.createDirectory(at: runtime, withIntermediateDirectories: true) }
         catch { alert(error.localizedDescription); NSApp.terminate(nil); return }
+        if let languageData = try? JSONSerialization.data(withJSONObject: CqsLocale.language, options: [.fragmentsAllowed]) { try? languageData.write(to: runtime.appendingPathComponent("language.json"), options: .atomic) }
         NSApp.setActivationPolicy(.accessory)
-        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 660, height: 500), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1000, height: 720), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
         window.title = "Codex Quota Sidebar"; window.delegate = self; window.center(); window.isReleasedWhenClosed = false
         window.appearance = NSAppearance(named: .aqua)
         window.backgroundColor = .white
@@ -66,23 +69,33 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         icon.widthAnchor.constraint(equalToConstant: 48).isActive = true; icon.heightAnchor.constraint(equalToConstant: 48).isActive = true
         let words = NSStackView(); words.orientation = .vertical; words.alignment = .leading; words.spacing = 4
         let title = NSTextField(labelWithString: "Codex Quota Sidebar"); title.font = .systemFont(ofSize: 21, weight: .regular)
-        let version = NSTextField(labelWithString: "macOS 0.2.2-alpha.1 · CHUNG"); version.textColor = .secondaryLabelColor
+        let version = NSTextField(labelWithString: "macOS 0.3.0-alpha.1 · KEFEN"); version.textColor = .secondaryLabelColor
         words.addArrangedSubview(title); words.addArrangedSubview(version); header.addArrangedSubview(icon); header.addArrangedSubview(words); container.addArrangedSubview(header)
+        languagePicker.identifier = NSUserInterfaceItemIdentifier("language")
+        languagePicker.addItems(withTitles: ["English", "简体中文", "繁體中文"])
+        languagePicker.selectItem(at: CqsLocale.language == "en" ? 0 : CqsLocale.language == "zh-CN" ? 1 : 2)
+        languagePicker.target = self; languagePicker.action = #selector(changeLanguage); header.addArrangedSubview(languagePicker)
         let divider = NSBox(); divider.boxType = .separator; container.addArrangedSubview(divider); divider.widthAnchor.constraint(equalTo: container.widthAnchor, constant: -48).isActive = true
-        body.orientation = .vertical; body.alignment = .leading; body.spacing = 14; container.addArrangedSubview(body)
-        body.widthAnchor.constraint(equalTo: container.widthAnchor, constant: -48).isActive = true
+        let split = NSStackView(); split.orientation = .horizontal; split.alignment = .top; split.spacing = 30
+        let navigation = NSStackView(); navigation.orientation = .vertical; navigation.alignment = .leading; navigation.spacing = 14
+        navigation.wantsLayer = true; navigation.layer?.backgroundColor = NSColor(calibratedWhite: 0.96, alpha: 1).cgColor
+        navigation.edgeInsets = NSEdgeInsets(top: 18, left: 12, bottom: 18, right: 12)
+        for (label, action) in [("Usage overview", #selector(showStatus)), ("Sidebar content", #selector(showDisplay)), ("Codex subscription record", #selector(showSettings)), ("GitHub", #selector(openGitHub)), ("Exit software", #selector(stop))] { navigation.addArrangedSubview(button(label, action)) }
+        navigation.widthAnchor.constraint(equalToConstant: 205).isActive = true
+        body.orientation = .vertical; body.alignment = .leading; body.spacing = 14; split.addArrangedSubview(navigation); split.addArrangedSubview(body); container.addArrangedSubview(split)
+        body.widthAnchor.constraint(equalTo: container.widthAnchor, constant: -283).isActive = true
         let spacer = NSView(); container.addArrangedSubview(spacer); spacer.setContentHuggingPriority(.defaultLow, for: .vertical)
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let image = NSImage(contentsOf: root.appendingPathComponent("assets/tray-template.png")) { image.isTemplate = true; image.size = NSSize(width: 18, height: 18); statusItem.button?.image = image }
         statusItem.button?.toolTip = "Codex Quota Sidebar"
         let menu = NSMenu()
-        for (text, action) in [("查看状态", #selector(showStatus)), ("设置", #selector(showSettings)), ("侧栏内容", #selector(showDisplay)), ("刷新数据", #selector(refresh)), ("退出软件", #selector(stop))] {
+        for (text, action) in [(CqsLocale.t("View status"), #selector(showStatus)), (CqsLocale.t("Settings"), #selector(showSettings)), (CqsLocale.t("Sidebar items"), #selector(showDisplay)), (CqsLocale.t("Refresh data"), #selector(refresh)), (CqsLocale.t("Exit software"), #selector(stop))] {
             let item = NSMenuItem(title: text, action: action, keyEquivalent: ""); item.target = self; menu.addItem(item)
         }
         statusItem.menu = menu; showStatus()
         if read("preferences.json")["cdpConsent"] as? Bool != true {
-            let prompt = NSAlert(); prompt.messageText = "允许本机调试连接"; prompt.informativeText = "调试权限不只限于读取额度，同机其他程序可能访问该端口。退出软件不会关闭端口；需完整退出 Codex，再从官方入口重启。本工具非 OpenAI 官方产品，CLI 账号可能与桌面账号不同。"
-            prompt.addButton(withTitle: "取消"); let agree = prompt.addButton(withTitle: "同意并继续"); agree.keyEquivalent = ""
+            let prompt = NSAlert(); prompt.messageText = CqsLocale.t("Allow local debugging"); prompt.informativeText = CqsLocale.t("Debugging grants more than quota access. Other local programs may access the port. Stopping the meter does not close it: fully quit Codex and reopen from its official entry. This is unofficial software. Verify that the CLI and desktop accounts match.")
+            prompt.addButton(withTitle: CqsLocale.t("Cancel")); let agree = prompt.addButton(withTitle: CqsLocale.t("Agree and continue")); agree.keyEquivalent = ""
             guard prompt.runModal() == .alertSecondButtonReturn else { NSApp.terminate(nil); return }
             do { var prefs = read("preferences.json"); prefs["cdpConsent"] = true; try write("preferences.json", prefs) }
             catch { alert(error.localizedDescription); NSApp.terminate(nil); return }
@@ -91,38 +104,55 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         timer = Timer.scheduledTimer(withTimeInterval: 4, repeats: true) { [weak self] _ in self?.tick() }
     }
     func button(_ title: String, _ action: Selector, primary: Bool = false) -> NSButton {
-        let result = NSButton(title: title, target: self, action: action); result.bezelStyle = .rounded; result.font = .systemFont(ofSize: 13, weight: .regular)
+        let result = NSButton(title: CqsLocale.t(title), target: self, action: action); result.bezelStyle = .rounded; result.font = .systemFont(ofSize: 13, weight: .regular)
         if primary { result.bezelColor = green }
         result.heightAnchor.constraint(greaterThanOrEqualToConstant: 32).isActive = true; return result
     }
     func clear() { for view in body.arrangedSubviews { body.removeArrangedSubview(view); view.removeFromSuperview() } }
-    func present() { NSApp.activate(ignoringOtherApps: true); window.makeKeyAndOrderFront(nil) }
+    func present() { CqsLocale.apply(window.contentView!); NSApp.activate(ignoringOtherApps: true); window.makeKeyAndOrderFront(nil) }
+    @objc func openGitHub() { NSWorkspace.shared.open(CqsLocale.repository) }
+    @objc func changeLanguage() {
+        CqsLocale.language = ["en","zh-CN","zh-TW"][languagePicker.indexOfSelectedItem]
+        UserDefaults.standard.set(CqsLocale.language, forKey: "cqs-language")
+        try? Data(("\"" + CqsLocale.language + "\"").utf8).write(to: runtime.appendingPathComponent("language.json"), options: .atomic)
+        CqsLocale.apply(window.contentView!)
+        for item in statusItem.menu?.items ?? [] { item.title = CqsLocale.t(item.title) }
+    }
     func line(_ label: String, _ value: NSView) {
-        let row = NSStackView(); row.spacing = 20; let key = NSTextField(labelWithString: label); key.textColor = .secondaryLabelColor
+        let row = NSStackView(); row.spacing = 20; let key = NSTextField(labelWithString: CqsLocale.t(label)); key.textColor = .secondaryLabelColor
         key.widthAnchor.constraint(equalToConstant: 130).isActive = true; row.addArrangedSubview(key); row.addArrangedSubview(value); body.addArrangedSubview(row)
     }
     @objc func showStatus() {
         showingSettings = false; clear(); rows = []
         headline.font = .systemFont(ofSize: 26, weight: .regular); body.addArrangedSubview(headline); body.addArrangedSubview(detail)
         detail.widthAnchor.constraint(lessThanOrEqualToConstant: 600).isActive = true
-        for title in ["客户端", "额度数据", "Token 数据", "最近同步"] { let field = NSTextField(labelWithString: "--"); rows.append(field); line(title, field) }
+        for title in [CqsLocale.t("Client"), CqsLocale.t("Quota data"), CqsLocale.t("Token data"), CqsLocale.t("Last sync")] { let field = NSTextField(labelWithString: "--"); rows.append(field); line(title, field) }
+        metricFields = []
+        let metrics = NSStackView(); metrics.orientation = .horizontal; metrics.spacing = 26
+        for label in ["5-hour remaining","Weekly remaining","Daily tokens","Weekly tokens","Lifetime tokens"] {
+            let column = NSStackView(); column.orientation = .vertical; column.alignment = .leading; column.spacing = 8
+            let name = NSTextField(wrappingLabelWithString: CqsLocale.t(label)); name.font = .systemFont(ofSize: 11)
+            let value = NSTextField(labelWithString: "--"); value.font = .systemFont(ofSize: 22, weight: .regular)
+            column.addArrangedSubview(name); column.addArrangedSubview(value); metrics.addArrangedSubview(column); metricFields.append(value)
+        }
+        body.addArrangedSubview(metrics)
         let commands = NSStackView(); commands.spacing = 8
-        retry = button("重新连接", #selector(reconnect)); commands.addArrangedSubview(button("打开 Codex", #selector(openCodex))); commands.addArrangedSubview(retry); commands.addArrangedSubview(button("设置", #selector(showSettings))); commands.addArrangedSubview(button("退出软件", #selector(stop))); body.addArrangedSubview(commands)
+        retry = button(CqsLocale.t("Reconnect"), #selector(reconnect)); commands.addArrangedSubview(button(CqsLocale.t("Open Codex"), #selector(openCodex))); commands.addArrangedSubview(retry); commands.addArrangedSubview(button(CqsLocale.t("Settings"), #selector(showSettings))); commands.addArrangedSubview(button(CqsLocale.t("Exit software"), #selector(stop))); body.addArrangedSubview(commands)
         tick(); present()
     }
     @objc func showSettings() {
         showingSettings = true; clear(); let member = read("membership.json")
         enabled.state = member["enabled"] as? Bool == true ? .on : .off; enabled.target = self; enabled.action = #selector(updateFields); body.addArrangedSubview(enabled)
-        plan.removeAllItems(); plan.addItems(withTitles: ["Plus","Pro / 未确定档位","Pro 100","Pro 200","Pro 500","Business / 未确定席位","Business Standard","Business Premium","Enterprise","Edu","Free","Go","其他 / 未确定"])
+        plan.removeAllItems(); plan.addItems(withTitles: ["Plus",CqsLocale.t("Pro / unknown tier"),"Pro 100","Pro 200","Pro 500",CqsLocale.t("Business / unknown seat"),"Business Standard","Business Premium","Enterprise","Edu","Free","Go",CqsLocale.t("Other / unknown")])
         let index = planIDs.indices.first { planIDs[$0] == (member["plan"] as? String) && (planTiers[$0] == (member["tier"] as? String ?? "unknown") || planTiers[$0].isEmpty) } ?? 12
         plan.selectItem(at: index); plan.target = self; plan.action = #selector(planChanged)
         for picker in [purchase, next] { picker.datePickerElements = [.yearMonthDay]; picker.datePickerStyle = .textFieldAndStepper; picker.target = self; picker.action = #selector(updateFields) }
         purchase.dateValue = date(member["purchaseDate"] as? String) ?? Date(); next.dateValue = date(member["date"] as? String) ?? Date()
-        mode.removeAllItems(); mode.addItems(withTitles: ["月付推算", "指定续费日", "指定到期日"]); mode.selectItem(at: member["kind"] as? String == "expiry" ? 2 : member["date"] != nil ? 1 : 0); mode.target = self; mode.action = #selector(updateFields)
-        mode.addItem(withTitle: "Business 年付推算"); if member["annualEstimate"] as? Bool == true { mode.selectItem(at: 3) }
-        line("套餐", plan); line("购买日期", purchase); line("日期类型", mode); line("续费 / 到期日", next); updateFields()
+        mode.removeAllItems(); mode.addItems(withTitles: [CqsLocale.t("Monthly estimate"), CqsLocale.t("Set renewal date"), CqsLocale.t("Set expiry date")]); mode.selectItem(at: member["kind"] as? String == "expiry" ? 2 : member["date"] != nil ? 1 : 0); mode.target = self; mode.action = #selector(updateFields)
+        mode.addItem(withTitle: CqsLocale.t("Business annual estimate")); if member["annualEstimate"] as? Bool == true { mode.selectItem(at: 3) }
+        line(CqsLocale.t("Plan"), plan); line(CqsLocale.t("Purchase date"), purchase); line(CqsLocale.t("Date type"), mode); line(CqsLocale.t("Renewal / expiry"), next); updateFields()
         let commands = NSStackView(); commands.spacing = 8
-        commands.addArrangedSubview(button("保存", #selector(save), primary: true)); commands.addArrangedSubview(button("跳过 / 隐藏", #selector(skip))); commands.addArrangedSubview(button("取消", #selector(showStatus))); body.addArrangedSubview(commands); present()
+        commands.addArrangedSubview(button(CqsLocale.t("Save"), #selector(save), primary: true)); commands.addArrangedSubview(button(CqsLocale.t("Skip / hide"), #selector(skip))); commands.addArrangedSubview(button(CqsLocale.t("Cancel"), #selector(showStatus))); body.addArrangedSubview(commands); present()
     }
     @objc func updateFields() {
         let free = planIDs[plan.indexOfSelectedItem] == "free"; enabled.isEnabled = !free; if free { enabled.state = .off }
@@ -136,17 +166,17 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc func planChanged() { if ["business","enterprise","edu","free"].contains(planIDs[plan.indexOfSelectedItem]) { enabled.state = .off; mode.selectItem(at: 1) }; updateFields() }
     @objc func showDisplay() {
         let keys = ["plan","short","week","reset","renewal","daily","average","weekly","lifetime"]
-        let labels = ["套餐标识","5 小时剩余","本周剩余","额度重置日","会员续费日","每日 Token","日均 Token","本周 Token","累计 Token"]
+        let labels = [CqsLocale.t("Plan badge"),CqsLocale.t("5-hour remaining"),CqsLocale.t("Weekly remaining"),CqsLocale.t("Quota reset"),CqsLocale.t("Renewal date"),CqsLocale.t("Daily tokens"),CqsLocale.t("Daily average"),CqsLocale.t("Weekly tokens"),CqsLocale.t("Lifetime tokens")]
         let values = read("display.json"), stack = NSStackView(); stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = 8
         var checks: [NSButton] = []
         for (key,label) in zip(keys,labels) { let check = NSButton(checkboxWithTitle: label, target: nil, action: nil); check.state = values[key] as? Bool == false ? .off : .on; checks.append(check); stack.addArrangedSubview(check) }
         stack.frame = NSRect(x: 0,y: 0,width: 300,height: 270)
-        let dialog = NSAlert(); dialog.messageText = "侧栏显示内容"; dialog.accessoryView = stack; dialog.addButton(withTitle: "保存"); dialog.addButton(withTitle: "取消")
+        let dialog = NSAlert(); dialog.messageText = CqsLocale.t("Sidebar display content"); dialog.accessoryView = stack; dialog.addButton(withTitle: CqsLocale.t("Save")); dialog.addButton(withTitle: CqsLocale.t("Cancel"))
         if dialog.runModal() == .alertFirstButtonReturn { var result: [String: Any] = [:]; for (key,check) in zip(keys,checks) { result[key] = check.state == .on }; do { try write("display.json",result) } catch { alert(error.localizedDescription) } }
     }
     @objc func skip() { enabled.state = .off; save() }
     @objc func save() {
-        if enabled.state == .on && mode.indexOfSelectedItem != 0 && mode.indexOfSelectedItem != 3 && dateString(next.dateValue) < dateString(purchase.dateValue) { alert("续费/到期日不能早于购买日期"); return }
+        if enabled.state == .on && mode.indexOfSelectedItem != 0 && mode.indexOfSelectedItem != 3 && dateString(next.dateValue) < dateString(purchase.dateValue) { alert(CqsLocale.t("Renewal/expiry date cannot precede purchase date.")); return }
         var member = read("membership.json"); member["enabled"] = enabled.state == .on
         member["plan"] = planIDs[plan.indexOfSelectedItem]; member["tier"] = planTiers[plan.indexOfSelectedItem]
         if enabled.state == .on {
@@ -186,36 +216,62 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             if let date = f.date(from: stamp), date >= startedAt, abs(date.timeIntervalSinceNow) < 35 { stage = state["stage"] as? String ?? stage } else { state = [:] }
         }
         let mounted = stage.hasPrefix("mounted")
-        headline.stringValue = mounted ? "已连接" : stage == "failed" ? "连接未完成" : stage == "stopped" ? "已停止" : "正在连接"
+        headline.stringValue = mounted ? CqsLocale.t("Connected") : stage == "failed" ? CqsLocale.t("Connection incomplete") : stage == "stopped" ? CqsLocale.t("Stopped") : CqsLocale.t("Connecting")
         headline.textColor = mounted ? green : .labelColor
-        detail.stringValue = stage == "failed" ? String(errorText.prefix(240)) : mounted ? "本机侧栏已挂载" : "等待客户端与数据同步"
-        rows[0].stringValue = mounted ? "已连接" : "未连接"
-        for (index, key) in [(1, "quotaAvailable"), (2, "usageAvailable")] { rows[index].stringValue = (state[key] as? Bool).map { $0 ? "已同步" : "暂不可用" } ?? "--" }
+        detail.stringValue = stage == "failed" ? String(errorText.prefix(240)) : mounted ? CqsLocale.t("Sidebar attached.") : CqsLocale.t("Waiting for client and data.")
+        rows[0].stringValue = mounted ? CqsLocale.t("Connected") : CqsLocale.t("Not connected")
+        for (index, key) in [(1, "quotaAvailable"), (2, "usageAvailable")] { rows[index].stringValue = (state[key] as? Bool).map { $0 ? CqsLocale.t("Synced") : CqsLocale.t("Unavailable") } ?? "--" }
         if let stamp = state["updatedAt"] as? String { let f = ISO8601DateFormatter(); f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]; rows[3].stringValue = f.date(from: stamp).map { DateFormatter.localizedString(from: $0, dateStyle: .short, timeStyle: .medium) } ?? "--" } else { rows[3].stringValue = "--" }
         retry.isEnabled = !stopping && !reconnecting && stage != "starting"
         if feedbackUntil > Date() { detail.stringValue = feedback }
+        updateMetrics(mounted)
+        CqsLocale.apply(window.contentView!)
         if mounted && !hiddenAfterMount { hiddenAfterMount = true; DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in if let self = self, self.stage.hasPrefix("mounted"), !self.showingSettings { self.window.orderOut(nil) } } }
+    }
+    func updateMetrics(_ connected: Bool) {
+        for field in metricFields { field.stringValue = "--" }
+        guard connected, metricFields.count == 5 else { return }
+        let snapshot = read("browser-state.json"), now = Date().timeIntervalSince1970 * 1000
+        func fresh(_ key: String, _ limit: Double) -> Bool { guard let stamp = snapshot[key] as? Double else { return false }; return now >= stamp && now - stamp < limit }
+        guard fresh("generatedAt",90000) else { return }
+        if fresh("quotaAt",180000) {
+            let windows = snapshot["windows"] as? [[String:Any]] ?? []
+            for (index, minutes) in [(0,300),(1,10080)] {
+                let matches = windows.filter { ($0["minutes"] as? Int) == minutes }
+                if matches.count == 1, let value = matches[0]["remaining"] as? Double, value.isFinite, value >= 0, value <= 100 { metricFields[index].stringValue = String(format: "%.0f%%",value) }
+            }
+        }
+        if fresh("usageAt",5400000) {
+            let daily = snapshot["daily"] as? [String:Any] ?? [:]
+            for (index, value) in [(2,daily["value"]),(3,snapshot["week"]),(4,snapshot["lifetime"])] {
+                if let count = value as? Double, count.isFinite, count >= 0, count.rounded() == count, count <= 9007199254740991 { metricFields[index].stringValue = count >= 1000000 ? String(format: "%.1fM",count/1000000) : String(format: "%.0f",count) }
+            }
+            if let date = daily["date"] as? String, date.range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil {
+                metricFields[2].stringValue += "\n" + date
+                metricFields[2].toolTip = CqsLocale.t("Data date") + ": " + date
+            } else { metricFields[2].stringValue = "--" }
+        }
     }
     @objc func refresh() { do { try Data("refresh".utf8).write(to: runtime.appendingPathComponent("refresh.request"), options: .atomic) } catch { alert(error.localizedDescription) } }
     @objc func reconnect() {
         guard !stopping, !reconnecting else { return }
-        notify("正在重新连接，不会关闭 Codex")
+        notify(CqsLocale.t("Reconnecting; Codex will not be closed automatically."))
         if child == nil { start(); return }
         do { try Data("reconnect".utf8).write(to: runtime.appendingPathComponent("background-stop.request"), options: .atomic); reconnecting = true; retry.isEnabled = false }
         catch { alert(error.localizedDescription) }
     }
     @objc func openCodex() {
-        guard opening == nil else { notify("正在唤起 Codex，请稍候"); return }
-        notify("正在唤起 Codex...")
+        guard opening == nil else { notify(CqsLocale.t("Opening Codex. Please wait.")); return }
+        notify(CqsLocale.t("Opening Codex..."))
         let process = Process(); process.executableURL = root.appendingPathComponent("runtime/node"); process.arguments = [root.appendingPathComponent("mac/launch.mjs").path,"--native-ui","--focus"]
-        process.terminationHandler = { [weak self] p in DispatchQueue.main.async { self?.opening = nil; self?.notify(p.terminationStatus == 0 ? "已发送 Codex 唤起请求" : "无法唤起 Codex，请检查签名配置和安装位置") } }
+        process.terminationHandler = { [weak self] p in DispatchQueue.main.async { self?.opening = nil; self?.notify(p.terminationStatus == 0 ? CqsLocale.t("Codex activation requested.") : CqsLocale.t("Cannot open Codex. Check signing configuration and install location.")) } }
         do { opening = process; try process.run() } catch { opening = nil; notify(error.localizedDescription) }
     }
     @objc func stop() {
         guard child?.isRunning == true else { NSApp.terminate(nil); return }
         do { try Data("stop".utf8).write(to: runtime.appendingPathComponent("background-stop.request"), options: .atomic); stopping = true
             stopTimer?.invalidate(); stopTimer = Timer.scheduledTimer(withTimeInterval: 40, repeats: false) { [weak self] _ in
-                guard let self = self, self.child?.isRunning == true else { return }; self.stopping = false; self.alert("仍在等待启动检查结束。请稍后再次退出软件，Codex 不会被强行关闭。")
+                guard let self = self, self.child?.isRunning == true else { return }; self.stopping = false; self.alert(CqsLocale.t("Startup checks are still running. Try exiting later. Codex will not be force-closed."))
             }
         } catch { alert(error.localizedDescription) }
     }

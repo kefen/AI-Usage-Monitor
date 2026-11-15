@@ -1,4 +1,4 @@
-# Browser companion / CHUNG
+# Browser companion / KEFEN
 
 Experimental Chrome MV3 side panel. Not a standalone account reader and not an
 official OpenAI extension. The desktop monitor must be running and connected.

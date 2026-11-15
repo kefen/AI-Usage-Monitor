@@ -1,6 +1,6 @@
 {
-  "manifest_version":3,"name":"Codex Quota Sidebar","version":"0.1.1","author":"CHUNG",
-  "description":"Read local Codex quota snapshots in a browser side panel. Unofficial companion by CHUNG.",
+  "manifest_version":3,"name":"Codex Quota Sidebar","version":"0.2.0","author":"KEFEN",
+  "description":"Read local Codex quota snapshots in a browser side panel. Unofficial companion by KEFEN.",
   "permissions":["sidePanel","nativeMessaging"],
   "background":{"service_worker":"background.js"},
   "action":{"default_title":"Codex Quota Sidebar"},

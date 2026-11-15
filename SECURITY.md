@@ -46,7 +46,7 @@ reporting and use its Security tab. Until then, report privately to the maintain
 do not post credentials or sensitive reproduction material in public issues.
 ## Browser companion boundary
 
-Author: CHUNG. The optional Chrome companion grants only sidePanel and
+Author: KEFEN. The optional Chrome companion grants only sidePanel and
 nativeMessaging. The local helper accepts one bounded read operation from the
 explicitly registered extension ID. It reads a fixed snapshot file and projects
 only quota numbers, token totals and timestamps. No cookies or credentials are

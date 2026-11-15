@@ -12,7 +12,7 @@ if ($InspectOnly) { $statusPath = Join-Path $runtime 'inspection.json' }
 function Write-StartupStatus([string]$stage, [string]$code = '', [int]$port = 0) {
     if($stage -ne 'startup-failed'){$script:startupPhase=$stage}
     if($port -gt 0){$script:selectedPort=$port}
-    [ordered]@{version='0.9.3-beta.1';stage=$stage;code=$code;port=$script:selectedPort;phase=$script:startupPhase;elevated=$script:elevated;updatedAt=[DateTime]::UtcNow.ToString('o')} |
+    [ordered]@{version='0.11.0-beta.1';stage=$stage;code=$code;port=$script:selectedPort;phase=$script:startupPhase;elevated=$script:elevated;updatedAt=[DateTime]::UtcNow.ToString('o')} |
         ConvertTo-Json | Set-Content -LiteralPath $statusPath -Encoding UTF8
 }
 function Invoke-NativeHelper([string]$action, [int]$port = 1) {
@@ -59,8 +59,10 @@ try {
         if ($ports.Count -ne 1) {
             $script:lastHelperCode = 'E_RUNNING_WITHOUT_CDP'
             if ($AfterRestart) { throw 'Codex is still running without a debug port after restart. No further restart was attempted.' }
-            Add-Type -AssemblyName System.Windows.Forms
-            Add-Type -Path (Join-Path $PSScriptRoot 'CodexMeter.exe')
+            $script:lastHelperCode = 'E_RESTART_DIALOG'
+            . (Join-Path $PSScriptRoot 'RestartSafety.ps1')
+            Initialize-MeterRestartDialog
+            $script:lastHelperCode = 'E_RUNNING_WITHOUT_CDP'
             $question = '"\u5f53\u524d Codex/ChatGPT \u4ecd\u5728\u540e\u53f0\u8fd0\u884c\uff0c\u6ca1\u6709\u6240\u9700\u8c03\u8bd5\u7aef\u53e3\u3002\u8bf7\u5148\u4fdd\u5b58\u6240\u6709\u5de5\u4f5c\uff0c\u5e76\u505c\u6b62\u6b63\u5728\u8fd0\u884c\u7684\u4efb\u52a1\u3002\n\n\u70b9\u51fb\u201c\u662f\u201d\u5c06\u7ed3\u675f\u8be5\u5e94\u7528\u7684\u6240\u6709\u5df2\u6838\u9a8c\u8fdb\u7a0b\uff0c\u5e76\u91cd\u65b0\u542f\u52a8\u4ee5\u52a0\u8f7d\u4fa7\u680f\u9762\u677f\u3002\u672a\u4fdd\u5b58\u5185\u5bb9\u53ef\u80fd\u4e22\u5931\u3002\n\n\u73b0\u5728\u5b8c\u6574\u91cd\u542f\u5417\uff1f"' | ConvertFrom-Json
             $title = '"\u91cd\u542f Codex \u5e76\u52a0\u8f7d\u989d\u5ea6\u9762\u677f"' | ConvertFrom-Json
             $question = $question.Replace([char]0x201c + [string][char]0x662f + [char]0x201d, [char]0x201c + ([string][char]0x5df2) + [char]0x4fdd + [char]0x5b58 + [char]0xff0c + [char]0x91cd + [char]0x542f + [char]0x201d)
@@ -68,7 +70,6 @@ try {
                 Write-StartupStatus 'restart-cancelled'
                 return
             }
-            . (Join-Path $PSScriptRoot 'RestartSafety.ps1')
             Write-StartupStatus 'restarting-after-user-confirmation'
             $fresh = Invoke-NativeHelper 'inspect'
             foreach ($expected in $fresh.processes) {

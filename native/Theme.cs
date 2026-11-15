@@ -4,14 +4,14 @@ using System.IO;
 using System.Windows.Forms;
 
 internal static class MeterTheme {
-    internal static readonly Color Ink=SystemInformation.HighContrast?SystemColors.WindowText:Color.FromArgb(30,38,34);
-    internal static readonly Color Muted=SystemInformation.HighContrast?SystemColors.WindowText:Color.FromArgb(91,103,96);
+    internal static readonly Color Ink=SystemInformation.HighContrast?SystemColors.WindowText:Color.FromArgb(33,40,50);
+    internal static readonly Color Muted=SystemInformation.HighContrast?SystemColors.WindowText:Color.FromArgb(99,109,122);
     internal static readonly Color Surface=SystemInformation.HighContrast?SystemColors.Window:Color.White;
-    internal static readonly Color Line=SystemInformation.HighContrast?SystemColors.WindowText:Color.FromArgb(221,228,223);
+    internal static readonly Color Line=SystemInformation.HighContrast?SystemColors.WindowText:Color.FromArgb(224,229,236);
     internal static readonly Color Green=SystemInformation.HighContrast?SystemColors.Highlight:Color.FromArgb(40,100,215);
     internal static readonly Color Blue=SystemInformation.HighContrast?SystemColors.Highlight:Color.FromArgb(44,103,168);
     internal static readonly Color Amber=SystemInformation.HighContrast?SystemColors.WindowText:Color.FromArgb(141,86,16);
-    internal static Font Font(float size){return new Font("Microsoft YaHei UI",size,FontStyle.Regular);}
+    internal static Font Font(float size){return new Font("Segoe UI",size,FontStyle.Regular);}
     internal static string Asset(string name){string root=Path.GetDirectoryName(typeof(MeterTheme).Assembly.Location);string p=Path.Combine(root,"assets",name);return File.Exists(p)?p:Path.Combine(root,"..","assets",name);}
     internal static Icon AppIcon(){try{return new Icon(Asset("cqs.ico"));}catch{return Icon.ExtractAssociatedIcon(Application.ExecutablePath)??(Icon)SystemIcons.Application.Clone();}}
     internal static Icon TrayIcon(){
@@ -23,6 +23,7 @@ internal static class MeterTheme {
         form.Font=Font(10);form.ForeColor=Ink;form.BackColor=Surface;form.Icon=AppIcon();
         form.AutoScaleDimensions=new SizeF(96,96);form.AutoScaleMode=AutoScaleMode.Dpi;form.ClientSize=new Size(width,height);
         form.FormBorderStyle=FormBorderStyle.FixedDialog;form.MaximizeBox=false;form.StartPosition=FormStartPosition.CenterScreen;
+        form.Shown+=(s,e)=>Locale.Apply(form);
     }
     internal static Label Label(string text,float size,Color color){return new Label{Text=text,Font=Font(size),ForeColor=color,AutoSize=false,TextAlign=ContentAlignment.MiddleLeft,Dock=DockStyle.Fill,UseMnemonic=false};}
     internal static Panel Header(string section,string version){
@@ -31,8 +32,9 @@ internal static class MeterTheme {
         try{using(var source=Image.FromFile(Asset("cqs-128.png")))icon.Image=new Bitmap(source);}catch{using(var stream=System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("brand.png")){if(stream!=null)using(var source=Image.FromStream(stream))icon.Image=new Bitmap(source);}}
         var words=new Panel{Dock=DockStyle.Fill,Padding=new Padding(16,0,0,0)};
         var title=Label("Codex Quota Sidebar",16,Ink);title.Dock=DockStyle.Top;title.Height=31;
-        var caption=Label(section+"  /  "+version+"  /  CHUNG",9,Muted);caption.Dock=DockStyle.Top;caption.Height=24;
+        var caption=Label("by KEFEN  /  "+section+"  /  "+version,9,Muted);caption.Dock=DockStyle.Top;caption.Height=24;
         words.Controls.Add(caption);words.Controls.Add(title);panel.Controls.Add(words);panel.Controls.Add(icon);
+        var language=Locale.Picker();language.Dock=DockStyle.Right;panel.Controls.Add(language);words.BringToFront();
         panel.Paint+=(s,e)=>{using(var pen=new Pen(Line))e.Graphics.DrawLine(pen,24,panel.Height-1,panel.Width-24,panel.Height-1);};
         panel.Disposed+=(s,e)=>{if(icon.Image!=null)icon.Image.Dispose();};return panel;
     }
@@ -46,13 +48,13 @@ internal static class MeterTheme {
     internal static bool Consent(){
         using(var form=new Form()){
             form.Text="Codex Quota Sidebar";Style(form,620,470);form.MinimizeBox=false;
-            var body=Body();form.Controls.Add(body);form.Controls.Add(Header("\u672c\u673a\u8fde\u63a5\u6388\u6743","Windows"));
-            var title=Label("\u5141\u8bb8\u672c\u673a\u8c03\u8bd5\u8fde\u63a5",17,Ink);title.Dock=DockStyle.Top;title.Height=44;
-            var notice=Label("\u8c03\u8bd5\u6743\u9650\u4e0d\u53ea\u9650\u4e8e\u8bfb\u53d6\u989d\u5ea6\u3002\u540c\u673a\u5176\u4ed6\u7a0b\u5e8f\u53ef\u80fd\u8bbf\u95ee\u8be5\u7aef\u53e3\u3002\n\n\u505c\u6b62\u9762\u677f\u4e0d\u4f1a\u5173\u95ed\u7aef\u53e3\uff1b\u9700\u5b8c\u6574\u9000\u51fa Codex\uff0c\u518d\u4ece\u5b98\u65b9\u5165\u53e3\u91cd\u542f\u3002\n\n\u672c\u5de5\u5177\u975e OpenAI \u5b98\u65b9\u4ea7\u54c1\u3002\u6570\u636e\u6765\u81ea CLI \u767b\u5f55\u8d26\u53f7\uff0c\u8bf7\u4e0e\u684c\u9762\u8d26\u53f7\u6838\u5bf9\u3002",10,Muted);notice.Dock=DockStyle.Top;notice.Height=190;
-            var accept=new CheckBox{Name="consentAccepted",Text="\u6211\u4e86\u89e3\u4e0a\u8ff0\u98ce\u9669\uff0c\u5e76\u4fe1\u4efb\u8fd9\u53f0\u7535\u8111",Dock=DockStyle.Top,Height=42,AutoSize=false};
+            var body=Body();form.Controls.Add(body);form.Controls.Add(Header(Locale.T("Local connection permission"),"Windows"));
+            var title=Label(Locale.T("Allow local debugging"),17,Ink);title.Dock=DockStyle.Top;title.Height=44;
+            var notice=Label(Locale.T("Debugging grants more than quota access. Other local programs may access the port. Stopping the meter does not close it: fully quit Codex and reopen from its official entry. This is unofficial software. Verify that the CLI and desktop accounts match."),10,Muted);notice.Dock=DockStyle.Top;notice.Height=190;
+            var accept=new CheckBox{Name="consentAccepted",Text=Locale.T("I understand the risks and trust this computer"),Dock=DockStyle.Top,Height=42,AutoSize=false};
             body.Controls.Add(accept);body.Controls.Add(notice);body.Controls.Add(title);
-            var footer=Footer();var yes=Button("confirm","\u540c\u610f\u5e76\u7ee7\u7eed",true);yes.Enabled=false;yes.DialogResult=DialogResult.OK;
-            var no=Button("cancel","\u53d6\u6d88",false);no.DialogResult=DialogResult.Cancel;footer.Controls.Add(yes);footer.Controls.Add(no);form.Controls.Add(footer);body.BringToFront();
+            var footer=Footer();var yes=Button("confirm",Locale.T("Agree and continue"),true);yes.Enabled=false;yes.DialogResult=DialogResult.OK;
+            var no=Button("cancel",Locale.T("Cancel"),false);no.DialogResult=DialogResult.Cancel;footer.Controls.Add(yes);footer.Controls.Add(no);form.Controls.Add(footer);body.BringToFront();
             accept.CheckedChanged+=(s,e)=>yes.Enabled=accept.Checked;form.CancelButton=no;form.AcceptButton=no;
             return form.ShowDialog()==DialogResult.OK&&accept.Checked;
         }
@@ -60,9 +62,9 @@ internal static class MeterTheme {
     internal static void Error(string text){
         using(var form=new Form()){
             form.Text="Codex Quota Sidebar";Style(form,620,330);
-            var body=Body();form.Controls.Add(body);form.Controls.Add(Header("\u9700\u8981\u5904\u7406","Windows"));
+            var body=Body();form.Controls.Add(body);form.Controls.Add(Header(Locale.T("Action needed"),"Windows"));
             body.Controls.Add(new TextBox{Text=text,ReadOnly=true,Multiline=true,Dock=DockStyle.Fill,BorderStyle=BorderStyle.None,BackColor=Surface,ForeColor=Ink,ScrollBars=ScrollBars.Vertical});
-            var footer=Footer();var close=Button("close","\u5173\u95ed",true);close.DialogResult=DialogResult.OK;footer.Controls.Add(close);form.Controls.Add(footer);body.BringToFront();form.CancelButton=close;form.ShowDialog();
+            var footer=Footer();var close=Button("close",Locale.T("Close"),true);close.DialogResult=DialogResult.OK;footer.Controls.Add(close);form.Controls.Add(footer);body.BringToFront();form.CancelButton=close;form.ShowDialog();
         }
     }
 }
@@ -72,10 +74,10 @@ public static class MeterRestartDialog {
         Application.EnableVisualStyles();
         using(var form=new Form()){
             form.Text="Codex Quota Sidebar";MeterTheme.Style(form,660,460);
-            var body=MeterTheme.Body();form.Controls.Add(body);form.Controls.Add(MeterTheme.Header("\u91cd\u542f\u786e\u8ba4","Windows"));
+            var body=MeterTheme.Body();form.Controls.Add(body);form.Controls.Add(MeterTheme.Header(Locale.T("Restart confirmation"),"Windows"));
             body.Controls.Add(new TextBox{Text=question,ReadOnly=true,Multiline=true,Dock=DockStyle.Fill,BorderStyle=BorderStyle.None,BackColor=MeterTheme.Surface,ForeColor=MeterTheme.Ink,ScrollBars=ScrollBars.Vertical});
-            var footer=MeterTheme.Footer();var yes=MeterTheme.Button("restartConfirm","\u5df2\u4fdd\u5b58\uff0c\u91cd\u542f",true);yes.Width=150;yes.DialogResult=DialogResult.OK;
-            var no=MeterTheme.Button("cancel","\u53d6\u6d88",false);no.DialogResult=DialogResult.Cancel;
+            var footer=MeterTheme.Footer();var yes=MeterTheme.Button("restartConfirm",Locale.T("Saved my work, restart"),true);yes.Width=150;yes.DialogResult=DialogResult.OK;
+            var no=MeterTheme.Button("cancel",Locale.T("Cancel"),false);no.DialogResult=DialogResult.Cancel;
             footer.Controls.Add(yes);footer.Controls.Add(no);form.Controls.Add(footer);body.BringToFront();form.AcceptButton=no;form.CancelButton=no;
             return form.ShowDialog()==DialogResult.OK;
         }

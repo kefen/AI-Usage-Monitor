@@ -1,11 +1,25 @@
-# Release review / CHUNG
+# Release review / KEFEN
 
-Candidate: Windows 0.9.3-beta.1, macOS 0.2.2-alpha.1, Chrome 0.1.1.
-No public repository or release has been created by this build.
+Candidate: Windows 0.11.0-beta.1, macOS 0.3.0-alpha.1, Chrome 0.2.0.
+Public repository: https://github.com/kefen/codex-quota-sidebar.
+Windows user acceptance and publication authorization confirmed on 2026-11-15.
+
+## 0.11 Windows acceptance gate
+
+The user accepted Windows 0.11 after testing A/A3 design and three locales.
+Chrome remains experimental; Mac is source-only. Publication uses the recorded
+release set and reruns packaging checks in GitHub Actions.
+Local checks cover 50 Node tests, the native wizard and failure/retry flow,
+150% layout, graceful old-meter shutdown request, settings round trip and
+diagnostic redaction. Setup extraction, owned upgrade, rollback and uninstall
+are verified in isolated directories, not by replacing the user's live install.
+Chrome 0.2.0 includes the new localized overview. Mac 0.3.0 includes the AppKit
+overview and shared locale source, but native compilation and installer wizard
+acceptance are still deferred to a real Mac.
 
 ## Scope
 
-Original blue winking-terminal logo; regular-weight native UI; CHUNG attribution.
+Original blue winking-terminal logo; regular-weight native UI; KEFEN attribution.
 Nine selectable desktop sidebar fields and manually recorded plan-family badge.
 Optional renewal dates with monthly/manual and Business annual modes.
 Chrome side panel reads a sanitized local snapshot through Native Messaging.

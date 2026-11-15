@@ -1,5 +1,5 @@
 (() => {
-  if (window.__localCodexMeter?.version === '0.9.3-beta.1') return;
+  if (window.__localCodexMeter?.version === '0.11.0-beta.1') return;
   if (window.__localCodexMeter?.controllerId === 'local-codex-sidebar-meter-v1') window.__localCodexMeter.dispose();
   else if (window.__localCodexMeter) return;
   const id = 'local-codex-sidebar-meter';
@@ -29,12 +29,43 @@
   section.setAttribute('aria-label', '\u672c\u673a CLI \u8d26\u6237\u989d\u5ea6');
   shadow.append(section);
   let state = {}, heartbeat = Date.now(), scheduled = false, lastRenderKey;
+  const words={
+    '服务端日期标签，分桶时区未核实；相对日期按 UTC 比较。周汇总从周一起，不是订阅额度周期。':['Server date labels; bucket timezone unverified. Relative dates use UTC. Weeks start Monday, independently of quota resets.','伺服器日期標籤，分桶時區未核實；相對日期按 UTC 比較。週彙總從週一起，不是訂閱額度週期。'],
+    '按用户充值日期和月付假设推算，未核对账单':['Estimated from purchase date and monthly billing; bill not verified','按使用者購買日期和月付假設推算，未核對帳單'],
+    '以订阅页面为准。不自动顺延。':['Check your subscription page. Not automatically rolled forward.','以訂閱頁面為準。不自動順延。'],
+    '会员日期未设置，不从周额度推测':['Subscription date not set; never inferred from weekly quota','訂閱日期未設定，不從週額度推測'],
+    '积分无限制（不代表时段额度无限）':['Unlimited credits (not unlimited quota windows)','點數無限制（不代表時段額度無限）'],
+    '积分余额':['Credit balance','點數餘額'],'可用额度重置次数':['Available quota resets','可用額度重設次數'],
+    '仅展示，不自动使用':['Display only; never used automatically','僅顯示，不自動使用'],
+    '暂无可用每日 Token 数据，已隐藏日用量':['No daily Token data; daily metric hidden','暫無可用每日 Token 資料，已隱藏日用量'],
+    '本机首次观测':['First observed locally','本機首次觀測'],'上次尚未返回':['Last observed absent','上次尚未回傳'],
+    '观测时间不等于官方发布时间；关闭期间不观测':['Observation is not publication time; no observations while stopped','觀測時間不等於官方發布時間；關閉期間不觀測'],
+    '本周已返回记录':['Returned weekly records','本週已回傳記錄'],'天，四舍五入；不含缺失日期':['days, rounded; missing dates excluded','天，四捨五入；不含缺失日期'],
+    '数据不完整':['Incomplete data','資料不完整'],'天，缺失日期不按 0 计算':['days; missing dates are not zero','天，缺失日期不按 0 計算'],
+    '不完整':['Incomplete','不完整'],'官方账号 Token 活动（本机 CLI 登录账号）；不是 API 账单':['Account Token activity (local CLI login); not an API bill','官方帳戶 Token 活動（本機 CLI 登入帳戶）；不是 API 帳單'],
+    '启动时读取，之后每 60 分钟刷新':['Read at startup, then every 60 minutes','啟動時讀取，之後每 60 分鐘更新'],
+    '本机 CLI 账户额度':['Local CLI account quota','本機 CLI 帳戶額度'],'下次':['Next','下次'],'天':['day','天'],
+    '5h余':['5h','5h餘'],'周余':['Week','週餘'],'额度':['Quota','額度'],'重置':['Reset','重設'],'续费':['Renew','續費'],'到期':['Expiry','到期'],
+    '今日':['Today','今日'],'昨日':['Yest.','昨日'],'最近':['Latest','最近'],'日均':['Avg','日均'],'本周':['Week','本週'],'累计':['Total','累計'],
+    '待刷新':['Pending','待更新'],'已同步':['Synced','已同步'],'可能过期':['May be stale','可能過期'],'数据已过期':['Data expired','資料已過期'],'读取失败':['Read failed','讀取失敗'],
+    '北京时间':['Asia/Shanghai','北京時間'],'剩余':['Remaining','剩餘'],'已用':['Used','已用'],'后重置':['until reset','後重設'],'重置时间未返回':['Reset time unavailable','未回傳重設時間'],
+    '等待服务端刷新':['Waiting for server','等待伺服器更新'],'服务端未返回重置时间':['No reset time returned','伺服器未回傳重設時間'],
+    '用户手动记录，未核验真实账号':['Manual record; account not verified','使用者手動記錄，未驗證真實帳戶'],
+    '用户手动填写':['Manually recorded','使用者手動填寫'],'预计':['Estimated','預估'],'会员':['Subscription','訂閱'],
+    '来源':['Source','來源'],'本机 CLI 账户，请与桌面账户核对':['Local CLI account; verify desktop account','本機 CLI 帳戶，請與桌面帳戶核對'],
+    '最后同步':['Last sync','最後同步'],'暂无可用数据':['Data unavailable','暫無可用資料']
+  };
+  const translated=value=>{
+    if(!state.language||state.language==='zh-CN')return value;
+    for(const key of Object.keys(words).sort((a,b)=>b.length-a.length))value=value.split(key).join(words[key][state.language==='en'?0:1]);
+    return value;
+  };
   const text = (tag, value, cls) => {
     const e = document.createElement(tag); e.textContent = value;
     if (cls) e.className = cls;
     return e;
   };
-  const beijingTime=value=>new Date(value).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai'});
+  const beijingTime=value=>new Date(value).toLocaleString(state.language||'zh-CN',{timeZone:'Asia/Shanghai'});
   const status = now => {
     if (!Number.isFinite(state.fetchedAt)) return 'unavailable';
     const age = now - state.fetchedAt;
@@ -160,6 +191,8 @@
     hints.push('\u6765\u6e90: \u672c\u673a CLI \u8d26\u6237\uff0c\u8bf7\u4e0e\u684c\u9762\u8d26\u6237\u6838\u5bf9');
     if(state.fetchedAt) hints.push('\u6700\u540e\u540c\u6b65\uff08\u5317\u4eac\u65f6\u95f4\uff09: '+beijingTime(state.fetchedAt));
     root.title = hints.join('\n');
+    for(const node of section.querySelectorAll('*')){if(node.children.length===0&&node.textContent)node.textContent=translated(node.textContent);if(node.title)node.title=translated(node.title);if(node.hasAttribute('aria-label'))node.setAttribute('aria-label',translated(node.getAttribute('aria-label')));}
+    root.title=translated(root.title);
     root.setAttribute('aria-label', root.title);
   }
   function anchor() {
@@ -200,7 +233,7 @@
     delete window.__localCodexMeter;
   }
   window.__localCodexMeter = {
-    version:'0.9.3-beta.1',
+    version:'0.11.0-beta.1',
     controllerId:'local-codex-sidebar-meter-v1',
     receive(value) { state = value; heartbeat = Date.now(); render(); mount(); },
     dispose,

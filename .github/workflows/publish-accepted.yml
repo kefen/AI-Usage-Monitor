@@ -1,0 +1,38 @@
+name: Publish accepted 0.11 release set
+on:
+  push:
+    branches: [main]
+    paths: ['docs/releases/accepted-0.11.json']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: publish-accepted-0.11
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.repository == 'kefen/codex-quota-sidebar' && github.ref == 'refs/heads/main'
+    runs-on: windows-2022
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Build and test accepted source
+        shell: pwsh
+        run: |
+          ./Build-Windows.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
+          ./runtime/node.exe test/package-extract.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Package verification failed' }
+          ./test/rollback.test.ps1
+          ./test/restart.test.ps1
+      - name: Publish verified prerelease assets
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          ./runtime/node.exe tools/publish-accepted.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Release verification failed' }

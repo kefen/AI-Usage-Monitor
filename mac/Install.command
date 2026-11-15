@@ -20,14 +20,14 @@ cleanup() {
   esac
 }
 trap cleanup EXIT
-cp -R src mac browser runtime assets package.json versions.json README.md LICENSE SECURITY.md THIRD_PARTY_NOTICES.md "$stage/"
+cp -R src mac browser runtime assets ui package.json versions.json README.md LICENSE SECURITY.md THIRD_PARTY_NOTICES.md "$stage/"
 chmod 755 "$stage/runtime/node"
 if ! "$stage/runtime/node" --version; then
   echo 'Node could not run. Check macOS version/security policy; installation incomplete.'
   exit 1
 fi
 cp -R 'build/Codex Quota Sidebar.app' "$stage/Codex Quota Sidebar.app"
-printf '%s\n' 'local-codex-sidebar-meter-0.2.2-alpha.1' > "$stage/installed-by-meter"
+printf '%s\n' 'local-codex-sidebar-meter-0.3.0-alpha.1' > "$stage/installed-by-meter"
 mv "$stage/Codex Quota Sidebar.app" "$app"
 mv "$stage" "$dest"
 echo 'Installed. Open ~/Applications/Codex Quota Sidebar.app.'

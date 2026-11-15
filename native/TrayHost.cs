@@ -31,7 +31,7 @@ internal static class TrayHost {
     static DateTime reconnectAt;
     static void Reconnect(){
         if(stopping||reconnecting)return;
-        window.Feedback("\u6b63\u5728\u91cd\u65b0\u8fde\u63a5\uff0c\u4e0d\u4f1a\u5173\u95ed Codex");
+        window.Feedback(Locale.T("Reconnecting; Codex will not be closed automatically."));
         if(child==null){Prepare();return;}
         reconnecting=true;reconnectAt=DateTime.UtcNow;File.WriteAllText(StopPath,"reconnect");
         window.UpdateState("starting",new Dictionary<string,object>());
@@ -48,7 +48,7 @@ internal static class TrayHost {
     }
     static void Report() {
         using(var self=Process.GetCurrentProcess()) {
-            var data=new Dictionary<string,object>{{"version","0.9.3-beta.1"},{"stage",stage},{"pid",self.Id},{"monitorPid",child==null?0:child.Id},{"host","native"},{"workingSetBytes",self.WorkingSet64},{"cpuSeconds",self.TotalProcessorTime.TotalSeconds},{"updatedAt",DateTime.UtcNow.ToString("o")}};
+            var data=new Dictionary<string,object>{{"version","0.11.0-beta.1"},{"stage",stage},{"pid",self.Id},{"monitorPid",child==null?0:child.Id},{"host","native"},{"workingSetBytes",self.WorkingSet64},{"cpuSeconds",self.TotalProcessorTime.TotalSeconds},{"updatedAt",DateTime.UtcNow.ToString("o")}};
             if(!preparing && child!=null && !child.HasExited){child.Refresh();data["nodeWorkingSetBytes"]=child.WorkingSet64;data["nodeCpuSeconds"]=child.TotalProcessorTime.TotalSeconds;}
             File.WriteAllText(Path.Combine(Runtime,"background.json"),Json.Serialize(data),Encoding.UTF8);
         }
@@ -62,7 +62,7 @@ internal static class TrayHost {
         p.ErrorDataReceived+=(s,e)=>{if(e.Data!=null)lock(errors){errors.WriteLine(e.Data);errors.Flush();}};
         p.Start();p.BeginOutputReadLine();p.BeginErrorReadLine();return p;
     }
-    static void Stop() {stopping=true;File.WriteAllText(StopPath,"stop");tray.Text=Title+" - stopping";window.Feedback("\u6b63\u5728\u9000\u51fa\u989d\u5ea6\u9762\u677f\uff0c\u4e0d\u4f1a\u5173\u95ed Codex");}
+    static void Stop() {stopping=true;File.WriteAllText(StopPath,"stop");tray.Text=Title+" - stopping";window.Feedback(Locale.T("Stopping the meter; Codex stays open."));}
     static void Prepare() {
         if(child!=null || stopping)return;
         try {
@@ -80,21 +80,21 @@ internal static class TrayHost {
         window.UpdateState(stage,new Dictionary<string,object>{{"code",error.Message}});window.Present();Report();
     }
     static void OpenCodex() {
-        if(preparing || stopping || opening){window.Feedback("\u6b63\u5728\u5904\u7406\u8fde\u63a5\uff0c\u8bf7\u7a0d\u5019");return;}
+        if(preparing || stopping || opening){window.Feedback(Locale.T("Connection is busy. Please wait."));return;}
         try {
             var state=Read("status.json");int port=Convert.ToInt32(state["port"]);
             if(port<1024 || port>65535)throw new InvalidDataException("Invalid port; reconnect first.");
             var start=new ProcessStartInfo(Ps,"-NoProfile -STA -ExecutionPolicy Bypass -File "+Q(Path.Combine(Root,"vendor\\codex-quota\\codex-cdp.ps1"))+" -Action focus -Port "+port){UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden,WorkingDirectory=Root};
-            start.EnvironmentVariables.Remove("PSModulePath");opening=true;window.Feedback("\u6b63\u5728\u5524\u8d77 Codex...");
+            start.EnvironmentVariables.Remove("PSModulePath");opening=true;window.Feedback(Locale.T("Opening Codex..."));
             var worker=new BackgroundWorker();worker.DoWork+=(s,e)=>{using(var p=Process.Start(start)){if(!p.WaitForExit(15000)){p.Kill();throw new TimeoutException("Codex activation timed out.");}if(p.ExitCode!=0)throw new InvalidOperationException("Codex activation failed; reconnect or inspect diagnostics.");}};
-            worker.RunWorkerCompleted+=(s,e)=>{if(window.IsDisposed){worker.Dispose();return;}try{window.BeginInvoke((Action)(()=>{opening=false;if(!window.IsDisposed)window.Feedback(e.Error==null?"\u5df2\u53d1\u9001 Codex \u5524\u8d77\u8bf7\u6c42":e.Error.Message);worker.Dispose();}));}catch(InvalidOperationException){worker.Dispose();}};worker.RunWorkerAsync();
+            worker.RunWorkerCompleted+=(s,e)=>{if(window.IsDisposed){worker.Dispose();return;}try{window.BeginInvoke((Action)(()=>{opening=false;if(!window.IsDisposed)window.Feedback(e.Error==null?Locale.T("Codex activation requested."):e.Error.Message);worker.Dispose();}));}catch(InvalidOperationException){worker.Dispose();}};worker.RunWorkerAsync();
         } catch(Exception ex) {opening=false;window.Feedback(ex.Message);}
     }
     static void Tick(object sender,EventArgs args) {
         try {
             if(File.Exists(StopPath)&&!reconnecting)stopping=true;
             if(reconnecting && child!=null && !child.HasExited){
-                if((DateTime.UtcNow-reconnectAt).TotalSeconds>45)window.Feedback("\u4ecd\u5728\u7b49\u5f85\u65e7\u76d1\u63a7\u9000\u51fa\uff0cCodex \u672a\u88ab\u5173\u95ed");
+                if((DateTime.UtcNow-reconnectAt).TotalSeconds>45)window.Feedback(Locale.T("Still waiting for the old monitor. Codex stays open."));
                 return;
             }
             if(stopping && child==null){stage="stopped";Application.ExitThread();return;}
@@ -137,13 +137,14 @@ internal static class TrayHost {
     }
     [STAThread] static int Main(string[] args) {
         Directory.CreateDirectory(Runtime);
+        Locale.Load(Runtime);
         if(args.Length>0 && args[0]=="--stop"){File.WriteAllText(StopPath,"stop");return 0;}
         using(var trayLock=new Mutex(false,LockName("tray")))using(var monitorLock=new Mutex(false,LockName("monitor"))) {
             bool haveTray=Acquire(trayLock), haveMonitor=false;
             if(!haveTray){string request=args.Length>0&&args[0]=="--settings"?"settings.request":args.Length>0&&args[0]=="--reconnect"?"reconnect.request":args.Length>0&&args[0]=="--open-codex"?"focus.request":"background-open.request";File.WriteAllText(Path.Combine(Runtime,request),"open");return 0;}
             try {
                 haveMonitor=Acquire(monitorLock);
-                if(!haveMonitor){MeterTheme.Error("\u8bf7\u5148\u505c\u6b62\u65e7\u7684\u989d\u5ea6\u76d1\u63a7\uff0c\u518d\u6253\u5f00\u65b0\u7248\u3002");return 0;}
+                if(!haveMonitor){MeterTheme.Error(Locale.T("Stop the old monitor before opening this version."));return 0;}
                 if(File.Exists(StopPath))File.Delete(StopPath);if(File.Exists(OpenPath))File.Delete(OpenPath);
                 Application.EnableVisualStyles();
                 if(args.Length>0&&args[0]=="--settings"){MeterPreferences.Edit(Runtime);return 0;}
@@ -153,12 +154,13 @@ internal static class TrayHost {
                 window=new LaunchWindow(OpenCodex,Reconnect,()=>MeterPreferences.Edit(Runtime),Stop);
                 tray=new NotifyIcon{Icon=MeterTheme.TrayIcon(),Text=Title,Visible=true};
                 var menu=new ContextMenuStrip();
-                menu.Items.Add("\u6253\u5f00 Codex",null,(s,e)=>OpenCodex());
-                menu.Items.Add("\u8bbe\u7f6e",null,(s,e)=>MeterPreferences.Edit(Runtime));
-                menu.Items.Add("\u5237\u65b0\u6570\u636e",null,(s,e)=>File.WriteAllText(Path.Combine(Runtime,"refresh.request"),"refresh"));
-                menu.Items.Add("\u67e5\u770b\u72b6\u6001",null,(s,e)=>window.Present());
-                menu.Items.Add("\u9000\u51fa\u8f6f\u4ef6",null,(s,e)=>Stop());
+                menu.Items.Add(Locale.T("Open Codex"),null,(s,e)=>OpenCodex());
+                menu.Items.Add(Locale.T("Settings"),null,(s,e)=>MeterPreferences.Edit(Runtime));
+                menu.Items.Add(Locale.T("Refresh data"),null,(s,e)=>File.WriteAllText(Path.Combine(Runtime,"refresh.request"),"refresh"));
+                menu.Items.Add(Locale.T("View status"),null,(s,e)=>window.Present());
+                menu.Items.Add(Locale.T("Exit software"),null,(s,e)=>Stop());
                 tray.ContextMenuStrip=menu;tray.DoubleClick+=(s,e)=>window.Present();
+                menu.Opening+=(s,e)=>{foreach(ToolStripItem item in menu.Items)item.Text=Locale.T(item.Text);};
                 Prepare();
                 Report();timer=new System.Windows.Forms.Timer{Interval=4000};timer.Tick+=Tick;timer.Start();
                 Application.Run();return stage=="failed"?1:0;

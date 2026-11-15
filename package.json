@@ -1,8 +1,8 @@
 {
   "name": "codex-quota-sidebar",
-  "version": "0.9.3-beta.1",
+  "version": "0.11.0-beta.1",
   "license": "MIT",
-  "author": "CHUNG",
+  "author": "KEFEN",
   "private": true,
   "type": "module",
   "engines": { "node": ">=22" },

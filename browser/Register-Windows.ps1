@@ -9,7 +9,7 @@ if(-not(Test-Path (Join-Path $root 'BrowserHost.exe'))){throw 'Build/install the
 if(Test-Path $key){if((Get-Item $key).GetValue('') -ne $manifest){throw 'Refusing to replace another registration'}}
 New-Item -ItemType Directory -Path $runtime -Force|Out-Null
 @{extensionId=$ExtensionId}|ConvertTo-Json|Set-Content (Join-Path $runtime 'browser-host.json') -Encoding ascii
-@{name='org.chung.codex_quota_sidebar';description='Read-only Codex quota snapshot by CHUNG';path=(Join-Path $root 'BrowserHost.exe');type='stdio';allowed_origins=@("chrome-extension://$ExtensionId/")}|ConvertTo-Json|Set-Content $manifest -Encoding ascii
+@{name='org.chung.codex_quota_sidebar';description='Read-only Codex quota snapshot by KEFEN';path=(Join-Path $root 'BrowserHost.exe');type='stdio';allowed_origins=@("chrome-extension://$ExtensionId/")}|ConvertTo-Json|Set-Content $manifest -Encoding ascii
 New-Item -Path $key -Force|Out-Null
 Set-Item -LiteralPath $key -Value $manifest
 Write-Host 'Registered only for the specified extension ID. Use -Remove before uninstalling.'

@@ -7,7 +7,7 @@ and CDP listener ownership helper from `keaipiao/codex-quota`.
 - Commit: `54e3e15c898b65d66db4ecffec1725c4d8e9275d`
 - Original path: `windows/codex-cdp.ps1`
 - License: MIT; original license retained as `vendor/codex-quota/LICENSE`.
-- Local change by CHUNG: explicit focus action reactivates the verified running
+- Local change by KEFEN: explicit focus action reactivates the verified running
   Store application, after the existing listener ownership checks.
 - TCP query failures are reported separately from an absent listener.
 

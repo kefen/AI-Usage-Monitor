@@ -27,10 +27,11 @@ internal static class Installer {
             if(args.Length==2 && args[0]=="--extract"){Extract(args[1]);return 0;}
             if(args.Length!=0)throw new ArgumentException("Use --extract DIRECTORY or double-click to install.");
             Application.EnableVisualStyles();
-            // Windows 0.9.3-beta.1
-            string destination=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"Documents\\Codex\\Apps\\CodexSidebarMeter");
+            // Windows 0.11.0-beta.1
+            string destination=SetupSupport.DefaultDestination();
             SetupWindow window=null;
             using(window=new SetupWindow(destination,()=>{
+            destination=window.Destination;
             if(temp==null){temp=Path.Combine(Path.GetTempPath(),"CodexMeter-install-"+Guid.NewGuid().ToString("N"));Extract(temp);}
             string ps=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System),"WindowsPowerShell\\v1.0\\powershell.exe");
             var start=new ProcessStartInfo(ps,"-NoProfile -ExecutionPolicy Bypass -File "+Q(Path.Combine(temp,"Install.ps1"))+" -Destination "+Q(destination)){UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden,RedirectStandardOutput=true,RedirectStandardError=true};
@@ -40,7 +41,8 @@ internal static class Installer {
                 if(p.ExitCode!=0)throw new IOException(error.Result+"\n"+output.Result);
             }
             DisplayOptions.Save(Path.Combine(destination,".runtime"),window.SelectedVisibility);
-            },()=>Process.Start(new ProcessStartInfo(Path.Combine(destination,"CodexMeter.exe")){UseShellExecute=true})))window.ShowDialog();return 0;
+            Locale.Save(Path.Combine(destination,".runtime"));
+            },()=>Process.Start(new ProcessStartInfo(Path.Combine(destination,"CodexMeter.exe")){UseShellExecute=true}),null,()=>MeterPreferences.Edit(Path.Combine(destination,".runtime"))))window.ShowDialog();return 0;
         }catch(Exception e){MeterTheme.Error(e.Message);return 1;}
         finally{if(temp!=null && Directory.Exists(temp) && Path.GetFullPath(temp).StartsWith(Path.Combine(Path.GetTempPath(),"CodexMeter-install-"),StringComparison.OrdinalIgnoreCase))Directory.Delete(temp,true);}
     }
