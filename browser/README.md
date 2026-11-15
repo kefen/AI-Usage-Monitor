@@ -6,6 +6,26 @@ The CLI account can differ from both the browser and desktop accounts.
 
 ## Windows setup
 
+## Upgrading From Earlier Versions
+
+The current native-host name is `org.kefen.codex_quota_sidebar`.
+The desktop tool and Chrome extension must use the same name.
+
+1. Before upgrading, run the **previous installed version's** registration script
+   with `-Remove` and your existing extension ID to unregister its previous host.
+2. Upgrade Windows to 0.11.1-beta.1 and the extension to 0.2.1. Keep the extension
+   directory/ID when possible. Do not mix the old extension with the new host.
+3. Run the new `browser/Register-Windows.ps1` with the exact current extension ID.
+4. Reload the extension and reopen its side panel.
+
+If already upgraded without step 1, register the new host as in step 3.
+The earlier registry entry is unused; its cleanup is separate from connecting
+the new version. Do not delete unrelated native messaging registrations.
+Mac source users similarly unregister using the previous registration script
+before switching source versions. Mac remains unverified.
+
+## First Installation On Windows
+
 1. Install the matching desktop candidate. Start its monitor and confirm data.
 2. Extract the Chrome ZIP into a permanent folder. Open `chrome://extensions`,
    enable Developer mode, choose Load unpacked, and select that folder.

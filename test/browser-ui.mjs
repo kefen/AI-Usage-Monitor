@@ -7,7 +7,7 @@ try{
   for(const width of [320,480])for(const mode of ['ok','stale','missing']){
     const page=await browser.newPage({viewport:{width,height:720}});
     await page.addInitScript(mode=>{window.chrome={runtime:{id:'a'.repeat(32),sendNativeMessage:async(name,payload)=>{
-      if(name!=='org.chung.codex_quota_sidebar'||JSON.stringify(payload)!=='{"op":"read"}')throw Error('Invalid request');
+      if(name!=='org.kefen.codex_quota_sidebar'||JSON.stringify(payload)!=='{"op":"read"}')throw Error('Invalid request');
       if(mode==='missing')throw Error('No host');
       if(mode==='stale')return {ok:false,code:'STALE'};
       return {ok:true,windows:[{minutes:300,remaining:75}],daily:{date:'2026-11-14',value:0},week:1234567,lifetime:987654321,quotaAt:Date.now(),usageAt:Date.now()};

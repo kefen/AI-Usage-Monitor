@@ -1,10 +1,12 @@
 {
   "acceptedOn": "2026-11-15",
-  "packagingRevision": 2,
-  "windows": "0.11.0-beta.1",
-  "chrome": "0.2.0",
-  "macos": "0.3.0-alpha.1",
-  "windowsUserAccepted": true,
+  "packagingRevision": 3,
+  "windows": "0.11.1-beta.1",
+  "chrome": "0.2.1",
+  "macos": "0.3.1-alpha.1",
+  "windowsUserAccepted": false,
+  "basedOnAcceptedWindows": "0.11.0-beta.1",
+  "brandingOnlyPatch": true,
   "macosSourceOnly": true,
   "prerelease": true
 }

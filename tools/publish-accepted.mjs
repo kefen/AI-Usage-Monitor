@@ -6,12 +6,12 @@ if(!token||process.env.GITHUB_REPOSITORY!==repo||!/^[a-f0-9]{40}$/.test(commit||
 const accepted=JSON.parse(await readFile('docs/releases/accepted-0.11.json','utf8'));
 const versions=JSON.parse(await readFile('versions.json','utf8'));
 const chrome=JSON.parse(await readFile('browser/manifest.json','utf8')).version;
-if(accepted.windows!=='0.11.0-beta.1'||accepted.macos!=='0.3.0-alpha.1'||accepted.chrome!=='0.2.0'||!accepted.windowsUserAccepted||!accepted.macosSourceOnly||!accepted.prerelease)throw Error('Not the explicitly accepted release set');
+if(accepted.windows!=='0.11.1-beta.1'||accepted.macos!=='0.3.1-alpha.1'||accepted.chrome!=='0.2.1'||!accepted.brandingOnlyPatch||accepted.basedOnAcceptedWindows!=='0.11.0-beta.1'||!accepted.macosSourceOnly||!accepted.prerelease)throw Error('Not the explicitly reviewed branding release set');
 if(versions.windows!==accepted.windows||versions.macos!==accepted.macos||chrome!==accepted.chrome)throw Error('Version mismatch');
 const source='Codex-Quota-Sidebar-source-windows-'+versions.windows+'-macos-'+versions.macos+'.zip';
 const sets=[
- {tag:'windows/v'+versions.windows,title:'Windows '+versions.windows+' / KEFEN',files:['Codex-Quota-Sidebar-Windows-'+versions.windows+'-x64-Setup.exe',source],note:'Windows user acceptance confirmed on '+accepted.acceptedOn+'. A installer, A3 overview, three UI languages. Unsigned x64 beta.'},
- {tag:'chrome/v'+chrome,title:'Chrome '+chrome+' / KEFEN',files:['Codex-Quota-Sidebar-Chrome-'+chrome+'.zip'],note:'Experimental Chrome MV3 companion. Requires the running desktop monitor and exact native-host registration. Not a Chrome Web Store release.'},
+ {tag:'windows/v'+versions.windows,title:'Windows '+versions.windows+' / KEFEN',files:['Codex-Quota-Sidebar-Windows-'+versions.windows+'-x64-Setup.exe',source],note:'KEFEN branding correction based on user-accepted Windows '+accepted.basedOnAcceptedWindows+'. Automated checks rerun; this patch is not separately user-accepted. Browser users must unregister the earlier host before upgrading, then register the new KEFEN host after updating both desktop and extension. Unsigned x64 beta.'},
+ {tag:'chrome/v'+chrome,title:'Chrome '+chrome+' / KEFEN',files:['Codex-Quota-Sidebar-Chrome-'+chrome+'.zip'],note:'KEFEN branding correction. Native host is now org.kefen.codex_quota_sidebar. Upgrade the desktop tool too and rerun native-host registration with the exact extension ID. See the browser upgrade guide. Experimental; not a Chrome Web Store release.'},
  {tag:'macos/v'+versions.macos,title:'macOS '+versions.macos+' / SOURCE ONLY',files:[source],note:'Apple Silicon experimental SOURCE ONLY. No installable Mac binary. AppKit compilation, official Team ID verification and live Mac acceptance are outstanding. Fail-closed trust checks remain enabled.'}
 ];
 async function request(path,method='GET',data){

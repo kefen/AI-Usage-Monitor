@@ -22,7 +22,7 @@ internal sealed class SetupWindow : Form {
     internal SetupWindow(string destination,Action operation,Action launch,Func<string> detect=null,Action configure=null){
         original=Destination=destination;this.operation=operation;this.launch=launch;this.configure=configure;this.detect=detect??SetupSupport.FindCodex;
         Text="Codex Quota Sidebar by KEFEN";MeterTheme.Style(this,1000,710);
-        body=MeterTheme.Body();Controls.Add(body);var header=MeterTheme.Header("Setup","Windows 0.11.0-beta.1");Controls.Add(header);
+        body=MeterTheme.Body();Controls.Add(body);var header=MeterTheme.Header("Setup","Windows 0.11.1-beta.1");Controls.Add(header);
         rail=new Panel{Dock=DockStyle.Left,Width=190,Padding=new Padding(18,28,14,20),BackColor=Color.FromArgb(246,247,249)};Controls.Add(rail);
         var list=new TableLayoutPanel{Dock=DockStyle.Top,ColumnCount=1,RowCount=4,Height=224};
         string[] names={"Environment","Install location","Display options","Install and connect"};

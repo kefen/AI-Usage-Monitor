@@ -3,6 +3,8 @@
 An unofficial local companion that puts quota and Token usage in the Codex
 desktop navigation rail. Not affiliated with or endorsed by OpenAI.
 
+**Author: KEFEN.**
+
 [GitHub](https://github.com/kefen/codex-quota-sidebar) | [Security](SECURITY.md) | [MIT license](LICENSE)
 
 ## Screenshots
@@ -30,23 +32,28 @@ synthetic data. Not a capture of the live Codex application or a real account.
 
 | Platform | Version | Availability |
 | --- | --- | --- |
-| Windows 10/11 x64 | 0.11.0-beta.1 | User-accepted Windows beta; unsigned installer |
-| macOS Apple Silicon | 0.3.0-alpha.1 | Experimental source; not compiled or tested on Mac |
-| Chrome MV3 | 0.2.0 | Experimental companion; requires the Windows native host |
+| Windows 10/11 x64 | 0.11.1-beta.1 | Branding patch on accepted 0.11.0; unsigned installer |
+| macOS Apple Silicon | 0.3.1-alpha.1 | Experimental source; not compiled or tested on Mac |
+| Chrome MV3 | 0.2.1 | Experimental companion; requires the Windows native host |
 
-Windows user acceptance was confirmed on 2026-11-15. Platform versions are
+Windows 0.11.0 user acceptance was confirmed on 2026-11-15. This branding patch
+has automated verification but no separate user acceptance. Platform versions are
 independent; Windows acceptance does not imply macOS or browser-profile acceptance.
 
 ## Downloads And Instructions
 
-- [Windows installer and checksums](https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.11.0-beta.1)
-- [Chrome extension ZIP](https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.2.0)
-- [macOS experimental source only](https://github.com/kefen/codex-quota-sidebar/releases/tag/macos/v0.3.0-alpha.1)
+- [Windows installer and checksums](https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.11.1-beta.1)
+- [Chrome extension ZIP](https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.2.1)
+- [macOS experimental source only](https://github.com/kefen/codex-quota-sidebar/releases/tag/macos/v0.3.1-alpha.1)
 - **[Step-by-step illustrated user guide](docs/USER-GUIDE.md)**
 - [Release and acceptance record](docs/RELEASES.md)
 
 Use the named setup/extension assets, not GitHub's automatically generated source
 ZIP, to install Windows or Chrome. All three releases are prereleases.
+
+**Browser upgrade:** the native-host name is now `org.kefen.codex_quota_sidebar`.
+Update both desktop and extension, and register again. Follow the
+[browser migration steps](browser/README.md#upgrading-from-earlier-versions).
 
 ## Features
 

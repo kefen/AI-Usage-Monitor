@@ -69,7 +69,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         icon.widthAnchor.constraint(equalToConstant: 48).isActive = true; icon.heightAnchor.constraint(equalToConstant: 48).isActive = true
         let words = NSStackView(); words.orientation = .vertical; words.alignment = .leading; words.spacing = 4
         let title = NSTextField(labelWithString: "Codex Quota Sidebar"); title.font = .systemFont(ofSize: 21, weight: .regular)
-        let version = NSTextField(labelWithString: "macOS 0.3.0-alpha.1 · KEFEN"); version.textColor = .secondaryLabelColor
+        let version = NSTextField(labelWithString: "macOS 0.3.1-alpha.1 · KEFEN"); version.textColor = .secondaryLabelColor
         words.addArrangedSubview(title); words.addArrangedSubview(version); header.addArrangedSubview(icon); header.addArrangedSubview(words); container.addArrangedSubview(header)
         languagePicker.identifier = NSUserInterfaceItemIdentifier("language")
         languagePicker.addItems(withTitles: ["English", "简体中文", "繁體中文"])

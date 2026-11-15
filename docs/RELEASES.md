@@ -1,5 +1,14 @@
 # Release Record
 
+## KEFEN Branding Correction
+
+Windows 0.11.1-beta.1, Chrome 0.2.1 and macOS 0.3.1-alpha.1 are branding-only
+corrections. The host name is org.kefen.codex_quota_sidebar; browser users must
+update both components and register again. This patch is based on accepted
+Windows 0.11.0, not a new claim of user acceptance or Mac support.
+
+## Earlier Accepted Release
+
 Author: KEFEN. Windows acceptance confirmed by the user on 2026-11-15.
 
 | Platform | Version | Tag | Evidence boundary |

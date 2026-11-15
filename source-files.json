@@ -5,6 +5,7 @@
   "docs/screenshots/codex-sidebar-overview.png",
   "docs/releases/published-0.11.json",
   "ui/strings.json", "native/Locale.cs", "native/UsageOverview.cs", "mac/Localization.swift",
+  "test/author-branding.test.mjs",
   "tools/sync-locales.mjs", "tools/locale-gaps.mjs", "browser/strings.js", "test/locales.test.mjs", "test/UsageOverviewTest.cs",
   "test/listener-errors.test.ps1",
   "test/restart-dialog-load.test.ps1",

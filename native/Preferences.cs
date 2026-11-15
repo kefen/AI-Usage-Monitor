@@ -30,7 +30,7 @@ internal static class MeterPreferences {
         var data=Read(Path.Combine(root,"membership.json"));
         using(var form=new Form()){
             form.Text=Locale.T("Codex Quota Sidebar - Settings");MeterTheme.Style(form,900,640);form.MinimizeBox=false;
-            var body=MeterTheme.Body();form.Controls.Add(body);form.Controls.Add(MeterTheme.Header(Locale.T("Codex subscription record"),"Windows 0.11.0-beta.1"));
+            var body=MeterTheme.Body();form.Controls.Add(body);form.Controls.Add(MeterTheme.Header(Locale.T("Codex subscription record"),"Windows 0.11.1-beta.1"));
             var grid=new TableLayoutPanel{Dock=DockStyle.Fill,Padding=new Padding(0),ColumnCount=2,RowCount=8};
             grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,180));grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
             for(int i=0;i<8;i++)grid.RowStyles.Add(new RowStyle(SizeType.Absolute,42));body.Controls.Add(grid);

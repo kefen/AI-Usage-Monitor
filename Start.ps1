@@ -12,7 +12,7 @@ if ($InspectOnly) { $statusPath = Join-Path $runtime 'inspection.json' }
 function Write-StartupStatus([string]$stage, [string]$code = '', [int]$port = 0) {
     if($stage -ne 'startup-failed'){$script:startupPhase=$stage}
     if($port -gt 0){$script:selectedPort=$port}
-    [ordered]@{version='0.11.0-beta.1';stage=$stage;code=$code;port=$script:selectedPort;phase=$script:startupPhase;elevated=$script:elevated;updatedAt=[DateTime]::UtcNow.ToString('o')} |
+    [ordered]@{version='0.11.1-beta.1';stage=$stage;code=$code;port=$script:selectedPort;phase=$script:startupPhase;elevated=$script:elevated;updatedAt=[DateTime]::UtcNow.ToString('o')} |
         ConvertTo-Json | Set-Content -LiteralPath $statusPath -Encoding UTF8
 }
 function Invoke-NativeHelper([string]$action, [int]$port = 1) {

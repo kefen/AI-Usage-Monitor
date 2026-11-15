@@ -1,8 +1,9 @@
 # Release review / KEFEN
 
-Candidate: Windows 0.11.0-beta.1, macOS 0.3.0-alpha.1, Chrome 0.2.0.
+Candidate: Windows 0.11.1-beta.1, macOS 0.3.1-alpha.1, Chrome 0.2.1.
 Public repository: https://github.com/kefen/codex-quota-sidebar.
-Windows user acceptance and publication authorization confirmed on 2026-11-15.
+Windows 0.11.0 user acceptance and publication authorization confirmed on 2026-11-15.
+0.11.1 is the requested branding correction; no separate user acceptance is claimed.
 
 ## 0.11 Windows acceptance gate
 
@@ -13,7 +14,7 @@ Local checks cover 50 Node tests, the native wizard and failure/retry flow,
 150% layout, graceful old-meter shutdown request, settings round trip and
 diagnostic redaction. Setup extraction, owned upgrade, rollback and uninstall
 are verified in isolated directories, not by replacing the user's live install.
-Chrome 0.2.0 includes the new localized overview. Mac 0.3.0 includes the AppKit
+Chrome 0.2.1 includes the new localized overview. Mac 0.3.0 includes the AppKit
 overview and shared locale source, but native compilation and installer wizard
 acceptance are still deferred to a real Mac.
 

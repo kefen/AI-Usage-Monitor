@@ -1,5 +1,13 @@
 # Changelog
 
+## Windows 0.11.1-beta.1 / macOS 0.3.1-alpha.1 / Chrome 0.2.1
+
+- Standardize all current first-party attribution and native messaging on KEFEN.
+- Rename the native host to org.kefen.codex_quota_sidebar; browser re-registration required.
+- Add author metadata and cross-platform native-host consistency regression tests.
+- Retire obsolete local publication entry points to prevent restoring old source.
+- Preserve historical commits and immutable earlier release files.
+
 ## Windows 0.11.0-beta.1 / macOS 0.3.0-alpha.1 / Chrome 0.2.0
 
 - Apply approved A installer and A3 usage-overview direction.

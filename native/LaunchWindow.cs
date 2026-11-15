@@ -23,7 +23,7 @@ internal sealed class LaunchWindow : Form {
     readonly UsageOverview overview;
     internal LaunchWindow(Action openCodex,Action reconnect,Action settings,Action stop){
         Text="Codex Quota Sidebar by KEFEN";MeterTheme.Style(this,1000,710);
-        var body=MeterTheme.Body();Controls.Add(body);var header=MeterTheme.Header("Usage overview","Windows 0.11.0-beta.1");Controls.Add(header);
+        var body=MeterTheme.Body();Controls.Add(body);var header=MeterTheme.Header("Usage overview","Windows 0.11.1-beta.1");Controls.Add(header);
         var nav=new FlowLayoutPanel{Dock=DockStyle.Left,Width=190,FlowDirection=FlowDirection.TopDown,WrapContents=false,Padding=new Padding(14,26,14,18),BackColor=Color.FromArgb(246,247,249)};Controls.Add(nav);
         Action<string,Action> item=(label,action)=>{var b=MeterTheme.Button(label,label,false);b.Width=160;b.Height=44;b.TextAlign=ContentAlignment.MiddleLeft;b.Margin=new Padding(0,0,0,8);b.BackColor=nav.BackColor;b.FlatAppearance.BorderSize=0;b.Click+=(s,e)=>action();nav.Controls.Add(b);};
         item("Usage overview",()=>Present());

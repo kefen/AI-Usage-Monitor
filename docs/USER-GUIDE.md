@@ -8,8 +8,8 @@ Windows UI using test fixtures, not real account data.
 
 Open [Releases](https://github.com/kefen/codex-quota-sidebar/releases).
 For Windows 10/11 x64, download the asset ending in
-`Windows-0.11.0-beta.1-x64-Setup.exe`, plus its SHA256 file if verifying integrity.
-Chrome uses the separate `Chrome-0.2.0.zip`. Mac is source-only, not a DMG installer.
+`Windows-0.11.1-beta.1-x64-Setup.exe`, plus its SHA256 file if verifying integrity.
+Chrome uses the separate `Chrome-0.2.1.zip`. Mac is source-only, not a DMG installer.
 The unsigned Windows executable may trigger an unknown-publisher warning.
 Verify its origin; never disable security software to get around a detection.
 
@@ -117,7 +117,8 @@ The date is always important. Calendar-week totals and quota-reset windows diffe
 
 This reads local snapshots, not your browser's ChatGPT session or cookies.
 Changing the unpacked folder may change the extension ID and require registration
-again. The legacy native-host identifier remains for compatibility.
+again. The host now uses `org.kefen.codex_quota_sidebar`; upgrade the desktop and
+extension together and follow [migration steps](../browser/README.md#upgrading-from-earlier-versions).
 
 ## Troubleshooting
 
