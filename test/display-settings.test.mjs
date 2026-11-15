@@ -3,13 +3,14 @@ import assert from 'node:assert/strict';
 import {normalizeDisplay,displayKeys,planBadge} from '../src/display-settings.mjs';
 import {nextAnnualDate,normalizeMembership} from '../src/settings.mjs';
 import * as settings from '../src/display-settings.mjs';
-import {mkdtemp,writeFile,rename,rm} from 'node:fs/promises';
+import {mkdtemp,writeFile,rename,rm,realpath} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {pathToFileURL} from 'node:url';
 test('settings changes notify immediately after atomic replacement, independently of quota polling',async()=>{
   assert.equal(typeof settings.watchDisplay,'function');
-  const root=await mkdtemp(join(tmpdir(),'cqs-settings-'));let close;
+  // Windows CI may expose an 8.3 TEMP alias; watch the canonical directory.
+  const root=await realpath(await mkdtemp(join(tmpdir(),'cqs-settings-')));let close;
   try{
     let wake;const changed=new Promise(resolve=>wake=resolve);
     close=settings.watchDisplay(pathToFileURL(root+'/'),wake);
