@@ -43,6 +43,7 @@ internal static class NativeVisualTest {
                 int topLevel=0;foreach(Form f in Application.OpenForms)if(f.TopLevel&&f.Visible)topLevel++;
                 Assert(topLevel==1,"Navigation opened a separate top-level window");
                 Capture(window,"page-"+section.Replace(" ","-"));
+                foreach(string language in new[]{"zh-CN","zh-TW","en"}){Locale.Set(language);Capture(window,"page-"+section.Replace(" ","-")+"-"+language);}
             }
             ((Button)window.Controls.Find("openCodex",true)[0]).PerformClick();Assert(opens==1,"Open action not dispatched");
             window.Feedback("Activation requested");window.UpdateState("mounted",new Dictionary<string,object>());Assert(window.Controls.Find("statusDetail",true)[0].Text=="Activation requested","Polling erased action feedback");
@@ -69,3 +70,4 @@ internal static class NativeVisualTest {
     static void Click(Form form){((Button)form.Controls.Find("install",true)[0]).PerformClick();Application.DoEvents();}
     static void Wait(Form form){var end=DateTime.UtcNow.AddSeconds(6);while(!form.Controls.Find("install",true)[0].Enabled&&DateTime.UtcNow<end){Application.DoEvents();System.Threading.Thread.Sleep(10);}Assert(form.Controls.Find("install",true)[0].Enabled,"Setup worker stalled");}
 }
+

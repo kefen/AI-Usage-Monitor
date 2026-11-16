@@ -97,3 +97,17 @@
 - GitHub publication withheld until the user's Windows acceptance.
 - macOS and Chrome source attribution updated; no new Mac installation-flow acceptance.
 
+# R2 test candidate - 2026-11-16
+
+- Windows 0.12.0-beta.1: compact setup; single-window navigation; separate data,
+  help and about pages; bottom-left version; three retained languages.
+- Shared rail: full display, bounded scrolling, compact action, then hidden.
+  Official controls always take priority, including dynamically appearing updates.
+- Chrome 0.3.0: local display preferences, help, sanitized diagnostic download,
+  about page; unchanged read-only Native Messaging permission boundary.
+- macOS 0.4.0-alpha.1: Intel/Apple Silicon unsigned test build workflow and
+  native navigation changes. Publisher trust and real-device acceptance remain
+  required; compiling a DMG does not establish working Codex integration.
+- Candidate branch only. No public Release or main-branch update authorized.
+
+
