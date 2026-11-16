@@ -9,6 +9,7 @@ import {setTimeout as delay} from 'node:timers/promises';
 const root=dirname(dirname(fileURLToPath(import.meta.url)));
 const nativeUI=process.argv.includes('--native-ui');
 const focusOnly=process.argv.includes('--focus');
+const restartApproved=process.argv.includes('--restart-approved');
 const runtime=join(root,'.runtime'),lock=join(runtime,'mac.pid'),stop=join(runtime,'background-stop.request');
 const run=(file,args,timeout=15000)=>{
   const r=spawnSync(file,args,{encoding:'utf8',timeout,maxBuffer:1024*1024});
@@ -55,8 +56,20 @@ try {
   }).filter(p=>p&&(p.cmd===main || p.cmd.startsWith(main+' ')));
   let running=processes(),port;
   if(running.length){
+    const existing=[...new Set(running.map(p=>Number(p.cmd.match(/--remote-debugging-port(?:=|\s+)(\d+)/)?.[1])).filter(Boolean))];
+    if(existing.length!==1){
+      if(!restartApproved)throw new Error('E_RESTART_REQUIRED');
+      // Ask the verified app to quit normally; cancellation and unsaved work are never overridden.
+      try{run('/usr/bin/osascript',['-e','on run argv','-e','tell application (item 1 of argv) to quit','-e','end run',app],90000);}
+      catch{throw new Error('E_QUIT_CANCELLED');}
+      for(let i=0;i<30&&processes().length;i++)await delay(1000);
+      running=processes();
+      if(running.length)throw new Error('E_QUIT_CANCELLED');
+    }
+  }
+  if(running.length){
     const ports=[...new Set(running.map(p=>Number(p.cmd.match(/--remote-debugging-port(?:=|\s+)(\d+)/)?.[1])).filter(Boolean))];
-    if(ports.length!==1)throw new Error('Save your work, fully Quit Codex, then open Codex Meter again. This tool will not close Codex for you.');
+    if(ports.length!==1)throw new Error('E_RESTART_REQUIRED');
     port=ports[0];
   }else{
     const server=net.createServer();await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve);});

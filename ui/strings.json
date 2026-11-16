@@ -1,4 +1,9 @@
 {
+  "Save work, restart and connect": ["保存工作后重启并连接", "儲存工作後重新啟動並連線"],
+  "Restart Codex to connect?": ["重启 Codex 以连接侧边栏？", "重新啟動 Codex 以連線側邊欄？"],
+  "Codex is open without a connection port. Save your work, then approve a restart to connect.": ["Codex 已打开，但未启用连接端口。请先保存工作，再确认重启并连接。", "Codex 已開啟，但未啟用連線埠。請先儲存工作，再確認重新啟動並連線。"],
+  "Codex did not quit. No process was forced closed. Save your work and retry, or quit Codex manually and reconnect.": ["Codex 尚未退出，工具没有强制关闭任何进程。请保存工作后重试，或手动退出 Codex 再重新连接。", "Codex 尚未結束，工具沒有強制關閉任何程序。請儲存工作後重試，或手動結束 Codex 再重新連線。"],
+  "1. Save your work and wait for active tasks to finish.\n2. Codex will receive a normal quit request, then reopen with a local connection port.\n3. Unsaved tasks may be interrupted. Cancel leaves Codex unchanged; no process will be force-closed.": ["1. 请先保存工作，并等待正在运行的任务结束。\n2. 工具将请求 Codex 正常退出，再启用本机连接端口重新打开。\n3. 未保存的任务可能中断。取消不会更改 Codex 状态；工具不会强制结束进程。", "1. 請先儲存工作，並等待正在執行的任務結束。\n2. 工具將請求 Codex 正常結束，再啟用本機連線埠重新開啟。\n3. 未儲存的任務可能中斷。取消不會更改 Codex 狀態；工具不會強制結束程序。"],
   "Runtime unavailable": [
     "运行组件无法启动",
     "執行元件無法啟動"

@@ -163,3 +163,11 @@
   runtime from Codex connection errors and restore retry controls.
 - Restore a missing runtime during reinstall; keep Windows and Chrome release
   versions unchanged. Apple notarization and real-account acceptance remain pending.
+
+# macOS 0.4.3-alpha.1 (test candidate)
+
+- Reuse an existing Codex connection port, or offer a localized, explicit save-work/restart confirmation. Request normal quit only; never force-close the official app.
+- Keep errors visible above transient feedback. Cancellation and quit timeout leave an actionable message.
+- Align Mac navigation, button sizing, selection colors, typography and two-row metrics with the Windows companion.
+- Extend the offline three-language guide with running-client connection, optional Automation permission and upgrade instructions.
+- Windows 0.12.3 remains unchanged. Real-device acceptance is required before release.

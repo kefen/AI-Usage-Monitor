@@ -186,3 +186,10 @@ Unregister the browser helper first if used. Exit the meter, then run
 `Uninstall.cmd` in the install directory. Personal settings and modified files
 are retained. Stopping/uninstalling the meter does not close Codex's debug port:
 fully quit Codex and reopen it from the official entry.
+## Mac 0.4.3 test candidate: Codex is already running
+
+Open the companion and choose **Reconnect**. A usable existing local debugging port is reused. If the app asks for a restart, finish active tasks and save work, then choose **Save work, restart and connect**. Confirming requests a normal quit and relaunch of the verified official Codex app. Cancel leaves Codex running. Quit refusal or timeout never triggers a force-kill.
+
+macOS may ask for Automation permission to send the quit request. Review the exact requesting app and target. You can decline and instead quit official Codex with Command-Q, then reconnect. Do not disable system security. No Full Disk Access or Accessibility permission is required.
+
+The bundled `READ-ME-FIRST.html` contains Simplified Chinese, Traditional Chinese and English guidance. Exit the previous companion, drag the new app into Applications and replace it, eject the DMG, then open the installed app. Check the lower-left version label. This is a test candidate, not a notarized release.

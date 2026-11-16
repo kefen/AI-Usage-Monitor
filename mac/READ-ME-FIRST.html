@@ -23,6 +23,11 @@
 <li>內附的 Node.js 元件會以 <code>node</code> 顯示，可能需要另外確認。請核對元件，不要授權其他同名程式。完成後回面板按「重新連線」。</li>
 <li>若誤刪元件，請退出工具並重新安裝完整套件。不要停用 Gatekeeper、SIP，或批次移除隔離屬性。</li></ol>
 <p>沒有允許選項、企業管控、明確惡意軟體或損壞警告時請停止並聯絡管理員。元件檢查通過後仍失敗，先確認官方 Codex 可開啟，儲存工作並完全退出，再重新連線。診斷檔不會自動上傳，送出前請檢查；不需要授予完整磁碟存取等無關權限。</p></section>
+<section><h2>Codex 已打开时 / Codex 已開啟時 / When Codex is already open</h2>
+<p>无需先手动退出。打开面板并点击“重新连接”；有可用端口时直接连接。若提示缺少端口，先保存工作、等待任务结束，再点击“保存工作后重启并连接”并确认。取消不会关闭 Codex。系统如询问自动化权限，请核对是本工具请求控制 Codex；不愿授权可取消，并手动用 ⌘Q 退出 Codex 后重连。关闭红色窗口不等于退出应用。</p>
+<p>無須先手動結束。開啟面板並按「重新連線」；有可用連線埠時直接連線。若缺少連線埠，先儲存工作並等待任務結束，再按「儲存工作後重新啟動並連線」並確認。取消不會關閉 Codex。如系統詢問自動化權限，請核對工具與 Codex；可取消並手動用 ⌘Q 結束 Codex 後重連。</p>
+<p>Choose Reconnect first. An existing usable port is reused. Otherwise, finish active tasks and save work before choosing Save work, restart and connect. Confirming requests a normal quit and relaunch; cancellation or timeout never force-kills Codex. Review any macOS Automation prompt for the exact companion and Codex. Alternatively, decline permission and manually quit Codex with Command-Q before reconnecting. Closing its window is not quitting.</p>
+<p>升级 / 升級 / Upgrade: Exit the old companion, replace the app in Applications, eject the DMG, and open the installed app. Confirm version 0.4.3-alpha.1 in the lower-left corner. Settings are retained.</p></section>
 <section id="en"><h2>Install and open safely</h2>
 <p class="warning">Experimental, not Developer ID signed or notarized. Checksums establish file consistency, not a security audit. Continue only if you trust the source and accept the risk, or wait for a notarized version.</p>
 <ol><li>Choose arm64 for Apple Silicon or x86_64 for Intel. Install a compatible official Codex client separately and sign in.</li>

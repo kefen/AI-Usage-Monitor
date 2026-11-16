@@ -12,6 +12,8 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var rows: [NSTextField] = []
     var displayChecks: [(String, NSButton)] = []
     var page = ""
+    var navigationButtons: [(String, NSButton)] = []
+    var restartApproved = false
     var dirty = false
     var editingReady = false
     var saveButton: NSButton?
@@ -22,15 +24,20 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             dialog.addButton(withTitle: CqsLocale.t("Cancel")); dialog.addButton(withTitle: CqsLocale.t("Continue"))
             guard dialog.runModal() == .alertSecondButtonReturn else { return false }
         }
-        dirty = false; editingReady = false; saveButton = nil; page = next; clear(); return true
+        dirty = false; editingReady = false; saveButton = nil; page = next
+        for (key, control) in navigationButtons {
+            control.layer?.backgroundColor = (key == next ? NSColor(calibratedRed: 0.90, green: 0.93, blue: 1, alpha: 1) : .clear).cgColor
+            control.contentTintColor = key == next ? green : .secondaryLabelColor
+        }
+        clear(); return true
     }
     @objc func markDirty() { if editingReady { dirty = true } }
     func saved() {
         dirty = false
         guard let control = saveButton else { return }
-        control.title = CqsLocale.t("Saved successfully"); control.bezelColor = nil; control.isEnabled = false
+        control.title = CqsLocale.t("Saved successfully"); control.layer?.backgroundColor = NSColor.white.cgColor; control.layer?.borderWidth = 1; control.contentTintColor = .labelColor; control.isEnabled = false
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) { [weak self, weak control] in
-            guard let control = control else { return }; control.title = CqsLocale.t("Save"); control.bezelColor = self?.green; control.isEnabled = true
+            guard let control = control else { return }; control.title = CqsLocale.t("Save"); control.layer?.backgroundColor = self?.green.cgColor; control.layer?.borderWidth = 0; control.contentTintColor = .white; control.isEnabled = true
         }
     }
     var metricFields: [NSTextField] = []
@@ -111,17 +118,23 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         languagePicker.selectItem(at: CqsLocale.language == "en" ? 0 : CqsLocale.language == "zh-CN" ? 1 : 2)
         languagePicker.target = self; languagePicker.action = #selector(changeLanguage); header.addArrangedSubview(languagePicker)
         let divider = NSBox(); divider.boxType = .separator; container.addArrangedSubview(divider); divider.widthAnchor.constraint(equalTo: container.widthAnchor, constant: -48).isActive = true
-        let split = NSStackView(); split.orientation = .horizontal; split.alignment = .top; split.spacing = 30
-        let navigation = NSStackView(); navigation.orientation = .vertical; navigation.alignment = .leading; navigation.spacing = 14
+        let split = NSStackView(); split.orientation = .horizontal; split.alignment = .top; split.spacing = 28
+        let navigation = NSStackView(); navigation.orientation = .vertical; navigation.alignment = .leading; navigation.spacing = 4
         navigation.wantsLayer = true; navigation.layer?.backgroundColor = NSColor(calibratedWhite: 0.96, alpha: 1).cgColor
         navigation.edgeInsets = NSEdgeInsets(top: 18, left: 12, bottom: 18, right: 12)
-        for (label, action) in [("Usage overview", #selector(showStatus)), ("Sidebar content", #selector(showDisplay)), ("Codex subscription record", #selector(showSettings)), ("Data and settings", #selector(showData)), ("Diagnostics", #selector(showHelp)), ("About project", #selector(showAbout))] { navigation.addArrangedSubview(button(label, action)) }
+        for (key, label, action) in [("overview", "Usage overview", #selector(showStatus)), ("display", "Sidebar content", #selector(showDisplay)), ("subscription", "Codex subscription record", #selector(showSettings)), ("data", "Data and settings", #selector(showData)), ("help", "Diagnostics", #selector(showHelp)), ("about", "About project", #selector(showAbout))] {
+            let control = button(label, action); control.alignment = .left
+            for constraint in control.constraints where constraint.firstAttribute == .width { constraint.isActive = false }
+            control.layer?.borderWidth = 0; control.layer?.backgroundColor = NSColor.clear.cgColor
+            control.widthAnchor.constraint(equalToConstant: 181).isActive = true
+            navigationButtons.append((key, control)); navigation.addArrangedSubview(control)
+        }
         navigation.widthAnchor.constraint(equalToConstant: 205).isActive = true
         body.orientation = .vertical; body.alignment = .leading; body.spacing = 14; split.addArrangedSubview(navigation); split.addArrangedSubview(body); container.addArrangedSubview(split)
         body.widthAnchor.constraint(equalTo: container.widthAnchor, constant: -283).isActive = true
         let spacer = NSView(); container.addArrangedSubview(spacer); spacer.setContentHuggingPriority(.defaultLow, for: .vertical)
         let footer = NSStackView(); footer.spacing = 8
-        let build = NSTextField(labelWithString: "macOS 0.4.2-alpha.1"); build.textColor = .secondaryLabelColor
+        let build = NSTextField(labelWithString: "macOS 0.4.3-alpha.1"); build.textColor = .secondaryLabelColor; build.font = .systemFont(ofSize: 11)
         footer.addArrangedSubview(build)
         let gap = NSView(); footer.addArrangedSubview(gap); gap.setContentHuggingPriority(.defaultLow, for: .horizontal)
         retry = button("Reconnect", #selector(reconnect))
@@ -146,13 +159,20 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             catch { alert(error.localizedDescription); NSApp.terminate(nil); return }
         }
         timer = Timer.scheduledTimer(withTimeInterval: 4, repeats: true) { [weak self] _ in self?.tick() }
-        if read("preferences.json")["macGuideVersion"] as? String != "0.4.2-alpha.1" { stage = "stopped"; showAuthorizationHelp() }
+        if read("preferences.json")["macGuideVersion"] as? String != "0.4.3-alpha.1" { stage = "stopped"; showAuthorizationHelp() }
         else { start() }
     }
     func button(_ title: String, _ action: Selector, primary: Bool = false) -> NSButton {
-        let result = NSButton(title: CqsLocale.t(title), target: self, action: action); result.bezelStyle = .rounded; result.font = .systemFont(ofSize: 13, weight: .regular)
-        if primary { result.bezelColor = green }
-        result.heightAnchor.constraint(greaterThanOrEqualToConstant: 32).isActive = true; return result
+        let result = NSButton(title: CqsLocale.t(title), target: self, action: action)
+        result.isBordered = false; result.font = .systemFont(ofSize: 13, weight: .regular)
+        result.wantsLayer = true; result.layer?.cornerRadius = 4
+        result.layer?.borderWidth = primary ? 0 : 1
+        result.layer?.borderColor = NSColor(calibratedWhite: 0.85, alpha: 1).cgColor
+        result.layer?.backgroundColor = (primary ? green : .white).cgColor
+        result.contentTintColor = primary ? .white : .labelColor
+        result.heightAnchor.constraint(equalToConstant: 36).isActive = true
+        result.widthAnchor.constraint(greaterThanOrEqualToConstant: max(108, result.intrinsicContentSize.width + 28)).isActive = true
+        return result
     }
     func smokeTest() {
         do {
@@ -176,7 +196,12 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 let failedView = window.contentView!, failedBitmap = failedView.bitmapImageRepForCachingDisplay(in: failedView.bounds)!
                 failedView.cacheDisplay(in: failedView.bounds, to: failedBitmap)
                 try failedBitmap.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("runtime-failure-" + language + ".png"))
-                runtimeIssue = false; stage = "stopped"; page = ""
+                runtimeIssue = false; stage = "failed"; errorText = "E_RESTART_REQUIRED"; page = ""
+                showStatus(); window.contentView!.layoutSubtreeIfNeeded()
+                let restartView = window.contentView!, restartBitmap = restartView.bitmapImageRepForCachingDisplay(in: restartView.bounds)!
+                restartView.cacheDisplay(in: restartView.bounds, to: restartBitmap)
+                try restartBitmap.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("restart-required-" + language + ".png"))
+                stage = "stopped"; errorText = ""; page = ""
             }
             let backup = try SettingsTransfer.exportData(runtime); try SettingsTransfer.restore(backup, at: runtime)
             do { _ = try SettingsTransfer.checked(Data("{\"auth.json\":{\"token\":\"do-not-import\"}}".utf8)); fatalError("Unknown settings accepted") } catch {}
@@ -204,12 +229,16 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         headline.font = .systemFont(ofSize: 26, weight: .regular); body.addArrangedSubview(headline); body.addArrangedSubview(detail)
         detail.widthAnchor.constraint(lessThanOrEqualToConstant: 600).isActive = true
         if runtimeIssue { authorizationButtons() }
+        if errorText.trimmingCharacters(in: .whitespacesAndNewlines) == "E_RESTART_REQUIRED" {
+            body.addArrangedSubview(button("Save work, restart and connect", #selector(confirmRestart), primary: true))
+        }
         for title in [CqsLocale.t("Client"), CqsLocale.t("Quota data"), CqsLocale.t("Token data"), CqsLocale.t("Last sync")] { let field = NSTextField(labelWithString: "--"); rows.append(field); line(title, field) }
         metricFields = []
-        let metrics = NSStackView(); metrics.orientation = .horizontal; metrics.spacing = 12
-        for label in ["5-hour remaining","Weekly remaining","Daily tokens","Weekly tokens","Lifetime tokens"] {
+        var metrics = NSStackView(); metrics.orientation = .horizontal; metrics.spacing = 20
+        for (index, label) in ["5-hour remaining","Weekly remaining","Daily tokens","Weekly tokens","Lifetime tokens"].enumerated() {
+            if index == 2 { body.addArrangedSubview(metrics); metrics = NSStackView(); metrics.orientation = .horizontal; metrics.spacing = 20 }
             let column = NSStackView(); column.orientation = .vertical; column.alignment = .leading; column.spacing = 8
-            column.widthAnchor.constraint(equalToConstant: 110).isActive = true
+            column.widthAnchor.constraint(equalToConstant: index < 2 ? 280 : 180).isActive = true
             let name = NSTextField(wrappingLabelWithString: CqsLocale.t(label)); name.font = .systemFont(ofSize: 11)
             let value = NSTextField(labelWithString: "--"); value.font = .systemFont(ofSize: 22, weight: .regular)
             column.addArrangedSubview(name); column.addArrangedSubview(value); metrics.addArrangedSubview(column); metricFields.append(value)
@@ -315,7 +344,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let dialog = NSSavePanel(); dialog.nameFieldStringValue = "Codex-Quota-Sidebar-diagnostics.json"
         guard dialog.runModal() == .OK, let url = dialog.url else { return }
         do {
-            let report: [String: Any] = ["version": "0.4.2-alpha.1", "platform": "macOS", "stage": stage, "runtimeReady": runtimeReady, "runtimeIssue": runtimeIssue, "monitorRunning": child?.isRunning == true, "exportedAt": ISO8601DateFormatter().string(from: Date())]
+            let report: [String: Any] = ["version": "0.4.3-alpha.1", "platform": "macOS", "stage": stage, "runtimeReady": runtimeReady, "runtimeIssue": runtimeIssue, "monitorRunning": child?.isRunning == true, "exportedAt": ISO8601DateFormatter().string(from: Date())]
             try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]).write(to: url, options: .atomic)
         } catch { alert(error.localizedDescription) }
     }
@@ -359,7 +388,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             if outcome == .ready {
                 self.runtimeReady = true; self.runtimeIssue = false
                 self.stage = previousStage == "checking" ? "stopped" : previousStage
-                var prefs = self.read("preferences.json"); prefs["macGuideVersion"] = "0.4.2-alpha.1"
+                var prefs = self.read("preferences.json"); prefs["macGuideVersion"] = "0.4.3-alpha.1"
                 try? self.write("preferences.json", prefs); self.tick(); next()
             } else {
                 self.stage = "failed"; self.runtimeIssue = true
@@ -406,12 +435,14 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             try? FileManager.default.removeItem(at: runtime.appendingPathComponent("mac-error.txt"))
             let logURL = runtime.appendingPathComponent("mac-ui.log"); try Data().write(to: logURL); log = try FileHandle(forWritingTo: logURL)
             let process = Process(); process.executableURL = root.appendingPathComponent("runtime/node"); process.arguments = [root.appendingPathComponent("mac/launch.mjs").path, "--native-ui"]; process.standardOutput = log; process.standardError = log
+            if restartApproved { process.arguments?.append("--restart-approved"); restartApproved = false }
             process.terminationHandler = { [weak self] process in DispatchQueue.main.async {
                 guard let self = self else { return }; self.child = nil; try? self.log?.close(); self.log = nil
                 if self.stopping { NSApp.terminate(nil); return }
                 if self.reconnecting { self.reconnecting = false; self.start(); return }
                 self.stage = process.terminationStatus == 0 ? "stopped" : "failed"
                 self.errorText = (try? String(contentsOf: self.runtime.appendingPathComponent("mac-error.txt"), encoding: .utf8)) ?? CqsLocale.t("The monitor exited without a connection report. Open Diagnostics and review the installation guide.")
+                if self.page == "overview" { self.page = "" }
                 self.showStatus()
             }}
             child = process; try process.run(); tick()
@@ -432,12 +463,14 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let mounted = stage.hasPrefix("mounted")
         headline.stringValue = runtimeIssue ? CqsLocale.t("Runtime unavailable") : stage == "checking" ? CqsLocale.t("Checking runtime") : mounted ? CqsLocale.t("Connected") : stage == "failed" ? CqsLocale.t("Connection incomplete") : stage == "stopped" ? CqsLocale.t("Stopped") : CqsLocale.t("Connecting")
         headline.textColor = mounted ? green : .labelColor
-        detail.stringValue = stage == "failed" ? String(errorText.prefix(240)) : mounted ? CqsLocale.t("Sidebar attached.") : CqsLocale.t("Waiting for client and data.")
+        let code = errorText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let failure = code == "E_RESTART_REQUIRED" ? CqsLocale.t("Codex is open without a connection port. Save your work, then approve a restart to connect.") : code == "E_QUIT_CANCELLED" ? CqsLocale.t("Codex did not quit. No process was forced closed. Save your work and retry, or quit Codex manually and reconnect.") : String(errorText.prefix(240))
+        detail.stringValue = stage == "failed" ? failure : mounted ? CqsLocale.t("Sidebar attached.") : CqsLocale.t("Waiting for client and data.")
         rows[0].stringValue = mounted ? CqsLocale.t("Connected") : CqsLocale.t("Not connected")
         for (index, key) in [(1, "quotaAvailable"), (2, "usageAvailable")] { rows[index].stringValue = (state[key] as? Bool).map { $0 ? CqsLocale.t("Synced") : CqsLocale.t("Unavailable") } ?? "--" }
         if let stamp = state["updatedAt"] as? String { let f = ISO8601DateFormatter(); f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]; rows[3].stringValue = f.date(from: stamp).map { DateFormatter.localizedString(from: $0, dateStyle: .short, timeStyle: .medium) } ?? "--" } else { rows[3].stringValue = "--" }
         retry.isEnabled = runtimeProbe == nil && !stopping && !reconnecting && stage != "starting"
-        if feedbackUntil > Date() { detail.stringValue = feedback }
+        if feedbackUntil > Date(), stage != "failed", !runtimeIssue { detail.stringValue = feedback }
         updateMetrics(mounted)
         CqsLocale.apply(window.contentView!)
         if mounted && !hiddenAfterMount { hiddenAfterMount = true; DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in if let self = self, self.stage.hasPrefix("mounted"), !self.showingSettings { self.window.orderOut(nil) } } }
@@ -473,6 +506,15 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if child == nil { start(); return }
         do { try Data("reconnect".utf8).write(to: runtime.appendingPathComponent("background-stop.request"), options: .atomic); reconnecting = true; retry.isEnabled = false }
         catch { alert(error.localizedDescription) }
+    }
+    @objc func confirmRestart() {
+        guard child == nil, runtimeProbe == nil, !stopping else { return }
+        let prompt = NSAlert(); prompt.messageText = CqsLocale.t("Restart Codex to connect?")
+        prompt.informativeText = CqsLocale.t("1. Save your work and wait for active tasks to finish.\n2. Codex will receive a normal quit request, then reopen with a local connection port.\n3. Unsaved tasks may be interrupted. Cancel leaves Codex unchanged; no process will be force-closed.")
+        prompt.addButton(withTitle: CqsLocale.t("Cancel"))
+        let approve = prompt.addButton(withTitle: CqsLocale.t("Save work, restart and connect")); approve.keyEquivalent = ""
+        guard prompt.runModal() == .alertSecondButtonReturn else { return }
+        restartApproved = true; feedbackUntil = .distantPast; start()
     }
     @objc func openCodex() {
         ensureRuntime { [weak self] in self?.launchCodexFocus() }

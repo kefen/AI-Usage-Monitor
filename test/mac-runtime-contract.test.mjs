@@ -2,6 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 const read=p=>readFile(new URL('../'+p,import.meta.url),'utf8');
+test('Mac restart is opt-in, graceful and never force-kills the official client',async()=>{
+ const launcher=await read('mac/launch.mjs'),ui=await read('mac/QuotaSidebar.swift');
+ assert.match(launcher,/if\(!restartApproved\)throw new Error\('E_RESTART_REQUIRED'\)/);
+ assert.match(launcher,/tell application \(item 1 of argv\) to quit/);
+ assert.match(launcher,/E_QUIT_CANCELLED/);
+ assert.doesNotMatch(launcher,/SIGKILL|killall|pkill/);
+ assert.match(ui,/prompt\.runModal\(\) == \.alertSecondButtonReturn/);
+ assert.match(ui,/restartApproved = true/);
+});
+test('Mac connection errors cannot be masked by transient action feedback',async()=>{
+ const ui=await read('mac/QuotaSidebar.swift');
+ assert.match(ui,/if feedbackUntil > Date\(\), stage != "failed", !runtimeIssue/);
+});
 test('Mac packaging preserves upstream runtime bytes and bundles offline help',async()=>{
  const build=await read('mac/Build.command');
  assert.doesNotMatch(build,/codesign --force --sign - .*runtime\/node/);
