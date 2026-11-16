@@ -14,6 +14,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var page = ""
     var navigationButtons: [(String, NSButton)] = []
     var restartApproved = false
+    var restartButton: NSButton?
     var dirty = false
     var editingReady = false
     var saveButton: NSButton?
@@ -130,6 +131,9 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             navigationButtons.append((key, control)); navigation.addArrangedSubview(control)
         }
         navigation.widthAnchor.constraint(equalToConstant: 205).isActive = true
+        navigation.heightAnchor.constraint(greaterThanOrEqualToConstant: 490).isActive = true
+        let navigationSpace = NSView(); navigation.addArrangedSubview(navigationSpace)
+        navigationSpace.setContentHuggingPriority(.defaultLow, for: .vertical)
         body.orientation = .vertical; body.alignment = .leading; body.spacing = 14; split.addArrangedSubview(navigation); split.addArrangedSubview(body); container.addArrangedSubview(split)
         body.widthAnchor.constraint(equalTo: container.widthAnchor, constant: -283).isActive = true
         let spacer = NSView(); container.addArrangedSubview(spacer); spacer.setContentHuggingPriority(.defaultLow, for: .vertical)
@@ -165,6 +169,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func button(_ title: String, _ action: Selector, primary: Bool = false) -> NSButton {
         let result = NSButton(title: CqsLocale.t(title), target: self, action: action)
         result.isBordered = false; result.font = .systemFont(ofSize: 13, weight: .regular)
+        result.alignment = .center
         result.wantsLayer = true; result.layer?.cornerRadius = 4
         result.layer?.borderWidth = primary ? 0 : 1
         result.layer?.borderColor = NSColor(calibratedWhite: 0.85, alpha: 1).cgColor
@@ -209,7 +214,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             NSApp.terminate(nil)
         } catch { fputs("UI smoke failed: \(error)\n", stderr); exit(1) }
     }
-    func clear() { for view in body.arrangedSubviews { body.removeArrangedSubview(view); view.removeFromSuperview() } }
+    func clear() { restartButton = nil; for view in body.arrangedSubviews { body.removeArrangedSubview(view); view.removeFromSuperview() } }
     func present() { CqsLocale.apply(window.contentView!); NSApp.activate(ignoringOtherApps: true); window.makeKeyAndOrderFront(nil) }
     @objc func openGitHub() { NSWorkspace.shared.open(CqsLocale.repository) }
     @objc func changeLanguage() {
@@ -222,6 +227,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func line(_ label: String, _ value: NSView) {
         let row = NSStackView(); row.spacing = 20; let key = NSTextField(labelWithString: CqsLocale.t(label)); key.textColor = .secondaryLabelColor
         key.widthAnchor.constraint(equalToConstant: 130).isActive = true; row.addArrangedSubview(key); row.addArrangedSubview(value); body.addArrangedSubview(row)
+        if value is NSPopUpButton || value is NSDatePicker { value.widthAnchor.constraint(equalToConstant: 400).isActive = true }
     }
     @objc func showStatus() {
         if page == "overview" { tick(); present(); return }
@@ -230,7 +236,8 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         detail.widthAnchor.constraint(lessThanOrEqualToConstant: 600).isActive = true
         if runtimeIssue { authorizationButtons() }
         if errorText.trimmingCharacters(in: .whitespacesAndNewlines) == "E_RESTART_REQUIRED" {
-            body.addArrangedSubview(button("Save work, restart and connect", #selector(confirmRestart), primary: true))
+            restartButton = button("Save work, restart and connect", #selector(confirmRestart), primary: true)
+            body.addArrangedSubview(restartButton!)
         }
         for title in [CqsLocale.t("Client"), CqsLocale.t("Quota data"), CqsLocale.t("Token data"), CqsLocale.t("Last sync")] { let field = NSTextField(labelWithString: "--"); rows.append(field); line(title, field) }
         metricFields = []
@@ -464,6 +471,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         headline.stringValue = runtimeIssue ? CqsLocale.t("Runtime unavailable") : stage == "checking" ? CqsLocale.t("Checking runtime") : mounted ? CqsLocale.t("Connected") : stage == "failed" ? CqsLocale.t("Connection incomplete") : stage == "stopped" ? CqsLocale.t("Stopped") : CqsLocale.t("Connecting")
         headline.textColor = mounted ? green : .labelColor
         let code = errorText.trimmingCharacters(in: .whitespacesAndNewlines)
+        restartButton?.isHidden = stage != "failed" || code != "E_RESTART_REQUIRED"
         let failure = code == "E_RESTART_REQUIRED" ? CqsLocale.t("Codex is open without a connection port. Save your work, then approve a restart to connect.") : code == "E_QUIT_CANCELLED" ? CqsLocale.t("Codex did not quit. No process was forced closed. Save your work and retry, or quit Codex manually and reconnect.") : String(errorText.prefix(240))
         detail.stringValue = stage == "failed" ? failure : mounted ? CqsLocale.t("Sidebar attached.") : CqsLocale.t("Waiting for client and data.")
         rows[0].stringValue = mounted ? CqsLocale.t("Connected") : CqsLocale.t("Not connected")
