@@ -10,7 +10,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 15
     steps:
-      - name: Inspect official distribution without launching it
+      - name: Verify publisher and test local debugging without an account
         shell: bash
         run: |
           set -euo pipefail
@@ -25,6 +25,17 @@ jobs:
           /usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app/Contents/Info.plist"
           file "$app/Contents/MacOS/"* "$app/Contents/Resources/codex"
           find "$app/Contents/Resources" -name codex -type f -print
+          "$app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex" --version
+          ditto "$app" /Applications/CQS-Official-Client-Test.app
+          open -a /Applications/CQS-Official-Client-Test.app --args --remote-debugging-address=127.0.0.1 --remote-debugging-port=19299
+          connected=false
+          for attempt in $(seq 1 45); do
+            if curl --fail --silent http://127.0.0.1:19299/json/version > debug-version.json; then connected=true; break; fi
+            sleep 1
+          done
+          if [[ "$connected" != true ]]; then echo 'No local debug endpoint'; exit 1; fi
+          cat debug-version.json
+          lsof -nP -iTCP:19299 -sTCP:LISTEN
           done
           shasum -a 256 official.dmg
           hdiutil detach "$PWD/official-mount"

@@ -8,8 +8,8 @@ Windows UI using test fixtures, not real account data.
 
 Open [Releases](https://github.com/kefen/codex-quota-sidebar/releases).
 For Windows 10/11 x64, download the asset ending in
-`Windows-0.11.1-beta.1-x64-Setup.exe`, plus its SHA256 file if verifying integrity.
-Chrome uses the separate `Chrome-0.2.1.zip`. Mac is source-only, not a DMG installer.
+`Windows-0.12.3-x64-Setup.exe`, plus its SHA256 file if verifying integrity.
+Chrome uses the separate `Chrome-0.3.1.zip`. Mac has experimental architecture-specific DMGs (see below).
 The unsigned Windows executable may trigger an unknown-publisher warning.
 Verify its origin; never disable security software to get around a detection.
 
@@ -84,8 +84,9 @@ this project's actual component.
 | Reconnect | Retries attachment; restart still requires confirmation |
 | Sidebar content | Changes visible metrics; save to apply |
 | Codex subscription record | Optional manual plan and renewal/expiry dates |
-| Diagnostics | Exports allow-listed diagnostic metadata |
-| GitHub | Opens this repository |
+| Diagnostics and help | Explains troubleshooting, then exports sanitized diagnostics for manual submission |
+| About project | Shows project details and a link to GitHub |
+| Data and settings | Backs up/restores settings or clears local observation history |
 | Window close button | Hides the panel while monitoring continues in the tray |
 | Exit software | Stops the meter; leaves Codex open |
 
@@ -94,6 +95,31 @@ for this tool. Choose your actual Codex plan and purchase date, or manually ente
 renewal/expiry. Estimated monthly/annual dates are not verified billing dates.
 Free, enterprise and organization-managed plans may not have an individual renewal.
 Skip the record when it does not apply. It never changes official subscription rights.
+
+Saving keeps you on the same page. The button briefly shows success, then returns
+to Save. While connected, sidebar settings apply automatically; no reconnect is
+needed. Unsaved edits are confirmed before leaving a page. Official Codex controls
+always take precedence: the sidebar scrolls when space is limited and collapses
+only when space is severely constrained.
+
+## macOS Experimental Installation
+
+Choose `arm64` for Apple Silicon or `x86_64` for Intel. Open the DMG, drag
+Codex Quota Sidebar into Applications, then open it. Keep the application there;
+do not run from the mounted disk image. The first run creates its private payload
+in `~/Library/Application Support/CodexSidebarMeter` and asks for connection consent.
+The app is ad-hoc signed, not Developer ID signed or notarized. macOS may block it;
+verify the repository and checksum before using System Settings > Privacy & Security
+to approve it. Do not disable Gatekeeper or run blanket quarantine-removal commands.
+
+Install the official Codex desktop client separately and sign in first. A supported
+client must have bundle ID `com.openai.codex`, the verified OpenAI publisher, and a
+bundled CLI. The official audited image now names it ChatGPT.app. The currently
+audited image is ARM-only: the Intel companion needs a separately compatible Intel
+official client. Its existence/availability is not guaranteed by this project.
+If a running client lacks local debugging, save work and fully quit it before
+reconnecting. Mac never silently terminates the official app. Real-account
+connection acceptance remains pending on both Mac architectures.
 
 The desktop language is saved and applied to sidebar labels. Settings backup and
 restore do not contain authentication or connection permission, but do contain

@@ -32,6 +32,10 @@ try{
     if(mode==='ok'){
       await page.locator('[data-page="display"]').click();
       await page.locator('#choices input').first().uncheck();
+      await page.locator('#choices input').first().focus();
+      await page.keyboard.press('Space');
+      assert.equal(await page.locator('#choices input').first().evaluate(el=>document.activeElement===el),true,'Saving must retain keyboard focus');
+      await page.keyboard.press('Space');
       await page.locator('[data-page="overview"]').click();
       assert.ok(!(await page.locator('#metrics').innerText()).includes('75%'));
     }

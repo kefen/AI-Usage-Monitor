@@ -30,3 +30,10 @@ includes the corresponding SHA256 file. No signing/notarization claim is made.
 isolated install, upgrade, uninstall, rollback, restart-ownership and layout tests.
 Public packaging runs build and extraction checks again. This is not an
 independent security audit.
+# 2026-11-16 Release Set
+
+- Windows **0.12.3 stable**: user acceptance and public publication authorized.
+- Chrome **0.3.1 experimental**: synchronized three-language interface and keyboard-focus fix.
+- macOS **0.4.1-alpha.1**: native Intel and Apple Silicon DMGs; unsigned/not notarized; real-account acceptance pending.
+- Mac publisher evidence: Actions run 43805495761, official bundle com.openai.codex, Team ID 2DC432GLL2. The audited official client is ARM-only.
+- The Windows accepted UI is unchanged from 0.12.3-beta.1; only stable metadata was promoted.

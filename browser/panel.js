@@ -5,7 +5,7 @@ locale=allowed.includes(locale)?locale:locale.startsWith('zh')?(locale.includes(
 const t=key=>locale==='en'?key:(CQS_STRINGS[key]?.[locale==='zh-TW'?1:0]||key);
 document.querySelector('#extension-id').textContent=chrome.runtime.id;
 document.querySelector('#help-id').textContent=chrome.runtime.id;
-document.querySelector('#version').textContent='v'+(chrome.runtime.getManifest?.().version||'0.3.0');
+document.querySelector('#version').textContent='v'+(chrome.runtime.getManifest?.().version||'0.3.1');
 const choices=['5-hour remaining','Weekly remaining','Daily tokens','Weekly tokens','Lifetime tokens'];
 let visible={};try{visible=JSON.parse(localStorage.getItem('cqs-visible')||'{}');if(!visible||typeof visible!=='object')visible={};}catch{}
 function switchPage(id){document.querySelectorAll('main>section').forEach(el=>el.hidden=el.id!==id);document.querySelectorAll('[data-page]').forEach(el=>el.setAttribute('aria-current',el.dataset.page===id?'page':'false'));}
@@ -39,7 +39,7 @@ language.addEventListener('change',()=>{locale=language.value;try{localStorage.s
 button.addEventListener('click',refresh);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});setInterval(refresh,60000);render();refresh();
 document.querySelector('#retry').addEventListener('click',refresh);
 document.querySelector('#export').addEventListener('click',()=>{
- const report={tool:'Codex Quota Sidebar by KEFEN',version:chrome.runtime.getManifest?.().version||'0.3.0',connection:error?'helper-unavailable':data?.ok?'snapshot-read':'snapshot-unavailable',exportedAt:new Date().toISOString()};
+ const report={tool:'Codex Quota Sidebar by KEFEN',version:chrome.runtime.getManifest?.().version||'0.3.1',connection:error?'helper-unavailable':data?.ok?'snapshot-read':'snapshot-unavailable',exportedAt:new Date().toISOString()};
  const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download='Codex-Quota-Sidebar-browser-diagnostics.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
  document.querySelector('#help-feedback').textContent=t('Review diagnostics before attaching them to a GitHub issue. No files are uploaded automatically.');
 });

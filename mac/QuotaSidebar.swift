@@ -82,6 +82,8 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         window.title = "Codex Quota Sidebar"; window.delegate = self; window.center(); window.isReleasedWhenClosed = false
         window.appearance = NSAppearance(named: .aqua)
         window.backgroundColor = .white
+        window.contentView!.wantsLayer = true
+        window.contentView!.layer?.backgroundColor = NSColor.white.cgColor
         let container = NSStackView(); container.orientation = .vertical; container.alignment = .leading; container.spacing = 14
         container.edgeInsets = NSEdgeInsets(top: 24, left: 24, bottom: 24, right: 24)
         container.translatesAutoresizingMaskIntoConstraints = false

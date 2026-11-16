@@ -34,4 +34,4 @@ ditto "$app" "build/dmg-$arch/Codex Quota Sidebar.app"
 ln -s /Applications "build/dmg-$arch/Applications"
 hdiutil create -size 512m -fs HFS+ -volname 'Codex Quota Sidebar Test' -srcfolder "build/dmg-$arch" -ov -format UDZO "dist/Codex-Quota-Sidebar-macOS-$version-$arch-unsigned-test.dmg"
 echo 'Local, ad-hoc signed test build only. Not notarized; no production Mac package created.'
-echo 'Verify the official Codex signing Team ID and complete RELEASE-CHECKLIST.md before distribution.'
+echo 'Official publisher verified; real-account connection acceptance is still pending.'

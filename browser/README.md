@@ -50,11 +50,13 @@ Registration changes only the current user's Chrome Native Messaging registry
 entry. It is not performed silently by the installer. The native helper lives
 outside the extension ZIP. Do not run registration as administrator.
 
-## Mac source only
+## macOS Experimental Native Host
 
-After desktop real-machine acceptance, the corresponding command from its
-installation directory is `./runtime/node browser/Register-Mac.mjs EXTENSION_ID`;
-append `--remove` to unregister. Not validated on macOS yet.
+After launching the DMG-installed companion, open Terminal in
+`~/Library/Application Support/CodexSidebarMeter` and run
+`./runtime/node browser/Register-Mac.mjs EXTENSION_ID`;
+append `--remove` to unregister. Real-profile registration acceptance on Mac
+is still pending; confirm desktop connection before registering.
 
 ## Boundaries
 

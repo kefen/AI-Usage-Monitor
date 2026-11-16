@@ -32,24 +32,27 @@ synthetic data. Not a capture of the live Codex application or a real account.
 
 | Platform | Version | Availability |
 | --- | --- | --- |
-| Windows 10/11 x64 | 0.11.2-beta.1 | Local sidebar-safety candidate; awaiting user acceptance; unsigned |
-| macOS Apple Silicon | 0.3.1-alpha.1 | Experimental source; not compiled or tested on Mac |
-| Chrome MV3 | 0.2.1 | Experimental companion; requires the Windows native host |
+| Windows 10/11 x64 | 0.12.3 | User-accepted stable release; unsigned installer |
+| macOS Apple Silicon / Intel | 0.4.1-alpha.1 | Experimental DMGs; unsigned/not notarized; real-account acceptance pending |
+| Chrome MV3 | 0.3.1 | Companion extension; requires the local desktop monitor and native host |
 
-Windows 0.11.0 user acceptance was confirmed on 2026-11-15. This branding patch
-has automated verification but no separate user acceptance. Platform versions are
+Windows 0.12.3 was accepted by the user on 2026-11-16. Platform versions are
 independent; Windows acceptance does not imply macOS or browser-profile acceptance.
+Mac packages require macOS 13.5+ and a compatible official Codex client. The
+currently audited official download is Apple Silicon only; the Intel companion
+does not make an ARM-only official client compatible with Intel.
 
 ## Downloads And Instructions
 
-- [Windows installer and checksums](https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.11.1-beta.1)
-- [Chrome extension ZIP](https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.2.1)
-- [macOS experimental source only](https://github.com/kefen/codex-quota-sidebar/releases/tag/macos/v0.3.1-alpha.1)
+- [Windows installer and checksums](https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.12.3)
+- [Chrome extension ZIP](https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.3.1)
+- [macOS experimental installers](https://github.com/kefen/codex-quota-sidebar/releases/tag/macos/v0.4.1-alpha.1)
 - **[Step-by-step illustrated user guide](docs/USER-GUIDE.md)**
 - [Release and acceptance record](docs/RELEASES.md)
 
 Use the named setup/extension assets, not GitHub's automatically generated source
-ZIP, to install Windows or Chrome. All three releases are prereleases.
+ZIP, to install Windows or Chrome. Only Windows is promoted to stable; Mac and
+browser remain explicitly experimental until their real-account/profile acceptance.
 
 **Browser upgrade:** the native-host name is now `org.kefen.codex_quota_sidebar`.
 Update both desktop and extension, and register again. Follow the
@@ -154,15 +157,16 @@ Fixture screenshots are not proof of live-account or Mac acceptance.
 
 ## macOS Boundary
 
-The AppKit management source follows the same design and three-language catalog,
-including usage overview and GitHub navigation. There is **no accepted Mac
-installer or binary**. Windows cannot verify AppKit compilation or layout.
+The AppKit app shares the three-language catalog and six same-window sections.
+Intel and Apple Silicon packages are built and UI-tested on their native GitHub
+macOS runners. Real-account connection acceptance is still pending. The packages
+are ad-hoc signed, not Developer ID signed or notarized.
 
-`mac/trust.json` intentionally lacks a developer Team ID and fails closed
-until the official app signature is verified on a real Mac. Do not remove this
-check to make a build launch. Packaging, upgrade preservation, signing,
-notarization and live sidebar acceptance remain release gates.
-See [release checklist](RELEASE-CHECKLIST.md).
+`mac/trust.json` pins OpenAI's verified Team ID; the launcher also validates the
+bundle identifier, full signature and loopback listener ownership. See the
+[publisher audit](https://github.com/kefen/codex-quota-sidebar/actions/runs/43805495761)
+and [Mac installation instructions](docs/USER-GUIDE.md#macos-experimental-installation).
+Do not bypass signature checks. Native compilation is not proof of live quota access.
 
 ## Contributing
 

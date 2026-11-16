@@ -7,12 +7,12 @@ enum Bootstrap {
         guard let payload = Bundle.main.resourceURL?.appendingPathComponent("payload"), fm.fileExists(atPath: payload.path) else { return }
         let marker = root.appendingPathComponent("versions.json")
         let packagedVersion = try Data(contentsOf: payload.appendingPathComponent("versions.json"))
-        if let installedVersion = try? Data(contentsOf: marker), installedVersion == packagedVersion { return }
         for path in [root, root.appendingPathComponent(".runtime")] {
             if (try? path.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink) == true {
                 throw NSError(domain: "CQS", code: 3, userInfo: [NSLocalizedDescriptionKey: "Linked installation folders are not supported."])
             }
         }
+        if let installedVersion = try? Data(contentsOf: marker), installedVersion == packagedVersion { return }
         let lock = root.appendingPathComponent(".runtime/mac.pid")
         if let text = try? String(contentsOf: lock, encoding: .utf8), let pid = Int32(text.trimmingCharacters(in: .whitespacesAndNewlines)), pid > 1, kill(pid, 0) == 0 {
             throw NSError(domain: "CQS", code: 1, userInfo: [NSLocalizedDescriptionKey: "Exit the previous Codex Quota Sidebar before installing this update."])

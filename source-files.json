@@ -1,5 +1,7 @@
 [
   ".gitignore", ".gitattributes", ".github/workflows/ci.yml", ".github/workflows/publish-accepted.yml",
+  ".github/workflows/publish-0.12.yml", ".github/workflows/mac-publisher-audit.yml",
+  "docs/releases/accepted-0.12.json", "tools/publish-release.mjs",
   "docs/USER-GUIDE.md", "docs/RELEASES.md", "docs/releases/accepted-0.11.json", "tools/publish-accepted.mjs",
   "docs/screenshots/setup-environment.png", "docs/screenshots/setup-location.png", "docs/screenshots/connection-consent.png", "docs/screenshots/restart-confirmation.png",
   "docs/screenshots/codex-sidebar-overview.png",

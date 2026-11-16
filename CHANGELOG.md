@@ -139,3 +139,13 @@
   heights; keep spacing between action groups and preserve long-text wrapping.
 - Windows-only visual iteration; save behavior, language choice and English
   shortcut naming are unchanged. Not publicly released.
+
+# 2026-11-16: Windows 0.12.3 / Chrome 0.3.1 / macOS 0.4.1-alpha.1
+
+- Promote the user-accepted Windows UI to stable without changing its behavior.
+- Mac: single-window pages, in-place save feedback, validated backup/restore,
+  compact layout, official publisher verification and updated bundled CLI discovery.
+- Browser: three-language navigation and retained checkbox keyboard focus.
+- Package both native Mac architectures; explicitly retain experimental status
+  and disclose the official client's Intel compatibility prerequisite.
+- Update illustrated English documentation and checksummed release automation.
