@@ -10,13 +10,14 @@ try{
       if(name!=='org.kefen.codex_quota_sidebar'||JSON.stringify(payload)!=='{"op":"read"}')throw Error('Invalid request');
       if(mode==='missing')throw Error('No host');
       if(mode==='stale')return {ok:false,code:'STALE'};
-      return {ok:true,windows:[{minutes:300,remaining:75}],daily:{date:'2026-11-14',value:0},week:1234567,lifetime:987654321,quotaAt:Date.now(),usageAt:Date.now()};
+      const date=new Date();date.setDate(date.getDate()-1);const day=date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0');
+      return {ok:true,windows:[{minutes:300,remaining:75},{minutes:10080,remaining:37}],daily:{date:day,value:202650000},monthAverage:125400000,week:96900000,lifetime:3008200000,creditBalance:'162.8117935',resetCredits:3,quotaAt:Date.now(),usageAt:Date.now()};
     }}};},mode);
     await page.goto(new URL('../browser/panel.html',import.meta.url).href);
     await page.locator('#language').selectOption('en');
     await page.waitForTimeout(200);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'No horizontal overflow');
-    if(mode==='ok'){assert.ok((await page.locator('#metrics').innerText()).includes('75%'));assert.ok((await page.locator('#metrics').innerText()).includes('2026-11-14'));}
+    if(mode==='ok'){assert.ok((await page.locator('#metrics').innerText()).includes('75%'));assert.ok((await page.locator('#metrics').innerText()).includes('Yesterday'));}
     else { assert.ok((await page.locator('#metrics').innerText()).includes('--')); assert.ok((await page.locator('#metrics').innerText()).includes('Not returned')); }
     assert.equal(await page.locator('#refresh').isDisabled(),true,'Refresh throttled');
     for(const [locale,heading] of [['zh-CN','用量概览'],['zh-TW','用量概覽'],['en','Usage overview']]){

@@ -1,4 +1,5 @@
 [
+  "docs/screenshots/windows-partial.png", "docs/screenshots/windows-empty.png", "docs/screenshots/mac-empty.png",
   "src/update.mjs", "src/update-public-key.pem", "tools/init-update-key.mjs", "tools/sign-update-feed.mjs", "test/update.test.mjs", "test/credit-display.test.mjs",
   ".gitignore", ".gitattributes", ".github/workflows/ci.yml", ".github/workflows/publish-accepted.yml",
   ".github/workflows/publish-0.12.yml", ".github/workflows/mac-publisher-audit.yml",

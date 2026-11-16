@@ -51,6 +51,17 @@ none is currently shipped. Windows 7/8 and 32-bit x86 are not supported.
 
 ## Screenshots
 
+**Current versions:** Windows **0.12.6**, macOS **0.4.8-alpha.1**
+(Apple Silicon and Intel), Chrome **0.3.4**.
+
+Usage is arranged in a stable two-column grid: daily tokens and monthly daily
+average, then weekly tokens and lifetime tokens. Zero is a real value; missing
+data says **Not returned**, expired data says **Data expired**, and disconnected
+desktop views say **Not connected**. Weekly calculations are unchanged.
+Subscription badges remain manually recorded: this utility cannot guarantee that
+CLI plan metadata matches the active desktop account or identifies its purchased
+billing tier. No billing credentials are scraped.
+
 Current Windows and Chrome interfaces, rendered with **synthetic sample data**,
 not a real account. The sidebar screenshot uses a test shell rather than the
 full Codex application. Native window chrome depends on Windows settings.
@@ -60,6 +71,10 @@ full Codex application. Native window chrome depends on Windows settings.
 
 ### Usage overview
 ![Windows usage overview](docs/screenshots/windows-status.png)
+
+### Partial and missing data
+![Windows overview with missing fields and real zero](docs/screenshots/windows-partial.png)
+![Windows connected overview before data arrives](docs/screenshots/windows-empty.png)
 
 ### Inline sidebar
 ![Sidebar in a generated Codex-style workspace](docs/screenshots/codex-sidebar-overview.png)
@@ -72,6 +87,8 @@ synthetic data. Not a capture of the live Codex application or a real account.
 
 ### macOS experimental companion
 ![Native macOS usage overview](docs/screenshots/mac-settings.png)
+
+![Native macOS overview before data arrives](docs/screenshots/mac-empty.png)
 
 Actual AppKit view captured on a macOS Actions runner with synthetic settings;
 not evidence of live-account connection acceptance.

@@ -1,5 +1,18 @@
 # Release Record
 
+## Usage Overview: 2026-11-16
+
+| Platform | Version | Changes |
+|---|---|---|
+| Windows 10/11 x64 | 0.12.6 | Fixed monthly average, aligned metric grid and explicit unavailable states |
+| macOS Apple Silicon | 0.4.8-alpha.1 | arm64 native layout, compact status strip and same metric order |
+| macOS Intel | 0.4.8-alpha.1 | x86_64 native layout; real-account acceptance remains pending |
+| Chrome | 0.3.4 | Two-column metrics, compact values and visible missing-data slots |
+
+All builds retain three languages, signed desktop update checks and manual plan
+records. No new account or billing credentials are read. Previous Releases remain
+available; this is a normal additive update after the earlier baseline cleanup.
+
 ## Update Baseline: 2026-11-16
 
 | Platform | Version | Update support |

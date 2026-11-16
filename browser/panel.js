@@ -12,7 +12,7 @@ function switchPage(id){document.querySelectorAll('main>section').forEach(el=>el
 document.querySelectorAll('[data-page]').forEach(el=>el.addEventListener('click',()=>switchPage(el.dataset.page)));
 switchPage('overview');
 let busy=false,last=0,data=null,error=false;
-function row(label,value,caption=''){const group=document.createElement('div'),dt=document.createElement('dt'),dd=document.createElement('dd'),note=document.createElement('small');group.className='metric';dt.textContent=label;dd.textContent=value;note.textContent=caption||(value==='--'?t('Not returned'):'');group.append(dt,dd,note);list.append(group);}
+function row(label,value,caption=''){const group=document.createElement('div'),dt=document.createElement('dt'),dd=document.createElement('dd'),note=document.createElement('small');group.className='metric';dt.textContent=label;dd.textContent=value;dd.style.fontSize=value.length>16?'12px':value.length>12?'14px':value.length>9?'18px':'24px';const quota=['5-hour remaining','Weekly remaining','Credits','Available quota resets'].some(key=>t(key)===label),at=quota?data?.quotaAt:data?.usageAt;note.textContent=caption||(value==='--'?t(typeof at==='number'&&Date.now()-at>(quota?180000:5400000)?'Data expired':'Not returned'):'');group.append(dt,dd,note);list.append(group);}
 const count=n=>Number.isSafeInteger(n)&&n>=0?n.toLocaleString(locale):'--';
 const tokens=n=>{if(!Number.isSafeInteger(n)||n<0)return '--';for(const [scale,unit] of [[1e9,'B'],[1e6,'M'],[1e3,'K']])if(n>=scale)return (n/scale).toFixed(2).replace(/\.?0+$/,'')+unit;return String(n);};
 function render(){

@@ -16,8 +16,8 @@ Mac keeps a backup app and restores it if replacement or launch fails.
 Automatic recovery from an application crash after successful launch is not
 implemented. Unsigned/unnotarized system approval requirements remain in force.
 
-Unofficial local utility, not an OpenAI extension. Public release is pending
-maintainer approval. No independent security audit has been completed.
+Unofficial local utility, not an OpenAI extension. Community builds are published
+on GitHub Releases. No independent security audit has been completed.
 
 ## Trust boundary
 

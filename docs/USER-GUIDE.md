@@ -1,5 +1,22 @@
 # User Guide
 
+## Reading the Overview
+
+Windows, Mac and Chrome use the same Token order: daily / monthly average,
+then this week / lifetime. Missing fields remain visible. **0** means a returned
+zero, **Not returned** means the source supplied no usable value, **Data expired**
+means it is too old, and **Not connected** describes a disconnected desktop view.
+An absent five-hour quota is not treated as unlimited. Yesterday has no numeric
+date below it; older daily records keep their source date.
+
+The plan badge remains a manual subscription record. Official protocol fields
+can identify some account categories, but do not reliably prove the desktop
+account identity and purchased billing tier together. This update does not
+replace your chosen plan with a guess.
+
+简体中文：Token 区固定为“每日／本月日均、本周／累计”。未返回、过期、未连接会明确标注，真实零值保留。套餐仍由你手动记录，不自动推测。
+繁體中文：Token 區固定為「每日／本月日均、本週／累計」。未回傳、過期、未連線均明確標示，真實零值保留。方案仍由你手動記錄，不自動推測。
+
 ## Updating
 
 Use **Check for updates** immediately above the version number. Desktop updates

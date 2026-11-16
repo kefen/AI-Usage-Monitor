@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-16 Usage Overview
+- Windows 0.12.6 / macOS 0.4.8-alpha.1 / Chrome 0.3.4.
+- Aligned two-column Token grids: daily and monthly average, then weekly and lifetime.
+- Added the missing Windows monthly average. Missing, expired and disconnected states remain visible; real zero stays zero.
+- Compact Mac connection summaries and quota progress bars. Consistent regular-weight typography and number formatting.
+- Subscription badges remain manual: the CLI account and purchased billing tier cannot be verified against every desktop account.
+- Refreshed English native and browser screenshots, including missing-data states. Existing signed-update support retained.
+
 ## 2026-11-16 Update Baseline
 - Windows 0.12.5 / macOS 0.4.7-alpha.1 / Chrome 0.3.3.
 - Update check sits immediately above the platform version. Desktop updates use a pinned Ed25519 key, signed expiring metadata and SHA-256 verified full packages.

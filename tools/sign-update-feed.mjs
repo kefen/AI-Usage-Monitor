@@ -12,7 +12,7 @@ for(const [target,version,name,tag] of [
  ['macos-x64',versions.macos,'Codex-Quota-Sidebar-macOS-'+versions.macos+'-x86_64-unsigned-test.dmg','macos/v'+versions.macos]
 ]){
  const bytes=await readFile(join(process.env.CQS_ARTIFACT_DIRECTORY||'dist',name));
- releases[target]=validateAsset({version,size:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex'),url:'https://github.com/kefen/codex-quota-sidebar/releases/download/'+encodeURIComponent(tag)+'/'+name,notes:'Signed in-app update checks and verified full-package replacement. Credits use integer display. Sidebar ordering and first-launch security guidance improved. Settings retained. Mac remains unnotarized.'});
+ releases[target]=validateAsset({version,size:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex'),url:'https://github.com/kefen/codex-quota-sidebar/releases/download/'+encodeURIComponent(tag)+'/'+name,notes:'Consistent usage overview: daily / monthly average, then weekly / lifetime. Missing, expired and disconnected values are explicit; real zero is preserved. Plan badges stay manually recorded, not inferred from another account. Three languages, settings and verified in-app updates retained. Mac remains unnotarized.'});
 }
 const payload=Buffer.from(JSON.stringify({schema:1,issuedAt:Date.now(),expiresAt:Date.now()+180*86400000,releases,chrome}));
 const privateKey=await readFile(join(folder,'private.pem'),'utf8');
