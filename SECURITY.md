@@ -1,5 +1,21 @@
 # Security and Privacy
 
+## Updates
+
+Desktop update metadata is verified using a bundled Ed25519 public key and expires
+after 180 days. Package URLs are restricted to this repository's HTTPS Releases;
+redirects are restricted to GitHub release-asset hosts, with byte limits, timeouts
+and SHA-256 validation. No update is installed without confirmation.
+The private signing key is stored outside the source repository and must be backed
+up securely. Future release maintainers must sign a new feed with
+tools/sign-update-feed.mjs after verifying all build artifacts.
+
+Updates wait for the companion and monitor to exit; they never kill Codex.
+Windows uses installer-owned file validation and transactional rollback.
+Mac keeps a backup app and restores it if replacement or launch fails.
+Automatic recovery from an application crash after successful launch is not
+implemented. Unsigned/unnotarized system approval requirements remain in force.
+
 Unofficial local utility, not an OpenAI extension. Public release is pending
 maintainer approval. No independent security audit has been completed.
 
@@ -55,3 +71,4 @@ only quota numbers, token totals and timestamps. No cookies or credentials are
 returned. No network listener is added. A hostile process running as the same
 OS user can still change local files; this is not a sandbox against that user.
 Unregister the host before uninstalling. Mac registration remains unverified.
+

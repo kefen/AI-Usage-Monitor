@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Codex Quota Sidebar",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "author": "KEFEN",
   "description": "Read local Codex quota snapshots in a browser side panel. Unofficial companion by KEFEN.",
   "permissions": [
     "sidePanel",
     "nativeMessaging"
   ],
+  "host_permissions": ["https://api.github.com/*"],
   "background": {
     "service_worker": "background.js"
   },
@@ -22,6 +23,6 @@
     "128": "icon-128.png"
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'none'; connect-src 'none'"
+    "extension_pages": "script-src 'self'; object-src 'none'; connect-src https://api.github.com"
   }
 }

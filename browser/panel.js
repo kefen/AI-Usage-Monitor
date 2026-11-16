@@ -5,7 +5,7 @@ locale=allowed.includes(locale)?locale:locale.startsWith('zh')?(locale.includes(
 const t=key=>locale==='en'?key:(CQS_STRINGS[key]?.[locale==='zh-TW'?1:0]||key);
 document.querySelector('#extension-id').textContent=chrome.runtime.id;
 document.querySelector('#help-id').textContent=chrome.runtime.id;
-document.querySelector('#version').textContent='v'+(chrome.runtime.getManifest?.().version||'0.3.2');
+document.querySelector('#version').textContent='v'+(chrome.runtime.getManifest?.().version||'0.3.3');
 const choices=['5-hour remaining','Weekly remaining','Daily tokens','Daily average','Weekly tokens','Lifetime tokens','Credit balance','Available quota resets'];
 let visible={};try{visible=JSON.parse(localStorage.getItem('cqs-visible')||'{}');if(!visible||typeof visible!=='object')visible={};}catch{}
 function switchPage(id){document.querySelectorAll('main>section').forEach(el=>el.hidden=el.id!==id);document.querySelectorAll('[data-page]').forEach(el=>el.setAttribute('aria-current',el.dataset.page===id?'page':'false'));}
@@ -19,12 +19,12 @@ function render(){
  document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n));list.replaceChildren();
  const controls=document.querySelector('#choices');
  if(!controls.children.length)for(const key of choices){const label=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.addEventListener('change',()=>{visible[key]=check.checked;try{localStorage.setItem('cqs-visible',JSON.stringify(visible));}catch{}render();});label.append(check,document.createTextNode(''));controls.append(label);}
- choices.forEach((key,index)=>{const label=controls.children[index];label.firstChild.checked=visible[key]!==false;label.lastChild.textContent=t(key);});
+ choices.forEach((key,index)=>{const label=controls.children[index];label.firstChild.checked=visible[key]!==false;label.lastChild.textContent=t(key==='Credit balance'?'Credits':key);});
  if(error){status.textContent=t('Local helper not connected');stamp.textContent=t('Check the desktop monitor and native host registration.');return;}
  if(!data||!data.ok){status.textContent=t(data?.code==='STALE'?'Snapshot expired':'Local snapshot unavailable');stamp.textContent=t('Check the desktop monitor and native host registration.');return;}
  status.textContent=t('Quota snapshot read');
  for(const w of data.windows||[]){const key=w.minutes===300?'5-hour remaining':w.minutes===10080?'Weekly remaining':'Remaining quota';if(visible[key]!==false)row(t(key),w.remaining+'%');}
- if(visible['Credit balance']!==false)row(t('Credit balance'),data.creditBalance??'--');
+ if(visible['Credit balance']!==false)row(t('Credits'),typeof data.creditBalance==='string'&&/^\d+(\.\d+)?$/.test(data.creditBalance)?count(Math.floor(Number(data.creditBalance))):'--');
  if(visible['Available quota resets']!==false)row(t('Available quota resets'),count(data.resetCredits));
  if(!data.windows?.length)row(t('Remaining quota'),t('Unavailable'));
  const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);const day=`${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`;
@@ -40,10 +40,27 @@ async function refresh(){
  finally{busy=false;render();setTimeout(()=>button.disabled=false,Math.max(0,60000-(Date.now()-last)));}
 }
 language.addEventListener('change',()=>{locale=language.value;try{localStorage.setItem('cqs-language',locale);}catch{}render();});
+async function checkUpdates(manual=false){
+ const control=document.querySelector('#check-updates'),message=document.querySelector('#update-status');
+ if(control.disabled)return;
+ if(!manual&&Date.now()-Number(localStorage.getItem('cqs-update-check')||0)<86400000)return;
+ control.disabled=true;message.textContent=t('Checking for updates...');
+ try{
+  const response=await fetch('https://api.github.com/repos/kefen/codex-quota-sidebar/releases?per_page=30',{credentials:'omit',signal:AbortSignal.timeout(15000)});if(!response.ok)throw Error('Network error');
+  const releases=await response.json(),current=chrome.runtime.getManifest().version;
+  const candidate=releases.find(r=>!r.draft&&/^chrome\/v\d+\.\d+\.\d+$/.test(r.tag_name));
+  const greater=v=>{const a=v.split('.').map(Number),b=current.split('.').map(Number);for(let i=0;i<3;i++)if(a[i]!==b[i])return a[i]>b[i];return false;};
+  message.replaceChildren();localStorage.setItem('cqs-update-check',String(Date.now()));
+  if(candidate&&greater(candidate.tag_name.slice(8))){const link=document.createElement('a');link.href='https://github.com/kefen/codex-quota-sidebar/releases/tag/'+encodeURIComponent(candidate.tag_name);link.target='_blank';link.rel='noopener noreferrer';link.textContent=t('Update available')+' '+candidate.tag_name.slice(8);message.append(link,document.createTextNode(' · '+t('Download, unpack and reload the extension in chrome://extensions.')));}
+  else if(manual)message.textContent=t('You are up to date.');
+ }catch{message.textContent=manual?t('Update check failed. Please try again later.') : '';}
+ finally{control.disabled=false;}
+}
+document.querySelector('#check-updates').addEventListener('click',()=>checkUpdates(true));setTimeout(()=>checkUpdates(),5000);
 button.addEventListener('click',refresh);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});setInterval(refresh,60000);render();refresh();
 document.querySelector('#retry').addEventListener('click',refresh);
 document.querySelector('#export').addEventListener('click',()=>{
- const report={tool:'Codex Quota Sidebar by KEFEN',version:chrome.runtime.getManifest?.().version||'0.3.2',connection:error?'helper-unavailable':data?.ok?'snapshot-read':'snapshot-unavailable',exportedAt:new Date().toISOString()};
+ const report={tool:'Codex Quota Sidebar by KEFEN',version:chrome.runtime.getManifest?.().version||'0.3.3',connection:error?'helper-unavailable':data?.ok?'snapshot-read':'snapshot-unavailable',exportedAt:new Date().toISOString()};
  const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download='Codex-Quota-Sidebar-browser-diagnostics.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
  document.querySelector('#help-feedback').textContent=t('Review diagnostics before attaching them to a GitHub issue. No files are uploaded automatically.');
 });

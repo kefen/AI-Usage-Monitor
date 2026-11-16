@@ -61,6 +61,8 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var metricCaptions: [NSTextField] = []
     let languagePicker = NSPopUpButton()
     var retry: NSButton!
+    var updateButton: NSButton!
+    var updateProcess: Process?
     var child: Process?
     var log: FileHandle?
     var timer: Timer?
@@ -168,8 +170,10 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         ])
         let spacer = NSView(); container.addArrangedSubview(spacer); spacer.setContentHuggingPriority(.defaultLow, for: .vertical)
         let footer = NSStackView(); footer.spacing = 8
-        let build = NSTextField(labelWithString: "macOS 0.4.6-alpha.1"); build.textColor = .secondaryLabelColor; build.font = .systemFont(ofSize: 11)
-        footer.addArrangedSubview(build)
+        let build = NSTextField(labelWithString: "macOS 0.4.7-alpha.1"); build.textColor = .secondaryLabelColor; build.font = .systemFont(ofSize: 11)
+        let updateArea = NSStackView(); updateArea.orientation = .vertical; updateArea.alignment = .leading; updateArea.spacing = 4
+        updateButton = button("Check for updates", #selector(checkUpdates)); updateArea.addArrangedSubview(updateButton); updateArea.addArrangedSubview(build)
+        footer.addArrangedSubview(updateArea)
         let gap = NSView(); footer.addArrangedSubview(gap); gap.setContentHuggingPriority(.defaultLow, for: .horizontal)
         retry = button("Reconnect", #selector(reconnect))
         footer.addArrangedSubview(button("Exit software", #selector(stop))); footer.addArrangedSubview(retry); footer.addArrangedSubview(button("Open Codex", #selector(openCodex), primary: true))
@@ -184,6 +188,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         statusItem.menu = menu
         if CommandLine.arguments.contains("--ui-smoke") { fputs("UI smoke: initial overview\n", stderr) }
         showStatus()
+        if !CommandLine.arguments.contains("--ui-smoke") { DispatchQueue.main.asyncAfter(deadline: .now() + 5) { self.runUpdate("auto") } }
         if CommandLine.arguments.contains("--ui-smoke") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.smokeTest() }; return
         }
@@ -195,7 +200,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             catch { alert(error.localizedDescription); NSApp.terminate(nil); return }
         }
         timer = Timer.scheduledTimer(withTimeInterval: 4, repeats: true) { [weak self] _ in self?.tick() }
-        if read("preferences.json")["macGuideVersion"] as? String != "0.4.6-alpha.1" { stage = "stopped"; showAuthorizationHelp() }
+        if read("preferences.json")["macGuideVersion"] as? String != "0.4.7-alpha.1" { stage = "stopped"; showAuthorizationHelp() }
         else { start() }
     }
     func button(_ title: String, _ action: Selector, primary: Bool = false) -> NSButton {
@@ -357,7 +362,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc func showDisplay() {
         guard beginPage("display") else { return }; showingSettings = true; displayChecks = []
         let keys = ["short","week","reset","plan","renewal","daily","average","weekly","lifetime","credits","resetCredits"]
-        let labels = [CqsLocale.t("5-hour remaining"),CqsLocale.t("Weekly remaining"),CqsLocale.t("Quota reset"),CqsLocale.t("Plan badge"),CqsLocale.t("Renewal date"),CqsLocale.t("Daily tokens"),CqsLocale.t("Monthly daily average"),CqsLocale.t("Weekly tokens"),CqsLocale.t("Lifetime tokens"),CqsLocale.t("Credit balance"),CqsLocale.t("Available quota resets")]
+        let labels = [CqsLocale.t("5-hour remaining"),CqsLocale.t("Weekly remaining"),CqsLocale.t("Quota reset"),CqsLocale.t("Plan badge"),CqsLocale.t("Renewal date"),CqsLocale.t("Daily tokens"),CqsLocale.t("Monthly daily average"),CqsLocale.t("Weekly tokens"),CqsLocale.t("Lifetime tokens"),CqsLocale.t("Credits"),CqsLocale.t("Available quota resets")]
         let values = read("display.json"), stack = NSStackView(); stack.orientation = .horizontal; stack.alignment = .top; stack.spacing = 20
         let left = NSStackView(), right = NSStackView()
         for column in [left, right] { column.orientation = .vertical; column.alignment = .leading; column.spacing = 8; column.widthAnchor.constraint(equalToConstant: 280).isActive = true; stack.addArrangedSubview(column) }
@@ -439,7 +444,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         do {
             let code = errorText.trimmingCharacters(in: .whitespacesAndNewlines)
             let allowedCodes = ["E_CDP_OWNER", "E_CDP_NONLOCAL", "E_CDP_HELPER_SIGNATURE", "E_CDP_QUERY", "E_RESTART_REQUIRED", "E_QUIT_CANCELLED"]
-            let report: [String: Any] = ["version": "0.4.6-alpha.1", "platform": "macOS", "stage": stage, "connectionCode": allowedCodes.contains(code) ? code : "", "runtimeReady": runtimeReady, "runtimeIssue": runtimeIssue, "monitorRunning": child?.isRunning == true, "exportedAt": ISO8601DateFormatter().string(from: Date())]
+            let report: [String: Any] = ["version": "0.4.7-alpha.1", "platform": "macOS", "stage": stage, "connectionCode": allowedCodes.contains(code) ? code : "", "runtimeReady": runtimeReady, "runtimeIssue": runtimeIssue, "monitorRunning": child?.isRunning == true, "exportedAt": ISO8601DateFormatter().string(from: Date())]
             try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]).write(to: url, options: .atomic)
         } catch { alert(error.localizedDescription) }
     }
@@ -484,7 +489,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             if outcome == .ready {
                 self.runtimeReady = true; self.runtimeIssue = false
                 self.stage = previousStage == "checking" ? "stopped" : previousStage
-                var prefs = self.read("preferences.json"); prefs["macGuideVersion"] = "0.4.6-alpha.1"
+                var prefs = self.read("preferences.json"); prefs["macGuideVersion"] = "0.4.7-alpha.1"
                 try? self.write("preferences.json", prefs); self.tick(); next()
             } else {
                 self.stage = "failed"; self.runtimeIssue = true
@@ -640,6 +645,32 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 guard let self = self, self.child?.isRunning == true else { return }; self.stopping = false; self.alert(CqsLocale.t("Startup checks are still running. Try exiting later. Codex will not be force-closed."))
             }
         } catch { alert(error.localizedDescription) }
+    }
+    @objc func checkUpdates() { runUpdate("check") }
+    func runUpdate(_ operation: String) {
+        guard updateProcess == nil else { return }
+        let process = Process(); process.executableURL = root.appendingPathComponent("runtime/node")
+        process.arguments = [root.appendingPathComponent("src/update.mjs").path, operation, root.path, Bundle.main.bundleURL.path, String(ProcessInfo.processInfo.processIdentifier)]
+        let output = Pipe(); process.standardOutput = output; process.standardError = FileHandle.nullDevice
+        updateButton.isEnabled = false; updateButton.title = CqsLocale.t(operation == "download" ? "Downloading update..." : "Checking for updates...")
+        updateProcess = process
+        process.terminationHandler = { [weak self] child in
+            let data = output.fileHandleForReading.readDataToEndOfFile()
+            DispatchQueue.main.async {
+                guard let self = self else { return }; self.updateProcess = nil; self.updateButton.isEnabled = true; self.updateButton.title = CqsLocale.t("Check for updates")
+                guard child.terminationStatus == 0, let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { if operation != "auto" { self.alert(CqsLocale.t("Update check failed. Please try again later.")) }; return }
+                if operation == "prepare" { self.stop(); return }
+                guard result["available"] as? Bool == true else { if operation != "auto" { self.alert(CqsLocale.t("You are up to date.")) }; return }
+                self.updateButton.title = CqsLocale.t("Update available") + " " + (result["version"] as? String ?? "")
+                if operation == "auto" { return }
+                let ready = result["ready"] as? Bool == true
+                let dialog = NSAlert(); dialog.messageText = CqsLocale.t(ready ? "Restart the companion to install the verified update? Codex stays open." : "Download this update in the background?")
+                dialog.informativeText = (result["version"] as? String ?? "") + "\n\n" + (result["notes"] as? String ?? "")
+                dialog.addButton(withTitle: CqsLocale.t("Cancel")); dialog.addButton(withTitle: CqsLocale.t("Continue"))
+                if dialog.runModal() == .alertSecondButtonReturn { self.runUpdate(ready ? "prepare" : "download") }
+            }
+        }
+        do { try process.run() } catch { updateProcess = nil; updateButton.isEnabled = true; updateButton.title = CqsLocale.t("Check for updates"); if operation != "auto" { alert(CqsLocale.t("Update check failed. Please try again later.")) } }
     }
     func alert(_ text: String) {
         if CommandLine.arguments.contains("--ui-smoke") { fputs("UI smoke alert: \(text)\n", stderr); exit(1) }

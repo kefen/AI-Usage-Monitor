@@ -34,3 +34,4 @@ ownership checks remain required. No independent security audit is claimed.
 
 The accepted Windows interface is unchanged apart from stable version metadata.
 Historical release details remain in [the release record](docs/RELEASES.md).
+

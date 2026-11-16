@@ -35,7 +35,35 @@ internal sealed class LaunchWindow : Form {
         body=MeterTheme.Body();Controls.Add(body);var header=MeterTheme.Header("","Windows");Controls.Add(header);
         var rail=new Panel{Dock=DockStyle.Left,Width=184,Padding=new Padding(12,22,12,16),BackColor=Color.FromArgb(245,247,250)};Controls.Add(rail);
         var nav=new FlowLayoutPanel{Dock=DockStyle.Top,Height=340,FlowDirection=FlowDirection.TopDown,WrapContents=false};rail.Controls.Add(nav);
-        var version=MeterTheme.Label("v0.12.4",8,MeterTheme.Muted);version.Dock=DockStyle.Bottom;version.Height=26;rail.Controls.Add(version);
+        var version=MeterTheme.Label("v0.12.5",8,MeterTheme.Muted);version.Dock=DockStyle.Bottom;version.Height=26;rail.Controls.Add(version);
+        var updates=MeterTheme.Button("checkUpdates","Check for updates",false);updates.Dock=DockStyle.Bottom;updates.Height=34;rail.Controls.Add(updates);updates.BringToFront();
+        bool updating=false;Action<string> check=null;
+        check=operation=>{
+            if(updating)return;updating=true;updates.Enabled=false;updates.Text=Locale.T(operation=="download"?"Downloading update...":"Checking for updates...");
+            System.Threading.Tasks.Task.Factory.StartNew(()=>{
+                string output="",failure=null;
+                try{
+                    var info=new System.Diagnostics.ProcessStartInfo(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"runtime","node.exe"),"\""+System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"src","update.mjs")+"\" "+operation+" \""+AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\')+"\" \""+AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\')+"\" "+System.Diagnostics.Process.GetCurrentProcess().Id){UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true};
+                    using(var p=System.Diagnostics.Process.Start(info)){var error=p.StandardError.ReadToEndAsync();output=p.StandardOutput.ReadToEnd();if(!p.WaitForExit(180000))throw new Exception("Update timed out");if(p.ExitCode!=0)throw new Exception("Update could not be verified or downloaded.");}
+                }catch(Exception e){failure=e.Message;}
+                if(IsDisposed)return;BeginInvoke((Action)(()=>{
+                    updating=false;updates.Enabled=true;updates.Text=Locale.T("Check for updates");
+                    if(failure!=null){if(operation!="auto")MeterTheme.Error(Locale.T("Update check failed. Please try again later."));return;}
+                    try{
+                        var result=new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<Dictionary<string,object>>(output);
+                        if(operation=="prepare"){stop();return;}
+                        if(!result.ContainsKey("available")||!Convert.ToBoolean(result["available"])){if(operation!="auto")MessageBox.Show(Locale.T("You are up to date."),Text);return;}
+                        updates.Text=Locale.T("Update available")+" "+result["version"];
+                        if(operation=="auto")return;
+                        bool ready=result.ContainsKey("ready")&&Convert.ToBoolean(result["ready"]);
+                        string prompt=Locale.T(ready?"Restart the companion to install the verified update? Codex stays open.":"Download this update in the background?");
+                        if(MessageBox.Show(prompt+"\n\n"+result["version"]+"\n"+result["notes"],Text,MessageBoxButtons.OKCancel,MessageBoxIcon.Information,MessageBoxDefaultButton.Button2)==DialogResult.OK)check(ready?"prepare":"download");
+                    }catch{MeterTheme.Error(Locale.T("Update check failed. Please try again later."));}
+                }));
+            });
+        };
+        updates.Click+=(s,e)=>check("check");
+        Shown+=(s,e)=>{if(System.IO.File.Exists(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"installation.json")))check("auto");};
         foreach(string label in new[]{"Usage overview","Sidebar content","Codex subscription record","Data and settings","Diagnostics","About project"}){
             string key=label;var b=MeterTheme.Button(key,key,false);b.Width=160;b.Height=40;b.TextAlign=ContentAlignment.MiddleLeft;b.Margin=new Padding(0,0,0,6);b.BackColor=rail.BackColor;b.FlatAppearance.BorderSize=0;b.Click+=(s,e)=>ShowPage(key);nav.Controls.Add(b);navigation[b]=key;
         }

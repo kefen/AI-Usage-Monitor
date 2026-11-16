@@ -1,5 +1,5 @@
 (() => {
-  if (window.__localCodexMeter?.version === '0.12.4') return;
+  if (window.__localCodexMeter?.version === '0.12.5') return;
   if (window.__localCodexMeter?.controllerId === 'local-codex-sidebar-meter-v1') window.__localCodexMeter.dispose();
   else if (window.__localCodexMeter) return;
   const id = 'local-codex-sidebar-meter';
@@ -48,7 +48,7 @@
     '以订阅页面为准。不自动顺延。':['Check your subscription page. Not automatically rolled forward.','以訂閱頁面為準。不自動順延。'],
     '会员日期未设置，不从周额度推测':['Subscription date not set; never inferred from weekly quota','訂閱日期未設定，不從週額度推測'],
     '积分无限制（不代表时段额度无限）':['Unlimited credits (not unlimited quota windows)','點數無限制（不代表時段額度無限）'],
-    '余额':['Credits','餘額'],'次数':['Resets','次數'],'积分余额':['Credit balance','點數餘額'],'可用额度重置次数':['Available quota resets','可用額度重設次數'],
+    '次数':['Resets','次數'],'积分余额':['Credits','額度'],'可用额度重置次数':['Available quota resets','可用額度重設次數'],
     '仅展示，不自动使用':['Display only; never used automatically','僅顯示，不自動使用'],
     '暂无可用每日 Token 数据，已隐藏日用量':['No daily Token data; daily metric hidden','暫無可用每日 Token 資料，已隱藏日用量'],
     '本机首次观测':['First observed locally','本機首次觀測'],'上次尚未返回':['Last observed absent','上次尚未回傳'],
@@ -58,7 +58,7 @@
     '不完整':['Incomplete','不完整'],'官方账号 Token 活动（本机 CLI 登录账号）；不是 API 账单':['Account Token activity (local CLI login); not an API bill','官方帳戶 Token 活動（本機 CLI 登入帳戶）；不是 API 帳單'],
     '启动时读取，之后每 60 分钟刷新':['Read at startup, then every 60 minutes','啟動時讀取，之後每 60 分鐘更新'],
     '本机 CLI 账户额度':['Local CLI account quota','本機 CLI 帳戶額度'],'下次':['Next','下次'],'天':['day','天'],
-    '5h余':['5h','5h餘'],'周余':['Week','週餘'],'额度':['Quota','額度'],'重置':['Reset','重設'],'续费':['Renew','續費'],'到期':['Expiry','到期'],
+    '5h余':['5h','5h餘'],'周余':['Week','週餘'],'额度':['Credits','額度'],'重置':['Reset','重設'],'续费':['Renew','續費'],'到期':['Expiry','到期'],
     '今日':['Today','今日'],'昨日':['Yest.','昨日'],'最近':['Latest','最近'],'日均':['Avg','日均'],'本周':['Week','本週'],'累计':['Total','累計'],
     '待刷新':['Pending','待更新'],'已同步':['Synced','已同步'],'可能过期':['May be stale','可能過期'],'数据已过期':['Data expired','資料已過期'],'读取失败':['Read failed','讀取失敗'],
     '北京时间':['Asia/Shanghai','北京時間'],'剩余':['Remaining','剩餘'],'已用':['Used','已用'],'后重置':['until reset','後重設'],'重置时间未返回':['Reset time unavailable','未回傳重設時間'],
@@ -104,17 +104,11 @@
     }[freshness];
     const hints = ['\u5269\u4f59\u989d\u5ea6: ' + statusLabel];
     const buckets = ['expired','unavailable'].includes(freshness) ? [] : (state.buckets || []);
-    if(visible('credits')) {
-      const creditBuckets=buckets.filter(b=>b.credits);
-      const credits=creditBuckets.length===1?creditBuckets[0].credits:null;
-      const block=text('div','','window');block.dataset.metric='credits';
-      block.append(text('div','\u4f59\u989d','label'),text('div',credits?.unlimited?'∞':credits?.balance??'--','value'));
-      block.title='Credit balance; separate from quota percentage. No purchase or reset action.';section.append(block);
-    }
+    const resetCount=text('div','','window');resetCount.dataset.metric='resetCredits';
     if(visible('resetCredits')) {
-      const block=text('div','','window');block.dataset.metric='resetCredits';
+      const block=resetCount;
       block.append(text('div','\u6b21\u6570','label'),text('div',!['expired','unavailable'].includes(freshness)&&Number.isSafeInteger(state.resetCredits)?String(state.resetCredits):'--','value'));
-      block.title='Available quota resets; read-only. No reset is performed.';section.append(block);
+      block.title='Available quota resets; read-only. No reset is performed.';
     }
     for (const bucket of buckets) {
       for (const w of bucket.windows) {
@@ -149,6 +143,7 @@
       else if(bucket.credits?.balance!==null && bucket.credits?.balance!==undefined) hints.push(`${bucket.id}: \u79ef\u5206\u4f59\u989d ${bucket.credits.balance}`);
     }
     if (!section.children.length&&(visible('short')||visible('week'))) section.append(text('div', '\u989d\u5ea6\n--', 'empty'));
+    if(visible('resetCredits'))section.append(resetCount);
     const member=state.membership;
     const membership=text('div','','membership');
     const memberLabel=member?.kind==='expiry'?'\u5230\u671f':'\u7eed\u8d39';
@@ -156,6 +151,14 @@
     membership.title=memberDate ? `${member.estimated?'\u9884\u8ba1':''}\u4f1a\u5458${memberLabel}: ${memberDate}\n${member.estimated?'\u6309\u7528\u6237\u5145\u503c\u65e5\u671f\u548c\u6708\u4ed8\u5047\u8bbe\u63a8\u7b97\uff0c\u672a\u6838\u5bf9\u8d26\u5355':'\u7528\u6237\u624b\u52a8\u586b\u5199'}\uff1b\u4ee5\u8ba2\u9605\u9875\u9762\u4e3a\u51c6\u3002\u4e0d\u81ea\u52a8\u987a\u5ef6\u3002` : '\u4f1a\u5458\u65e5\u671f\u672a\u8bbe\u7f6e\uff0c\u4e0d\u4ece\u5468\u989d\u5ea6\u63a8\u6d4b';
     membership.append(text('div',memberLabel,'label'),text('div',memberDate?memberDate.slice(5).split('-').map(Number).join('/'):'--','membership-date'));
     if(memberDate&&visible('renewal')){section.append(membership);hints.push(membership.title);}
+    if(visible('credits')) {
+      const creditBuckets=buckets.filter(b=>b.credits);
+      const credits=creditBuckets.length===1?creditBuckets[0].credits:null;
+      const balance=typeof credits?.balance==='string'&&/^\d+(\.\d+)?$/.test(credits.balance)&&Number.isSafeInteger(Math.floor(Number(credits.balance)))?String(Math.floor(Number(credits.balance))):'--';
+      const block=text('div','','window');block.dataset.metric='credits';
+      block.append(text('div','额度','label'),text('div',credits?.unlimited?'∞':balance,'value'));
+      block.title='Credits; displayed as a whole number, rounded down. Separate from quota percentage. No purchase or reset action.';section.append(block);
+    }
     if(freshness==='fresh' && Number.isSafeInteger(state.resetCredits)) hints.push(`\u53ef\u7528\u989d\u5ea6\u91cd\u7f6e\u6b21\u6570: ${state.resetCredits}\uff08\u4ec5\u5c55\u793a\uff0c\u4e0d\u81ea\u52a8\u4f7f\u7528\uff09`);
     const usage=state.usage || {};
     const nextRefresh=Number.isFinite(usage.nextRefreshAt)?usage.nextRefreshAt:null;
@@ -303,7 +306,7 @@
     delete window.__localCodexMeter;
   }
   window.__localCodexMeter = {
-    version:'0.12.4',
+    version:'0.12.5',
     controllerId:'local-codex-sidebar-meter-v1',
     receive(value) { state = value; heartbeat = Date.now(); render(); mount(); },
     dispose,

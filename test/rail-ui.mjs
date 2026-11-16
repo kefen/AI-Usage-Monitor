@@ -18,6 +18,11 @@ try {
     assert.ok(box.width<=36 && box.x>=0 && box.x+box.width<=52);
     assert.ok(box.y+box.height<=bottom.y,'must not overlap account/actions');
     assert.equal(await host.locator('[role=progressbar]').count(),2);
+    await page.evaluate(()=>window.__localCodexMeter.receive({fetchedAt:Date.now(),language:'en',resetCredits:3,membership:{kind:'renewal',date:'2026-12-16'},buckets:[{id:'codex',credits:{balance:'162.8117935000'},windows:[{minutes:10080,remaining:42,resetsAt:Date.now()/1000+7200}]}]}));
+    assert.equal(await host.locator('[data-metric=credits] .label').innerText(),'Credits');
+    assert.equal(await host.locator('[data-metric=credits] .value').innerText(),'162');
+    assert.deepEqual(await host.evaluate(e=>Array.from(e.shadowRoot.querySelector('section').children).map(x=>x.dataset.metric||x.className).slice(0,5)),['plan-badge','window','resetCredits','membership','credits']);
+    assert.equal(await host.evaluate(e=>e.shadowRoot.querySelector('section').scrollWidth>e.clientWidth),false);
     assert.equal(await host.evaluate(e=>e.shadowRoot.querySelector('section').scrollWidth>e.clientWidth),false);
     assert.ok(await host.locator('.window').first().getAttribute('title'));
     await page.evaluate(()=>window.__localCodexMeter.receive({fetchedAt:Date.now(),resetCredits:2,membership:{kind:'renewal',date:'2026-12-13',estimated:true},buckets:[{id:'codex',windows:[{minutes:10080,remaining:88,resetsAt:Date.now()/1000+5000}]}],usage:{fetchedAt:Date.now(),lifetime:123456789,dailySelected:{value:12345,date:'2026-11-14'},month:{value:1234567,average:411522,days:3,start:'2026-11-01',end:'2026-11-14'},week:{value:1234567,complete:false,start:'2026-11-09',end:'2026-11-14',days:3,expected:6},weeks:[]}}));

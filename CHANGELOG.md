@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-16 Update Baseline
+- Windows 0.12.5 / macOS 0.4.7-alpha.1 / Chrome 0.3.3.
+- Update check sits immediately above the platform version. Desktop updates use a pinned Ed25519 key, signed expiring metadata and SHA-256 verified full packages.
+- Desktop replacement waits for the companion to quit; preserves settings and does not close official Codex. Browser unpacked installations require explicit reload.
+- Credits now use the official English name and integer display rounded down. Reset count follows reset date; credits follow renewal.
+- Windows SmartScreen and Mac Privacy & Security instructions are shown before download and included in installation help.
+
 ## Windows 0.11.2-beta.1 (local candidate, awaiting user acceptance)
 
 - Measure official navigation controls before allocating sidebar space.

@@ -1,4 +1,5 @@
 [
+  "src/update.mjs", "src/update-public-key.pem",
   "ui/strings.json",
   "Start.cmd", "Start.ps1", "RestartSafety.ps1", "Check.cmd", "Diagnose.cmd",
   "Uninstall.cmd", "Uninstall.ps1", "package.json", "versions.json", "runtime-files.json",

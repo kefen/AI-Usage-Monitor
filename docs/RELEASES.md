@@ -1,5 +1,19 @@
 # Release Record
 
+## Update Baseline: 2026-11-16
+
+| Platform | Version | Update support |
+|---|---|---|
+| Windows x64 | 0.12.5 | Signed checks, verified download, transactional install after restart |
+| macOS Apple Silicon | 0.4.7-alpha.1 | arm64 DMG, signed checks and verified app replacement |
+| macOS Intel | 0.4.7-alpha.1 | x86_64 DMG; real-account acceptance pending |
+| Chrome | 0.3.3 | Check above version; explicit download/unpack/reload |
+
+Includes integer Credits, reset-count/renewal/Credits ordering, and three-language
+first-launch security help. Mac remains experimental and unnotarized.
+Previous Releases/assets are removed after new package verification.
+Source commits and tags are retained.
+
 ## Public Baseline: 2026-11-16 Follow-up
 
 | Platform | Version | Package distinction |

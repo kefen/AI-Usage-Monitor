@@ -12,6 +12,7 @@ __pycache__/
 .env
 .env.*
 *.pem
+!src/update-public-key.pem
 *.key
 .install-test-*/
 .native-test-*/

@@ -1,5 +1,38 @@
 # User Guide
 
+## Updating
+
+Use **Check for updates** immediately above the version number. Desktop updates
+show the version and notes, then ask to download in the background. When ready,
+confirm restarting this companion to install; Codex stays open. Cancel postpones
+updating. Settings and subscription records stay in place. Check failures do not
+stop monitoring. Signature, expiry or checksum failures block installation.
+
+Mac updates require installation in /Applications or ~/Applications. If blocked,
+follow Privacy & Security guidance below. Do not disable system protection.
+Chrome unpacked installations cannot self-replace: download the ZIP, unpack into
+the extension folder and reload in chrome://extensions.
+
+简体中文：版本号上方点击“检查更新”。桌面端下载后确认重启本工具安装，取消可稍后处理。浏览器手动加载版需下载解压并重新加载。
+繁體中文：版本號上方按「檢查更新」。桌面版下載後確認重新啟動本工具安裝，取消可稍後處理。瀏覽器手動載入版需下載解壓並重新載入。
+
+## First Launch Security Notice
+
+Windows: the installer is unsigned. Check its repository origin and release
+SHA-256 before using **More info → Run anyway**, if available. Do not turn off
+SmartScreen or Defender. A genuine malware alert is not the same as an
+unknown-publisher reputation warning; stop and report it.
+
+Mac: install the app into Applications. If macOS blocks this unnotarized app or
+its Node runtime, choose **Done**, not **Move to Trash**. After verifying the
+download, go to **System Settings → Privacy & Security → Open Anyway**, and
+confirm opening. Repeat for the runtime only if separately blocked.
+Then return to the app and reconnect. Do not disable Gatekeeper.
+
+简体中文：Mac 拦截后请点“完成”，到“系统设置 → 隐私与安全性 → 仍要打开”并再次确认；不要直接移到废纸篓。应用和 Node 组件可能需要分别授权。
+
+繁體中文：Mac 攔截後請按「完成」，前往「系統設定 → 隱私權與安全性 → 強制打開」並確認；不要移到垃圾桶。應用程式和 Node 元件可能需要分別授權。
+
 Codex Quota Sidebar by KEFEN. English / 简体中文 / 繁體中文 are available
 from the upper-right language selector. Screenshots below are actual rendered
 Windows UI using test fixtures, not real account data.
@@ -8,8 +41,8 @@ Windows UI using test fixtures, not real account data.
 
 Open [Releases](https://github.com/kefen/codex-quota-sidebar/releases).
 For Windows 10/11 x64, download the asset ending in
-`Windows-0.12.4-x64-Setup.exe`, plus its SHA256 file if verifying integrity.
-Chrome uses the separate `Chrome-0.3.2.zip`. Mac has experimental architecture-specific DMGs (see below).
+`Windows-0.12.5-x64-Setup.exe`, plus its SHA256 file if verifying integrity.
+Chrome uses the separate `Chrome-0.3.3.zip`. Mac has experimental architecture-specific DMGs (see below).
 The unsigned Windows executable may trigger an unknown-publisher warning.
 Verify its origin; never disable security software to get around a detection.
 
@@ -104,7 +137,7 @@ only when space is severely constrained.
 
 ## macOS Experimental Installation
 
-**Current version: 0.4.6-alpha.1.** Download `arm64` for Apple Silicon (M-series)
+**Current version: 0.4.7-alpha.1.** Download `arm64` for Apple Silicon (M-series)
 or `x86_64` for Intel. The companion requires macOS 13.5+ and a compatible official
 client. It is not Developer ID signed or notarized. The user confirmed live
 connection on Apple Silicon; Intel account testing remains pending.

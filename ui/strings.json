@@ -1,4 +1,13 @@
 {
+  "Check for updates": ["检查更新", "檢查更新"],
+  "Checking for updates...": ["正在检查更新…", "正在檢查更新…"],
+  "Downloading update...": ["正在下载更新…", "正在下載更新…"],
+  "Update available": ["有新版本", "有新版本"],
+  "Update check failed. Please try again later.": ["更新检查失败，请稍后重试。", "更新檢查失敗，請稍後重試。"],
+  "You are up to date.": ["当前已是最新版本。", "目前已是最新版本。"],
+  "Download this update in the background?": ["在后台下载此更新？", "在背景下載此更新？"],
+  "Restart the companion to install the verified update? Codex stays open.": ["重启本工具以安装已校验的更新？不会关闭 Codex。", "重新啟動本工具以安裝已驗證的更新？不會關閉 Codex。"],
+  "Download, unpack and reload the extension in chrome://extensions.": ["下载解压后，在 chrome://extensions 重新加载插件。", "下載解壓後，在 chrome://extensions 重新載入擴充功能。"],
   "Finish installing the app": ["请先完成应用安装", "請先完成應用程式安裝"],
   "Quit": ["退出", "結束"],
   "Open Applications": ["打开应用程序文件夹", "開啟應用程式資料夾"],
@@ -263,7 +272,8 @@
     "日均 Token"
   ],
   "Monthly daily average": ["本月日均", "本月日均"],
-  "Credit balance": ["额度余额", "額度餘額"],
+  "Credit balance": ["额度", "額度"],
+  "Credits": ["额度", "額度"],
   "Available quota resets": ["可用重置次数", "可用重設次數"],
   "Yesterday": ["昨日", "昨日"],
   "Plan badge": [

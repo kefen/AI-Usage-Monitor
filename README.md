@@ -7,6 +7,48 @@ desktop navigation rail. Not affiliated with or endorsed by OpenAI.
 
 [GitHub](https://github.com/kefen/codex-quota-sidebar) | [Security](SECURITY.md) | [MIT license](LICENSE)
 
+## Before Downloading
+
+### Updates
+
+Click **Check for updates**, immediately above the version number. Desktop builds
+check at startup (at most once per day). A new version offers background download,
+then explicit confirmation to restart the companion and install. Codex itself stays
+open. Settings are preserved. Updates use signed, expiring metadata with a pinned
+Ed25519 public key plus package SHA-256 verification. Failed verification blocks
+installation. Windows uses the existing transactional installer; Mac keeps a backup
+app and restores it if replacement or launching fails. Runtime crash recovery after
+a successful launch is not yet automatic.
+
+Unpacked Chrome extensions can check and link to a newer release but must be
+downloaded, unpacked and reloaded in chrome://extensions; they cannot self-install.
+Existing older installations must be upgraded once to gain update support.
+
+检查更新按钮位于版本号上方。桌面端可后台下载，确认后重启本工具安装，保留设置、不关闭 Codex。手动加载的浏览器插件需要下载解压后重新加载。旧版需手动升级一次才能获得本功能。
+
+**Windows:** this unsigned installer may show “Windows protected your PC” and
+“Unknown publisher”. Verify the repository download and release SHA-256 first.
+Only for that trusted file, choose **More info → Run anyway** if offered.
+Do not disable Defender or SmartScreen. Managed computers may prohibit this.
+Future code signing identifies the publisher but cannot guarantee immediate trust.
+
+**Mac:** these experimental builds are not notarized. Read the bundled
+**READ-ME-FIRST-macOS.html** before opening. Install into Applications first.
+If blocked, choose **Done**, not Move to Trash. Go to
+**System Settings → Privacy & Security → Open Anyway**, then confirm opening.
+The app and bundled Node runtime may need separate approval. Approve only verified
+downloads; do not disable Gatekeeper.
+
+Windows：核对来源及校验值后，如系统允许，可选择“更多信息 → 仍要运行”，不要关闭防护。
+Mac：被拦截时选择“完成”，不要移到废纸篓；到“系统设置 → 隐私与安全性 → 仍要打开”，再次确认。应用和 Node 可能需分别授权。
+
+### Windows Compatibility
+
+One x64 installer covers Windows 10/11; separate OS-specific packages are not
+needed. Prefer a currently supported Windows release. Windows 11 ARM64 requires
+a separately built and tested package before native support can be claimed;
+none is currently shipped. Windows 7/8 and 32-bit x86 are not supported.
+
 ## Screenshots
 
 Current Windows and Chrome interfaces, rendered with **synthetic sample data**,
@@ -38,11 +80,11 @@ not evidence of live-account connection acceptance.
 
 | Platform | Version | Availability |
 | --- | --- | --- |
-| Windows 10/11 x64 | 0.12.4 | Stable follow-up to accepted 0.12.3; unsigned installer |
-| macOS Apple Silicon / Intel | 0.4.6-alpha.1 | Experimental DMGs; not notarized; Apple Silicon connection user-confirmed, Intel account testing pending |
-| Chrome MV3 | 0.3.2 | Companion extension; requires the local desktop monitor and native host |
+| Windows 10/11 x64 | 0.12.5 | Stable follow-up to accepted 0.12.3; unsigned installer |
+| macOS Apple Silicon / Intel | 0.4.7-alpha.1 | Experimental DMGs; not notarized; Apple Silicon connection user-confirmed, Intel account testing pending |
+| Chrome MV3 | 0.3.3 | Companion extension; requires the local desktop monitor and native host |
 
-The Windows 0.12.3 interface was accepted by the user on 2026-11-16; 0.12.4 adds
+The Windows 0.12.3 interface was accepted by the user on 2026-11-16; 0.12.5 adds
 the requested statistics and read-only balance/reset indicators. A prior
 installer-only fix handles legacy Unicode shortcut cleanup on English Windows.
 Platform versions are
@@ -53,9 +95,9 @@ does not make an ARM-only official client compatible with Intel.
 
 ## Downloads And Instructions
 
-- [Windows installer and checksums](https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.12.4)
-- [Chrome extension ZIP](https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.3.2)
-- [macOS experimental installers, both architectures](https://github.com/kefen/codex-quota-sidebar/releases/tag/macos/v0.4.6-alpha.1)
+- [Windows installer and checksums](https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.12.5)
+- [Chrome extension ZIP](https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.3.3)
+- [macOS experimental installers, both architectures](https://github.com/kefen/codex-quota-sidebar/releases/tag/macos/v0.4.7-alpha.1)
 - **[Step-by-step illustrated user guide](docs/USER-GUIDE.md)**
 - [Release and acceptance record](docs/RELEASES.md)
 

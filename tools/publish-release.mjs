@@ -6,7 +6,7 @@ if(!token||process.env.GITHUB_REPOSITORY!==repo||process.env.GITHUB_REF!=='refs/
 const accepted=JSON.parse(await readFile('docs/releases/accepted-0.12.json','utf8'));
 const versions=JSON.parse(await readFile('versions.json','utf8'));
 const chrome=JSON.parse(await readFile('browser/manifest.json','utf8')).version;
-if(accepted.windows!=='0.12.4'||accepted.macos!=='0.4.6-alpha.1'||accepted.chrome!=='0.3.2'||accepted.windowsAccepted!==true||accepted.publicReleaseAuthorized!==true||accepted.macAccountAccepted!==true||accepted.browserProfileAccepted!==false)throw Error('Not the authorized release set');
+if(accepted.windows!=='0.12.5'||accepted.macos!=='0.4.7-alpha.1'||accepted.chrome!=='0.3.3'||accepted.windowsAccepted!==true||accepted.publicReleaseAuthorized!==true||accepted.macAccountAccepted!==true||accepted.browserProfileAccepted!==false)throw Error('Not the authorized release set');
 if(versions.windows!==accepted.windows||versions.macos!==accepted.macos||chrome!==accepted.chrome)throw Error('Version mismatch');
 const source='Codex-Quota-Sidebar-source-windows-'+versions.windows+'-macos-'+versions.macos+'.zip';
 const macSource='Codex-Quota-Sidebar-macOS-'+versions.macos+'-source.zip';
@@ -48,7 +48,7 @@ for(const set of sets){
 // Destructive cleanup is explicitly scoped to the user-approved old release list.
 for(const item of published){const release=await request('/releases/tags/'+encodeURIComponent(item.tag));if(release?.draft||!item.files.every(f=>release.assets.some(a=>a.name===f.name&&a.digest===f.digest)))throw Error('Published asset verification failed');}
 if(accepted.deletePriorReleasesAfterVerification===true&&published.length===3){
- const oldTags=["windows/v0.12.3","macos/v0.4.1-alpha.1","chrome/v0.3.1","windows/v0.11.1-beta.1","windows/v0.11.0-beta.1","macos/v0.3.1-alpha.1","macos/v0.3.0-alpha.1","chrome/v0.2.1","chrome/v0.2.0"];
+ const oldTags=["windows/v0.12.4","macos/v0.4.6-alpha.1","chrome/v0.3.2"];
  for(const tag of oldTags){if(sets.some(s=>s.tag===tag))throw Error('Refuse to delete current release');const old=await request('/releases/tags/'+encodeURIComponent(tag));if(old)await request('/releases/'+old.id,'DELETE');}
  console.log('Removed approved previous Releases/assets; Git tags and commits retained.');
 }
