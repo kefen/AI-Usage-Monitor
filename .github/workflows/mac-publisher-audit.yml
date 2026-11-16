@@ -44,6 +44,24 @@ jobs:
           lsof -nP -iTCP:19299 -sTCP:LISTEN
           node mac/launch.mjs --native-ui --focus
           echo 'PASS: actual launcher signature rule and official client activation without an account'
+          osascript -e 'tell application "/Applications/Codex.app" to quit'
+          sleep 3
+          open -a /Applications/Codex.app
+          sleep 5
+          if node mac/launch.mjs --native-ui; then echo 'Expected restart-required error'; exit 1; fi
+          grep -qx E_RESTART_REQUIRED .runtime/mac-error.txt
+          node mac/launch.mjs --native-ui --restart-approved > restart-test.log 2>&1 &
+          monitor=$!
+          ready=false
+          for attempt in $(seq 1 120); do
+            if [[ -f .runtime/status.json ]] && node -e 'const s=require("./.runtime/status.json");process.exit(String(s.stage).startsWith("mounted")?0:1)'; then ready=true; break; fi
+            if ! kill -0 "$monitor" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          printf stop > .runtime/background-stop.request
+          if [[ "$ready" != true ]]; then cat restart-test.log; cat .runtime/mac-error.txt || true; kill "$monitor" 2>/dev/null || true; wait "$monitor" || true; exit 1; fi
+          wait "$monitor"
+          echo 'PASS: ordinary running official client requires approval; approved graceful restart attaches sidebar without an account'
           done
           shasum -a 256 official.dmg
           hdiutil detach "$PWD/official-mount"
