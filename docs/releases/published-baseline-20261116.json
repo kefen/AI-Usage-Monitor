@@ -1,0 +1,86 @@
+{
+  "publishedAt": "2026-11-16",
+  "workflow": "https://github.com/kefen/codex-quota-sidebar/actions/runs/43855890644",
+  "sourceCommit": "249c38867de46565bfe3e9b97a70f7a22b0dab9e",
+  "versions": {
+    "windows": "0.12.4",
+    "macos": "0.4.6-alpha.1",
+    "chrome": "0.3.2"
+  },
+  "features": [
+    "monthly returned-day average; weekly unchanged",
+    "local-midnight yesterday label without numeric date; older fallback remains dated",
+    "read-only credit balance and available reset count",
+    "Mac layout and installation entry guidance"
+  ],
+  "cleanup": {
+    "oldReleasesRemoved": [
+      "windows/v0.12.3",
+      "macos/v0.4.1-alpha.1",
+      "chrome/v0.3.1",
+      "windows/v0.11.1-beta.1",
+      "windows/v0.11.0-beta.1",
+      "macos/v0.3.1-alpha.1",
+      "macos/v0.3.0-alpha.1",
+      "chrome/v0.2.1",
+      "chrome/v0.2.0"
+    ],
+    "gitTagsAndCommitsRetained": true
+  },
+  "releases": [
+    {
+      "tag": "windows/v0.12.4",
+      "url": "https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.12.4",
+      "assets": [
+        {
+          "name": "Codex-Quota-Sidebar-source-windows-0.12.4-macos-0.4.6-alpha.1.zip",
+          "sha256": "c8efc116243e14e4b07ea893ee7a45693ea20b4f26ab5086cde138f26bfeb119"
+        },
+        {
+          "name": "Codex-Quota-Sidebar-Windows-0.12.4-x64-Setup.exe",
+          "sha256": "a58ca45a923070c5fa8fd6d429a6bed88740fa156b18fa6f894b6b1b8edddc41"
+        },
+        {
+          "name": "SHA256SUMS-windows-v0.12.4.txt",
+          "sha256": "3a8dbfc35e47d00de452055f5fba271a1565c8c50451944a1ef833cc13f03819"
+        }
+      ]
+    },
+    {
+      "tag": "macos/v0.4.6-alpha.1",
+      "url": "https://github.com/kefen/codex-quota-sidebar/releases/tag/macos/v0.4.6-alpha.1",
+      "assets": [
+        {
+          "name": "Codex-Quota-Sidebar-macOS-0.4.6-alpha.1-arm64-unsigned-test.dmg",
+          "sha256": "b611f97c7ba7a2c03b80acbc0f7122bd509ceffa3ff7291fa3ead9d4bfd16f6b"
+        },
+        {
+          "name": "Codex-Quota-Sidebar-macOS-0.4.6-alpha.1-source.zip",
+          "sha256": "c8efc116243e14e4b07ea893ee7a45693ea20b4f26ab5086cde138f26bfeb119"
+        },
+        {
+          "name": "Codex-Quota-Sidebar-macOS-0.4.6-alpha.1-x86_64-unsigned-test.dmg",
+          "sha256": "46d28f60d6f8d6ec8b922889d564bc379a5860356df0a292f02b426ac7ed123b"
+        },
+        {
+          "name": "SHA256SUMS-macos-v0.4.6-alpha.1.txt",
+          "sha256": "6b2f2884a983c0218be413f9b47f0d177e95119a7fb5ff4ffe4eae9ae7330203"
+        }
+      ]
+    },
+    {
+      "tag": "chrome/v0.3.2",
+      "url": "https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.3.2",
+      "assets": [
+        {
+          "name": "Codex-Quota-Sidebar-Chrome-0.3.2.zip",
+          "sha256": "72718c2e3a6aeb5b163c12fc0b427e09363be5f2e1eb80db94106a1ad63d1c0c"
+        },
+        {
+          "name": "SHA256SUMS-chrome-v0.3.2.txt",
+          "sha256": "40d0bd6e0a0b0e75997504e646da27256fbcb6722df0701e23e78e51f74dd907"
+        }
+      ]
+    }
+  ]
+}
