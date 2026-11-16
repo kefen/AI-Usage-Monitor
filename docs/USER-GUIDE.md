@@ -176,6 +176,20 @@ Quota refresh is approximately every minute; Token activity is read at startup
 and hourly. Daily data may refer to yesterday or the most recent available date.
 The date is always important. Calendar-week totals and quota-reset windows differ.
 
+**Why are weekly Tokens and daily average both `--`?** Weekly Tokens sum returned
+records from Monday onward; daily average divides that sum by the number of returned
+days in the same week. When Monday arrives but the latest available daily record is
+Sunday, neither metric has a current-week record yet. Yesterday and lifetime can
+still show values. Missing data is not zero and is not a connection failure by
+itself. Hourly refresh will use new records when the source returns them; no exact
+source publication time is promised. The quota percentage uses its separate reset
+window. Server bucket timezone is unverified; the tool compares date labels in UTC.
+
+**简体中文：** 周一开始新一周，但最新日数据仍为上周日时，“本周”和“日均”会显示
+`--`，而“昨日”和“累计”仍可显示。日均是本周已返回记录的平均值，不是历史日均；
+没有数据不等于消耗为零。“周余”采用独立的额度重置周期。数据每小时刷新，源端何时
+返回新记录无法保证。
+
 ## 8. Browser Companion
 
 1. Keep the Windows desktop monitor running and connected.
@@ -226,3 +240,4 @@ Open the companion and choose **Reconnect**. A usable existing local debugging p
 macOS may ask for Automation permission to send the quit request. Review the exact requesting app and target. You can decline and instead quit official Codex with Command-Q, then reconnect. Do not disable system security. No Full Disk Access or Accessibility permission is required.
 
 The bundled `READ-ME-FIRST.html` contains Simplified Chinese, Traditional Chinese and English guidance. Exit the previous companion, drag the new app into Applications and replace it, eject the DMG, then open the installed app. Check the lower-left version label. This is an experimental release, not a notarized release.
+
