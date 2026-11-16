@@ -29,7 +29,7 @@ synthetic data. Not a capture of the live Codex application or a real account.
 ![Chrome side panel](docs/screenshots/chrome-panel.png)
 
 ### macOS experimental companion
-![Native macOS subscription settings](docs/screenshots/mac-settings.png)
+![Native macOS usage overview](docs/screenshots/mac-settings.png)
 
 Actual AppKit view captured on a macOS Actions runner with synthetic settings;
 not evidence of live-account connection acceptance.
@@ -38,11 +38,12 @@ not evidence of live-account connection acceptance.
 
 | Platform | Version | Availability |
 | --- | --- | --- |
-| Windows 10/11 x64 | 0.12.4 | User-accepted stable release; unsigned installer |
+| Windows 10/11 x64 | 0.12.4 | Stable follow-up to accepted 0.12.3; unsigned installer |
 | macOS Apple Silicon / Intel | 0.4.6-alpha.1 | Experimental DMGs; not notarized; Apple Silicon connection user-confirmed, Intel account testing pending |
 | Chrome MV3 | 0.3.2 | Companion extension; requires the local desktop monitor and native host |
 
-The Windows 0.12.4 interface was accepted by the user on 2026-11-16. A final
+The Windows 0.12.3 interface was accepted by the user on 2026-11-16; 0.12.4 adds
+the requested statistics and read-only balance/reset indicators. A prior
 installer-only fix handles legacy Unicode shortcut cleanup on English Windows.
 Platform versions are
 independent; Windows acceptance does not imply macOS or browser-profile acceptance.
