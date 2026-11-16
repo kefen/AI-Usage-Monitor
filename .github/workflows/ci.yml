@@ -9,7 +9,7 @@ jobs:
   shared:
     strategy:
       matrix:
-        os: [windows-2022, macos-14]
+        os: [windows-2022, macos-15]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -36,3 +36,4 @@ jobs:
           ./test/lifecycle.test.ps1
           node test/package-extract.mjs
           if ($LASTEXITCODE -ne 0) { throw 'Package verification failed' }
+

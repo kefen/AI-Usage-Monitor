@@ -7,7 +7,7 @@ permissions:
   contents: read
 jobs:
   mac:
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 25
     strategy:
       fail-fast: false
@@ -26,3 +26,4 @@ jobs:
           name: mac-${{ matrix.arch }}-unsigned-test
           path: dist/*unsigned-test.dmg
           retention-days: 14
+
