@@ -27,7 +27,7 @@ internal static class Installer {
             if(args.Length==2 && args[0]=="--extract"){Extract(args[1]);return 0;}
             if(args.Length!=0)throw new ArgumentException("Use --extract DIRECTORY or double-click to install.");
             Application.EnableVisualStyles();
-            // Windows 0.11.1-beta.1
+            // Windows 0.12.3
             string destination=SetupSupport.DefaultDestination();
             SetupWindow window=null;
             using(window=new SetupWindow(destination,()=>{

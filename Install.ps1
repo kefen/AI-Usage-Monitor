@@ -6,11 +6,6 @@ if (-not $Destination) { $Destination = Join-Path $env:USERPROFILE 'Documents\Co
 if (-not $ShortcutPath) {
     $name = 'Codex Quota Sidebar.lnk'
     $ShortcutPath = Join-Path ([Environment]::GetFolderPath('Desktop')) $name
-    $prior=Join-Path $Destination 'installation.json'
-    if(Test-Path -LiteralPath $prior){
-        $record=Get-Content -LiteralPath $prior -Raw | ConvertFrom-Json
-        if($record.id -eq 'local-codex-sidebar-meter' -and $record.shortcut){$ShortcutPath=$record.shortcut}
-    }
 }
 $Destination = [IO.Path]::GetFullPath($Destination).TrimEnd('\')
 $ShortcutPath = [IO.Path]::GetFullPath($ShortcutPath)
@@ -42,9 +37,9 @@ if (Test-Path -LiteralPath $Destination) {
     if (-not (Test-Path -LiteralPath $marker)) {
         if (@(Get-ChildItem -LiteralPath $Destination -Force).Count) { throw 'Refusing to overwrite a directory not owned by this installer.' }
     } else {
-        $old = Get-Content -LiteralPath $marker -Raw | ConvertFrom-Json
+        $old = Get-Content -LiteralPath $marker -Raw -Encoding UTF8 | ConvertFrom-Json
         if ($old.id -ne 'local-codex-sidebar-meter') { throw 'Unrecognized install marker.' }
-        if ($old.shortcut -ne $ShortcutPath) { throw 'Use the shortcut location recorded by the existing installation.' }
+        if ($old.shortcut -ne $ShortcutPath -and [IO.Path]::GetFileName($ShortcutPath) -ne 'Codex Quota Sidebar.lnk') { throw 'Use the shortcut location recorded by the existing installation.' }
     }
 }
 $shell = New-Object -ComObject WScript.Shell
@@ -124,6 +119,16 @@ $cleanupBackup=$true
     }
 }
 Write-Host "Installed: $Destination"
+if([IO.Path]::GetFileName($ShortcutPath) -eq 'Codex Quota Sidebar.lnk'){
+    # Only remove verified duplicates beside the successfully installed shortcut.
+    foreach($candidate in Get-ChildItem -LiteralPath (Split-Path $ShortcutPath -Parent) -Filter '*.lnk' -File){
+        if($candidate.FullName -eq $ShortcutPath -or ($candidate.Attributes -band [IO.FileAttributes]::ReparsePoint)){continue}
+        try{
+            $duplicate=$shell.CreateShortcut($candidate.FullName)
+            if(Test-OwnedMeterShortcut $duplicate $Destination){Remove-Item -LiteralPath $candidate.FullName -Force}
+        }catch{Write-Warning 'An old meter shortcut could not be removed. The new English shortcut is ready.'}
+    }
+}
 Write-Host "Desktop shortcut: $ShortcutPath"
 Write-Host 'Files and shortcut only. The running Codex app has not been stopped or modified.'
 } finally {if($canInstall){$probe.ReleaseMutex()};$probe.Dispose()}

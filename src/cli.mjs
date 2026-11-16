@@ -6,7 +6,7 @@ import { normalizeUsage, observeAvailability } from './usage.mjs';
 import {version} from './version.mjs';
 import { nextUsageRefresh, readMembership } from './settings.mjs';
 import { normalizeLimits } from './core.mjs';
-import { listTargets, evaluate } from './cdp.mjs';
+import { listTargets, evaluate, watchOverview } from './cdp.mjs';
 import { rendererExpression } from './renderer-expression.mjs';
 import { recordStatus } from './status.mjs';
 import { browserSnapshot } from './browser-snapshot.mjs';
@@ -46,6 +46,7 @@ if (args[0] === 'usage') {
     const stopFile=option('--stop-file');
     const shouldStop=()=>stopping || (stopFile && existsSync(stopFile));
     let cachedTargets=[],paintQueue=Promise.resolve(),closeDisplay=()=>{};
+    let actionChannel=null,actionTarget=null,sidebarMode='hidden',sidebarReason='sidebar-unrecognized';
     const paint=()=>{
       const work=async()=>{
         if(shouldStop())return 0;
@@ -54,7 +55,17 @@ if (args[0] === 'usage') {
         const expression=rendererExpression(widget,{...state,...display,usage:{...usage,observations:observation.records||[]},membership});
         const known=cachedTargets.find(t=>t.id===mainTargetId);
         for(const target of known?[known]:cachedTargets){
-          try{if((await evaluate(target,port,expression))?.mounted===true){mainTargetId=target.id;return 1;}}catch{}
+          try{
+            const result=await evaluate(target,port,expression);
+            if(result?.reason==='sidebar-check'){
+              sidebarMode=result.layout?.mode||'hidden';sidebarReason=result.layout?.reason||'sidebar-unrecognized';
+              if(actionTarget!==target.id||!actionChannel?.active()){
+                actionChannel?.close();actionTarget=target.id;
+                actionChannel=watchOverview(target,port,()=>{if(!shouldStop())return writeFile(new URL('../.runtime/background-open.request',import.meta.url),'open',{mode:0o600});});
+              }
+              if(result.mounted===true){mainTargetId=target.id;return 1;}
+            }
+          }catch{}
         }
         mainTargetId=null;return 0;
       };
@@ -72,6 +83,7 @@ if (args[0] === 'usage') {
         let targets = [];
         try { targets = await listTargets(port); } catch { /* app may still be starting */ }
         cachedTargets=targets;
+        if(actionTarget&&!targets.some(t=>t.id===actionTarget)){actionChannel?.close();actionChannel=null;actionTarget=null;}
         if (targets.length) {
           if(existsSync(clearPath)){await unlink(clearPath).catch(()=>{});observation={};observedAt=0;await unlink(observationPath).catch(()=>{});}
           if(existsSync(refreshPath)){
@@ -119,7 +131,7 @@ if (args[0] === 'usage') {
           try {const path=fileURLToPath(new URL('../.runtime/browser-state.json',import.meta.url));await writeFile(path+'.tmp',JSON.stringify(browserSnapshot(state,usage)),{mode:0o600});await rename(path+'.tmp',path);} catch { /* Browser companion is optional. */ }
           const mounted=await paint();
           await report(mounted ? (state.error ? 'mounted-quota-unavailable' : 'mounted') : 'sidebar-missing', {
-            targetCount:targets.length,mountedCount:mounted,quotaAvailable:!state.error && state.buckets.length>0,
+            sidebarMode,sidebarReason,targetCount:targets.length,mountedCount:mounted,quotaAvailable:!state.error && state.buckets.length>0,
             usageAvailable:!usage.error && (usage.lifetime!==null || usage.week?.value!==null),nextUsageAt:nextUsage,usageReadAt:usage.fetchedAt
           });
           if (Date.now() >= nextStatus) {
@@ -137,7 +149,7 @@ if (args[0] === 'usage') {
       }
     } catch (e) { console.error(e.message); process.exitCode = 1; await report('attach-failed').catch(()=>{}); }
     finally {
-      closeDisplay();await paintQueue.catch(()=>{});
+      closeDisplay();await paintQueue.catch(()=>{});actionChannel?.close();
       let targets = [];
       try { targets = await listTargets(port); } catch { /* app already closed */ }
       for (const t of targets) {

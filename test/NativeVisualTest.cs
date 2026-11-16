@@ -26,7 +26,8 @@ internal static class NativeVisualTest {
             timer.Start();Assert(MeterRestartDialog.Confirm("Save your work before restarting. This fixture does not close Codex.")==accept,"Restart decision mismatch");
         }
         using(var window=new LaunchWindow(()=>opens++,()=>retries++,()=>{},()=>{})){
-            window.Present();window.UpdateState("starting",new Dictionary<string,object>());Capture(window,"startup");
+            Assert(window.Controls.Find("brandCaption",true)[0].Text=="by KEFEN","Main header must not repeat page name or slash");
+            window.Present();window.UpdateState("starting",new Dictionary<string,object>());Assert(window.Controls.Find("statusHeadline",true)[0].Parent.Parent.Parent.Controls.Count==1,"Initial overview is covered by a transient page");Capture(window,"startup");
             window.UpdateState("failed",new Dictionary<string,object>{{"code","Codex preparation failed. Run Diagnose.cmd."}});Capture(window,"retry");((Button)window.Controls.Find("reconnect",true)[0]).PerformClick();Assert(retries==1,"Retry callback missing");
             window.UpdateState("mounted",new Dictionary<string,object>{{"quotaAvailable",true},{"usageAvailable",false},{"updatedAt","2026-01-01T12:00:00Z"}});Capture(window,"connected");Assert(window.Controls.Find("reconnect",true)[0].Enabled,"Reconnect must work with an existing monitor");
             foreach(string language in new[]{"en","zh-CN","zh-TW"}){
@@ -37,6 +38,26 @@ internal static class NativeVisualTest {
                 Capture(window,"overview-"+language);
             }
             Locale.Set("en");
+            foreach(string section in new[]{"Sidebar content","Codex subscription record","Data and settings","Diagnostics","About project","Usage overview"}){
+                var buttons=window.Controls.Find(section,true);Assert(buttons.Length==1,"Missing navigation: "+section);
+                ((Button)buttons[0]).PerformClick();Application.DoEvents();
+                int topLevel=0;foreach(Form f in Application.OpenForms)if(f.TopLevel&&f.Visible)topLevel++;
+                Assert(topLevel==1,"Navigation opened a separate top-level window");
+                if(section=="Codex subscription record"||section=="Sidebar content"){
+                    if(section=="Codex subscription record"){
+                        ((ComboBox)window.Controls.Find("plan",true)[0]).SelectedIndex=2;
+                        ((Button)buttons[0]).PerformClick();Application.DoEvents();
+                        Assert(((ComboBox)window.Controls.Find("plan",true)[0]).SelectedIndex==2,"Clicking current page discarded edits");
+                    }
+                    var save=(Button)window.Controls.Find(section=="Sidebar content"?"saveDisplay":"save",true)[0];save.PerformClick();Application.DoEvents();
+                    Assert(save.Visible&&!save.Enabled&&save.Text==Locale.T("Saved successfully"),"Save did not remain on page with success feedback");
+                    if(section=="Codex subscription record")Assert(((Func<bool>)save.FindForm().Tag)(),"Successful save left dirty guard active");
+                    var until=DateTime.UtcNow.AddMilliseconds(1600);while(DateTime.UtcNow<until){Application.DoEvents();System.Threading.Thread.Sleep(10);}
+                    Assert(save.Enabled&&save.Text==Locale.T("Save"),"Save feedback did not reset");
+                }
+                Capture(window,"page-"+section.Replace(" ","-"));
+                foreach(string language in new[]{"zh-CN","zh-TW","en"}){Locale.Set(language);Capture(window,"page-"+section.Replace(" ","-")+"-"+language);}
+            }
             ((Button)window.Controls.Find("openCodex",true)[0]).PerformClick();Assert(opens==1,"Open action not dispatched");
             window.Feedback("Activation requested");window.UpdateState("mounted",new Dictionary<string,object>());Assert(window.Controls.Find("statusDetail",true)[0].Text=="Activation requested","Polling erased action feedback");
             window.Scale(new SizeF(1.5f,1.5f));Capture(window,"connected-150");window.Finish();

@@ -18,7 +18,7 @@ const run=(file,args)=>{
 const plist=(app,key)=>run('/usr/libexec/PlistBuddy',['-c',`Print :${key}`,join(app,'Contents/Info.plist')]);
 let ownsLock=false;
 try {
-  if(process.platform!=='darwin' || process.arch!=='arm64')throw new Error('This package requires Apple Silicon macOS.');
+  if(process.platform!=='darwin' || !['arm64','x64'].includes(process.arch))throw new Error('This package requires Intel or Apple Silicon macOS.');
   await mkdir(runtime,{recursive:true});
   if(process.argv.includes('--stop')){await writeFile(stop,'stop');process.exit(0);}
   if(!focusOnly){try{
@@ -30,8 +30,10 @@ try {
   await unlink(stop).catch(e=>{if(e.code!=='ENOENT')throw e;});
   }
   let app;
-  for(const candidate of ['/Applications/Codex.app',join(homedir(),'Applications/Codex.app')]){
-    if(await stat(candidate).catch(()=>null)){app=candidate;break;}
+  for(const candidate of ['/Applications/Codex.app','/Applications/ChatGPT.app',join(homedir(),'Applications/Codex.app'),join(homedir(),'Applications/ChatGPT.app')]){
+    if(await stat(candidate).catch(()=>null)){
+      try{if(plist(candidate,'CFBundleIdentifier')==='com.openai.codex'){app=candidate;break;}}catch{}
+    }
   }
   if(!app)throw new Error('Install the official Codex.app in /Applications first.');
   if(plist(app,'CFBundleIdentifier')!=='com.openai.codex')throw new Error('Unexpected Codex bundle identifier; no application was launched.');
@@ -42,8 +44,12 @@ try {
   const executable=plist(app,'CFBundleExecutable');
   if(!/^[\w .-]+$/.test(executable))throw new Error('Invalid app executable.');
   const main=join(app,'Contents/MacOS',executable);
-  const cli=join(app,'Contents/Resources/codex');
-  if(!(await stat(cli).catch(()=>null))?.isFile())throw new Error('Bundled Codex CLI not found.');
+  let cli;
+  for(const path of ['Contents/Resources/codex','Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex']){
+    const candidate=join(app,path);
+    if((await stat(candidate).catch(()=>null))?.isFile()){cli=candidate;break;}
+  }
+  if(!cli)throw new Error('Bundled Codex CLI not found.');
   const processes=()=>run('/bin/ps',['-axo','pid=,command=']).split('\n').map(line=>{
     const match=line.trim().match(/^(\d+)\s+(.+)$/);return match?{pid:Number(match[1]),cmd:match[2]}:null;
   }).filter(p=>p&&(p.cmd===main || p.cmd.startsWith(main+' ')));

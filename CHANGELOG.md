@@ -1,5 +1,15 @@
 # Changelog
 
+## Windows 0.11.2-beta.1 (local candidate, awaiting user acceptance)
+
+- Measure official navigation controls before allocating sidebar space.
+- Collapse to a quota icon or hide safely when controls need the space; restore automatically.
+- Open the native usage overview through a fixed, local-only CDP action.
+- Report compact/hidden states in English, Simplified Chinese and Traditional Chinese.
+- Cover update buttons, small windows, 100-200% scaling and layout changes with browser tests.
+- macOS Intel/Apple Silicon packaging and other Windows targets are deferred until Windows acceptance.
+- No GitHub publication or installed-user configuration changes in this candidate build.
+
 ## Windows 0.11.1-beta.1 / macOS 0.3.1-alpha.1 / Chrome 0.2.1
 
 - Standardize all current first-party attribution and native messaging on KEFEN.
@@ -87,3 +97,45 @@
 - GitHub publication withheld until the user's Windows acceptance.
 - macOS and Chrome source attribution updated; no new Mac installation-flow acceptance.
 
+# R2 test candidate - 2026-11-16
+
+- Windows 0.12.0-beta.1: compact setup; single-window navigation; separate data,
+  help and about pages; bottom-left version; three retained languages.
+- Shared rail: full display, bounded scrolling, compact action, then hidden.
+  Official controls always take priority, including dynamically appearing updates.
+- Chrome 0.3.0: local display preferences, help, sanitized diagnostic download,
+  about page; unchanged read-only Native Messaging permission boundary.
+- macOS 0.4.0-alpha.1: Intel/Apple Silicon unsigned test build workflow and
+  native navigation changes. Publisher trust and real-device acceptance remain
+  required; compiling a DMG does not establish working Codex integration.
+- Candidate branch only. No public Release or main-branch update authorized.
+
+# Windows 0.12.1-beta.1 - 2026-11-16
+
+- Fix initial overview being covered by an empty transient page before the window
+  is shown; reconnect status now remains visible without navigating away.
+- Embedded subscription save stays on the current page, clears dirty state, and
+  uses the same 1.4-second success button as sidebar settings. Remove redundant
+  embedded cancel/skip controls; keep standalone onboarding behavior.
+- Remove nested editor close callbacks that re-entered navigation and confirmations.
+- Number restart safety instructions; widen confirmation button; load saved locale.
+- Re-space installation actions/completion steps and compact project information.
+- Windows-only candidate; no Mac update or public Release in this iteration.
+
+# Windows 0.12.2-beta.1 - 2026-11-16
+
+- Always create the default desktop shortcut as Codex Quota Sidebar, independently
+  of interface language. Do not inherit legacy localized/misdecoded names.
+- Read installation manifests explicitly as UTF-8 for Windows PowerShell 5.1.
+- After successful installation, remove only verified same-installation shortcut
+  duplicates beside the new shortcut. Preserve foreign shortcuts and symlinks.
+- Keep UI language selection and all saved preferences unchanged.
+
+# Windows 0.12.3-beta.1 - 2026-11-16
+
+- Main-window brand caption now shows only by KEFEN, without a repeated page title.
+- Compact sidebar notes, data actions, diagnostic steps and About information.
+- Text rows size to their translated content instead of reserving large fixed
+  heights; keep spacing between action groups and preserve long-text wrapping.
+- Windows-only visual iteration; save behavior, language choice and English
+  shortcut naming are unchanged. Not publicly released.

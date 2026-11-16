@@ -32,7 +32,7 @@ synthetic data. Not a capture of the live Codex application or a real account.
 
 | Platform | Version | Availability |
 | --- | --- | --- |
-| Windows 10/11 x64 | 0.11.1-beta.1 | Branding patch on accepted 0.11.0; unsigned installer |
+| Windows 10/11 x64 | 0.11.2-beta.1 | Local sidebar-safety candidate; awaiting user acceptance; unsigned |
 | macOS Apple Silicon | 0.3.1-alpha.1 | Experimental source; not compiled or tested on Mac |
 | Chrome MV3 | 0.2.1 | Experimental companion; requires the Windows native host |
 

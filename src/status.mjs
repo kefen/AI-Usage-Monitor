@@ -8,6 +8,8 @@ export async function recordStatus(path, stage, details = {}) {
   }
   if (typeof details.quotaAvailable === 'boolean') status.quotaAvailable = details.quotaAvailable;
   if (typeof details.usageAvailable === 'boolean') status.usageAvailable = details.usageAvailable;
+  if(['full','scroll','compact','hidden'].includes(details.sidebarMode))status.sidebarMode=details.sidebarMode;
+  if(['available','scroll-space','limited-space','disabled','official-controls-priority','sidebar-unrecognized'].includes(details.sidebarReason))status.sidebarReason=details.sidebarReason;
   await mkdir(dirname(path), {recursive:true});
   await writeFile(path, JSON.stringify(status,null,2), 'utf8');
 }

@@ -7,17 +7,18 @@ import {mkdtemp,writeFile,rename,rm,realpath} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {pathToFileURL} from 'node:url';
-test('settings changes notify immediately after atomic replacement, independently of quota polling',async()=>{
+for(const file of ['display.json','membership.json'])test(file+' changes notify immediately after atomic replacement, independently of quota polling',async()=>{
   assert.equal(typeof settings.watchDisplay,'function');
   // Windows CI may expose an 8.3 TEMP alias; watch the canonical directory.
   const root=await realpath(await mkdtemp(join(tmpdir(),'cqs-settings-')));let close;
   try{
     let wake;const changed=new Promise(resolve=>wake=resolve);
     close=settings.watchDisplay(pathToFileURL(root+'/'),wake);
-    await writeFile(join(root,'display.json.tmp'),JSON.stringify({weekly:false}));
-    await rename(join(root,'display.json.tmp'),join(root,'display.json'));
+    await writeFile(join(root,file+'.tmp'),JSON.stringify(file==='display.json'?{weekly:false}:{plan:'plus'}));
+    await rename(join(root,file+'.tmp'),join(root,file));
     let timer;await Promise.race([changed,new Promise((_,reject)=>timer=setTimeout(()=>reject(Error('No live refresh')),1800))]).finally(()=>clearTimeout(timer));
-    assert.equal((await settings.readDisplay(pathToFileURL(root+'/'))).visible.weekly,false);
+    const result=await settings.readDisplay(pathToFileURL(root+'/'));
+    if(file==='display.json')assert.equal(result.visible.weekly,false);else assert.equal(result.planBadge,'Plus');
   }finally{if(close)close();await rm(root,{recursive:true,force:true});}
 });
 test('display preferences whitelist keys and preserve explicit false',()=>{

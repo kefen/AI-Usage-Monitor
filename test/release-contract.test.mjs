@@ -16,5 +16,8 @@ test('separate platform versions and explicit source/runtime manifests stay alig
   assert.ok((await read('native/TrayHost.cs')).includes(versions.windows));
   assert.ok((await read('native/Installer.cs')).includes(versions.windows));
   assert.ok((await read('mac/Install.command')).includes(versions.macos));
-  assert.equal(JSON.parse(await read('mac/trust.json')).teamIdentifier,null,'Mac remains gated before acceptance');
+  const trust=JSON.parse(await read('mac/trust.json'));
+  assert.equal(trust.teamIdentifier,'2DC432GLL2');
+  assert.match(trust.evidence,/actions\/runs\/43805495761$/);
+  assert.match(trust.acceptance,/real-account acceptance pending/);
 });

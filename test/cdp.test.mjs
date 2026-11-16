@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { listTargets, evaluate } from '../src/cdp.mjs';
+import { listTargets, evaluate, watchOverview } from '../src/cdp.mjs';
 const target = { type: 'page', url:'codex://app/index.html', webSocketDebuggerUrl:'ws://127.0.0.1:9222/devtools/page/1' };
 
 test('target discovery requests loopback only, forbids redirects and filters pages', async () => {
@@ -35,4 +35,23 @@ test('untrusted pages are rejected before opening a socket', async () => {
 test('CDP timeouts are bounded', async () => {
   class StalledSocket extends FakeSocket { send() {} }
   await assert.rejects(evaluate(target,9222,'true',25,StalledSocket),/timed out/);
+});
+
+test('overview channel accepts only a fixed action and closes cleanly',async()=>{
+  let socket,opens=0;
+  class BindingSocket extends FakeSocket {
+    constructor(){super();socket=this;}
+    send(data){const q=JSON.parse(data);assert.ok(['Runtime.enable','Runtime.addBinding'].includes(q.method));}
+    emit(name,payload){this.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({method:'Runtime.bindingCalled',params:{name,payload}})}));}
+  }
+  const channel=watchOverview(target,9222,()=>opens++,BindingSocket);
+  await new Promise(resolve=>setTimeout(resolve,0));
+  socket.emit('__cqsOpenOverview','run-command');socket.emit('other','open-overview');
+  assert.equal(opens,0);
+  socket.emit('__cqsOpenOverview','open-overview');socket.emit('__cqsOpenOverview','open-overview');
+  await Promise.resolve();
+  assert.equal(opens,1,'duplicate clicks are throttled');
+  channel.close();assert.equal(channel.active(),false);
+  socket.emit('__cqsOpenOverview','open-overview');assert.equal(opens,1);
+  assert.throws(()=>watchOverview({...target,url:'https://evil.example'},9222,()=>{}),/untrusted/);
 });

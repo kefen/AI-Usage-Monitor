@@ -9,7 +9,7 @@ foreach ($itemPath in @($root, $marker, (Join-Path $root 'src'), (Join-Path $roo
         throw 'Refusing to uninstall through a symbolic link or junction.'
     }
 }
-$manifest = Get-Content -LiteralPath $marker -Raw | ConvertFrom-Json
+$manifest = Get-Content -LiteralPath $marker -Raw -Encoding UTF8 | ConvertFrom-Json
 if ($manifest.id -ne 'local-codex-sidebar-meter') { throw 'Unrecognized installation. Nothing was removed.' }
 $allowed = @(Get-Content (Join-Path $root 'runtime-files.json') -Raw | ConvertFrom-Json | ForEach-Object {$_ -replace '/', '\'})
 foreach ($file in $manifest.files) {

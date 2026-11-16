@@ -4,6 +4,12 @@ using System.IO;
 using System.Windows.Forms;
 
 internal static class MeterTheme {
+    internal static void Saved(Button button){
+        button.Text=Locale.T("Saved successfully");button.BackColor=Surface;button.ForeColor=Blue;button.FlatAppearance.BorderColor=Blue;button.Enabled=false;
+        var timer=new Timer{Interval=1400};
+        timer.Tick+=(s,e)=>{timer.Stop();timer.Dispose();if(button.IsDisposed)return;button.Text=Locale.T("Save");button.BackColor=Blue;button.ForeColor=Color.White;button.Enabled=true;};
+        button.Disposed+=(s,e)=>{timer.Stop();timer.Dispose();};timer.Start();
+    }
     internal static readonly Color Ink=SystemInformation.HighContrast?SystemColors.WindowText:Color.FromArgb(33,40,50);
     internal static readonly Color Muted=SystemInformation.HighContrast?SystemColors.WindowText:Color.FromArgb(99,109,122);
     internal static readonly Color Surface=SystemInformation.HighContrast?SystemColors.Window:Color.White;
@@ -27,12 +33,12 @@ internal static class MeterTheme {
     }
     internal static Label Label(string text,float size,Color color){return new Label{Text=text,Font=Font(size),ForeColor=color,AutoSize=false,TextAlign=ContentAlignment.MiddleLeft,Dock=DockStyle.Fill,UseMnemonic=false};}
     internal static Panel Header(string section,string version){
-        var panel=new Panel{Dock=DockStyle.Top,Height=92,Padding=new Padding(24,20,24,16),BackColor=Surface};
-        var icon=new PictureBox{Dock=DockStyle.Left,Width=48,SizeMode=PictureBoxSizeMode.Zoom};
+        var panel=new Panel{Dock=DockStyle.Top,Height=78,Padding=new Padding(24,15,24,12),BackColor=Surface};
+        var icon=new PictureBox{Dock=DockStyle.Left,Width=40,SizeMode=PictureBoxSizeMode.Zoom};
         try{using(var source=Image.FromFile(Asset("cqs-128.png")))icon.Image=new Bitmap(source);}catch{using(var stream=System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("brand.png")){if(stream!=null)using(var source=Image.FromStream(stream))icon.Image=new Bitmap(source);}}
         var words=new Panel{Dock=DockStyle.Fill,Padding=new Padding(16,0,0,0)};
-        var title=Label("Codex Quota Sidebar",16,Ink);title.Dock=DockStyle.Top;title.Height=31;
-        var caption=Label("by KEFEN  /  "+section+"  /  "+version,9,Muted);caption.Dock=DockStyle.Top;caption.Height=24;
+        var title=Label("Codex Quota Sidebar",14,Ink);title.Dock=DockStyle.Top;title.Height=27;
+        var caption=Label(String.IsNullOrEmpty(section)?"by KEFEN":"by KEFEN  /  "+section,9,Muted);caption.Name="brandCaption";caption.Dock=DockStyle.Top;caption.Height=22;
         words.Controls.Add(caption);words.Controls.Add(title);panel.Controls.Add(words);panel.Controls.Add(icon);
         var language=Locale.Picker();language.Dock=DockStyle.Right;panel.Controls.Add(language);words.BringToFront();
         panel.Paint+=(s,e)=>{using(var pen=new Pen(Line))e.Graphics.DrawLine(pen,24,panel.Height-1,panel.Width-24,panel.Height-1);};
@@ -72,11 +78,15 @@ internal static class MeterTheme {
 public static class MeterRestartDialog {
     public static bool Confirm(string question){
         Application.EnableVisualStyles();
+        Locale.Load(Path.Combine(Path.GetDirectoryName(typeof(MeterRestartDialog).Assembly.Location),".runtime"));
         using(var form=new Form()){
             form.Text="Codex Quota Sidebar";MeterTheme.Style(form,660,460);
             var body=MeterTheme.Body();form.Controls.Add(body);form.Controls.Add(MeterTheme.Header(Locale.T("Restart confirmation"),"Windows"));
-            body.Controls.Add(new TextBox{Text=question,ReadOnly=true,Multiline=true,Dock=DockStyle.Fill,BorderStyle=BorderStyle.None,BackColor=MeterTheme.Surface,ForeColor=MeterTheme.Ink,ScrollBars=ScrollBars.Vertical});
-            var footer=MeterTheme.Footer();var yes=MeterTheme.Button("restartConfirm",Locale.T("Saved my work, restart"),true);yes.Width=150;yes.DialogResult=DialogResult.OK;
+            var steps=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false,AutoScroll=true};body.Controls.Add(steps);
+            foreach(string key in new[]{"1. Codex is running without the required local connection.","2. Save all work and stop active tasks before continuing.","3. With your permission, verified Codex processes will restart to attach the sidebar.","4. Unsaved work may be lost. Cancel to leave Codex unchanged."}){
+                var item=MeterTheme.Label(Locale.T(key),10,MeterTheme.Ink);item.Dock=DockStyle.None;item.Width=580;item.Height=52;item.Margin=new Padding(0,0,0,12);steps.Controls.Add(item);
+            }
+            var footer=MeterTheme.Footer();var yes=MeterTheme.Button("restartConfirm",Locale.T("Saved my work, restart"),true);yes.Width=270;yes.DialogResult=DialogResult.OK;
             var no=MeterTheme.Button("cancel",Locale.T("Cancel"),false);no.DialogResult=DialogResult.Cancel;
             footer.Controls.Add(yes);footer.Controls.Add(no);form.Controls.Add(footer);body.BringToFront();form.AcceptButton=no;form.CancelButton=no;
             return form.ShowDialog()==DialogResult.OK;

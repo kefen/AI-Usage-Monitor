@@ -53,4 +53,3 @@ only quota numbers, token totals and timestamps. No cookies or credentials are
 returned. No network listener is added. A hostile process running as the same
 OS user can still change local files; this is not a sandbox against that user.
 Unregister the host before uninstalling. Mac registration remains unverified.
-
