@@ -20,9 +20,20 @@ try{
     assert.equal(await page.locator('#refresh').isDisabled(),true,'Refresh throttled');
     for(const [locale,heading] of [['zh-CN','用量概览'],['zh-TW','用量概覽'],['en','Usage overview']]){
       await page.locator('#language').selectOption(locale);
-      assert.equal(await page.locator('h1').innerText(),heading);
+      assert.equal(await page.locator('#overview h1').innerText(),heading);
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Localized layout overflow');
       if(mode==='ok')assert.ok((await page.locator('#metrics').innerText()).includes('75%'));
+      for(const id of ['display','help','about','overview']){
+        await page.locator(`[data-page="${id}"]`).click();
+        assert.equal(await page.locator(`section#${id}`).isVisible(),true);
+        assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Page overflow: '+id);
+      }
+    }
+    if(mode==='ok'){
+      await page.locator('[data-page="display"]').click();
+      await page.locator('#choices input').first().uncheck();
+      await page.locator('[data-page="overview"]').click();
+      assert.ok(!(await page.locator('#metrics').innerText()).includes('75%'));
     }
     await page.screenshot({path:fileURLToPath(new URL(`../verification/browser-${width}-${mode}.png`,import.meta.url))});
     await page.close();

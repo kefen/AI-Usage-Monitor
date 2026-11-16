@@ -43,7 +43,7 @@ try {
     await page.evaluate(()=>{const a=document.querySelector('aside');a.replaceWith(a.cloneNode(true));});
     await page.waitForTimeout(120);
     assert.equal(await host.count(),1,'remount must not duplicate widgets');
-    assert.equal(await page.locator('button').count(),2,'native controls are preserved');
+    assert.equal(await page.locator('.bottom button').count(),2,'native controls are preserved');
     await page.evaluate(()=>{const a=document.querySelector('aside');a.className='';a.dataset.testid='app-shell-floating-left-panel';});
     await page.waitForTimeout(1100);
     assert.equal(await host.count(),1,'floating shell is supported');

@@ -27,7 +27,7 @@ if ! "$stage/runtime/node" --version; then
   exit 1
 fi
 cp -R 'build/Codex Quota Sidebar.app' "$stage/Codex Quota Sidebar.app"
-printf '%s\n' 'local-codex-sidebar-meter-0.3.1-alpha.1' > "$stage/installed-by-meter"
+printf '%s\n' 'local-codex-sidebar-meter-0.4.0-alpha.1' > "$stage/installed-by-meter"
 mv "$stage/Codex Quota Sidebar.app" "$app"
 mv "$stage" "$dest"
 echo 'Installed. Open ~/Applications/Codex Quota Sidebar.app.'

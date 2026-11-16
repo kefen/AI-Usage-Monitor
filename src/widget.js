@@ -1,5 +1,5 @@
 (() => {
-  if (window.__localCodexMeter?.version === '0.11.1-beta.1') return;
+  if (window.__localCodexMeter?.version === '0.12.0-beta.1') return;
   if (window.__localCodexMeter?.controllerId === 'local-codex-sidebar-meter-v1') window.__localCodexMeter.dispose();
   else if (window.__localCodexMeter) return;
   const id = 'local-codex-sidebar-meter';
@@ -12,7 +12,8 @@
   style.textContent = `
     :host{font-family:inherit;color:inherit;font-size:11px;font-weight:400;line-height:1.4;letter-spacing:0}
     :host(:focus-visible){outline:2px solid currentColor;outline-offset:2px;border-radius:4px}
-    *{box-sizing:border-box}section{display:flex;flex-direction:column;gap:8px;min-width:0;padding:4px 0;max-height:min(440px,calc(100vh - 160px));overflow-y:auto;scrollbar-width:thin}
+    *{box-sizing:border-box}section{display:flex;flex-direction:column;gap:8px;min-width:0;padding:4px 0;scrollbar-width:thin;overscroll-behavior:contain}section>*{flex-shrink:0}
+    .compact{width:32px;height:32px;padding:0;border:1px solid #c7d8f5;border-radius:4px;background:#eaf1ff;color:#285cae;cursor:pointer;font:inherit}
     .window{text-align:center;flex-shrink:0;width:100%}.label{font-size:10px;opacity:.65;white-space:nowrap}
     .percent{font-size:11px;line-height:18px;font-variant-numeric:tabular-nums;font-weight:400;white-space:nowrap}
     .track{height:3px;background:color-mix(in srgb,currentColor 14%,transparent);border-radius:2px;margin:5px auto 0;width:26px}
@@ -28,6 +29,18 @@
   const section = document.createElement('section');
   section.setAttribute('aria-label', '\u672c\u673a CLI \u8d26\u6237\u989d\u5ea6');
   shadow.append(section);
+  const compact = document.createElement('button');
+  compact.className='compact';compact.textContent='\u25a5';compact.hidden=true;
+  compact.addEventListener('click',()=>{
+    if(typeof window.__cqsOpenOverview==='function')window.__cqsOpenOverview('open-overview');
+  });
+  shadow.append(compact);
+  let layoutMode='hidden', layoutReason='sidebar-unrecognized', observedTarget=null, disposed=false;
+  const schedule=()=>{
+    if(scheduled||disposed)return;
+    scheduled=true;requestAnimationFrame(()=>{scheduled=false;if(!disposed)mount();});
+  };
+  const resize=new ResizeObserver(schedule);
   let state = {}, heartbeat = Date.now(), scheduled = false, lastRenderKey;
   const words={
     '服务端日期标签，分桶时区未核实；相对日期按 UTC 比较。周汇总从周一起，不是订阅额度周期。':['Server date labels; bucket timezone unverified. Relative dates use UTC. Weeks start Monday, independently of quota resets.','伺服器日期標籤，分桶時區未核實；相對日期按 UTC 比較。週彙總從週一起，不是訂閱額度週期。'],
@@ -187,7 +200,6 @@
       usageBox.append(block);hints.push(detail.join('\n'));
     }
     if(usageBox.children.length>1)section.append(usageBox);
-    root.style.display=section.children.length?'block':'none';
     hints.push('\u6765\u6e90: \u672c\u673a CLI \u8d26\u6237\uff0c\u8bf7\u4e0e\u684c\u9762\u8d26\u6237\u6838\u5bf9');
     if(state.fetchedAt) hints.push('\u6700\u540e\u540c\u6b65\uff08\u5317\u4eac\u65f6\u95f4\uff09: '+beijingTime(state.fetchedAt));
     root.title = hints.join('\n');
@@ -200,7 +212,7 @@
     const selectors = 'aside.app-shell-left-panel [data-app-navigation-rail],aside[data-testid="app-shell-floating-left-panel"] [data-app-navigation-rail]';
     const candidates = [...document.querySelectorAll(selectors)].filter(e => {
       const rect = e.getBoundingClientRect(), style = getComputedStyle(e);
-      return rect.width >= 40 && rect.width <= 80 && rect.height >= 260 &&
+      return e.offsetWidth >= 40 && e.offsetWidth <= 80 && rect.height >= 100 &&
         style.visibility !== 'hidden' && style.display !== 'none' &&
         style.display === 'flex' && style.flexDirection === 'column' &&
         !e.closest('[data-settings-panel-slug]') && !e.querySelector('[data-settings-panel-slug]');
@@ -211,37 +223,83 @@
     const target = anchor();
     for (const e of document.querySelectorAll('#' + id)) if (e !== root) e.remove();
     const bottom = target && [...target.children].filter(e=>e!==root).at(-1);
-    if (bottom && target.children.length >= 2) {
-      if (root.parentElement !== target || root.nextElementSibling !== bottom) target.insertBefore(root,bottom);
+    if(observedTarget!==target){resize.disconnect();observedTarget=target;if(target){resize.observe(target);for(const child of target.children)if(child!==root)resize.observe(child);}}
+    const previous=layoutMode;
+    layoutMode='hidden';layoutReason='sidebar-unrecognized';
+    if(!bottom||target.children.length<2){root.remove();return;}
+    if(root.parentElement!==target||root.nextElementSibling!==bottom)target.insertBefore(root,bottom);
+    root.style.display='none';
+    if(!section.children.length){layoutReason='disabled';return;}
+    // Measure the official layout WITHOUT our contribution, including text and fixed controls.
+    const rail=target.getBoundingClientRect(),css=getComputedStyle(target);
+    const zoom=rail.width/target.offsetWidth||1;
+    const gap=(parseFloat(css.rowGap)||0)*zoom;
+    let top=Math.max(0,rail.top)+(parseFloat(css.paddingTop)||0)*zoom;
+    const end=Math.min(innerHeight,rail.bottom,bottom.getBoundingClientRect().top);
+    const controls=[...target.querySelectorAll('button,a,[role=button],input,[tabindex]')].filter(e=>e!==root&&!root.contains(e)&&e.getClientRects().length);
+    for(const child of target.children){
+      if(child===root||child===bottom||getComputedStyle(child).display==='none')continue;
+      const style=getComputedStyle(child);
+      if(Number(style.flexGrow)===0)top=Math.max(top,child.getBoundingClientRect().bottom);
+      else {
+        const walker=document.createTreeWalker(child,NodeFilter.SHOW_TEXT);
+        for(let node=walker.nextNode();node;node=walker.nextNode())if(node.textContent.trim()){
+          const range=document.createRange();range.selectNodeContents(node);
+          for(const r of range.getClientRects())top=Math.max(top,r.bottom);
+        }
+        for(const e of controls)if(child.contains(e))top=Math.max(top,e.getBoundingClientRect().bottom);
+      }
     }
-    else root.remove();
+    const baseline=controls.map(e=>({e,r:e.getBoundingClientRect()}));
+    const budget=(end-top-2*gap)/zoom-8;
+    section.style.display='flex';section.style.maxHeight='none';section.style.overflowY='visible';compact.hidden=true;root.style.display='block';
+    const needed=section.getBoundingClientRect().height/zoom;
+    const full=needed+(previous==='full'?0:16)<=budget;
+    const scroll=!full&&budget>=(previous==='scroll'?120:136);
+    if(scroll){section.style.maxHeight=Math.floor(budget)+'px';section.style.overflowY='auto';}
+    if(!full&&!scroll){section.style.display='none';compact.hidden=false;}
+    compact.title=state.language==='en'?'Open usage overview':state.language==='zh-TW'?'開啟用量概覽':'打开用量概览';
+    compact.setAttribute('aria-label',compact.title);
+    compact.disabled=typeof window.__cqsOpenOverview!=='function';
+    const required=full?needed:scroll?Math.floor(budget):32;
+    const box=root.getBoundingClientRect();
+    const overlaps=(a,b)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
+    const safe=required<=budget&&box.top>=Math.max(0,rail.top)&&box.bottom<=Math.min(innerHeight,rail.bottom)&&baseline.every(({e,r})=>{
+      const now=e.getBoundingClientRect();
+      if(overlaps(box,now)||Math.abs(now.top-r.top)>1||Math.abs(now.left-r.left)>1)return false;
+      if(r.top>=0&&r.bottom<=innerHeight){const hit=document.elementFromPoint(now.x+now.width/2,now.y+now.height/2);if(!hit||!(hit===e||e.contains(hit)))return false;}
+      return true;
+    });
+    if(!safe){root.style.display='none';layoutReason='official-controls-priority';return;}
+    layoutMode=full?'full':scroll?'scroll':'compact';layoutReason=full?'available':scroll?'scroll-space':'limited-space';
   }
   const observer = new MutationObserver(records => {
-    const relevant=records.some(r=>r.target instanceof Element &&
+    const relevant=records.some(r=>r.target!==root && r.target instanceof Element &&
       (r.target.contains(root) || r.target.closest('aside.app-shell-left-panel,aside[data-testid="app-shell-floating-left-panel"]')));
     if(root.isConnected && !relevant) return;
-    if (scheduled) return;
-    scheduled = true;
-    requestAnimationFrame(() => { scheduled = false; if(window.__localCodexMeter) mount(); });
+    if(relevant||!root.isConnected)schedule();
   });
   const timer = setInterval(() => {
     if (Date.now() - heartbeat > 90000) return dispose();
-    mount(); render();
+    render(); mount();
   }, 15000);
   function dispose() {
-    clearInterval(timer); observer.disconnect(); root.remove();
+    disposed=true;clearInterval(timer); observer.disconnect();resize.disconnect();window.removeEventListener('resize',schedule);root.remove();
     delete window.__localCodexMeter;
   }
   window.__localCodexMeter = {
-    version:'0.11.1-beta.1',
+    version:'0.12.0-beta.1',
     controllerId:'local-codex-sidebar-meter-v1',
     receive(value) { state = value; heartbeat = Date.now(); render(); mount(); },
     dispose,
+    refreshLayout:schedule,
+    layout() { return {mode:layoutMode,reason:layoutReason}; },
     mounted() { return root.isConnected; }
   };
   observer.observe(document.documentElement, {
     childList:true, subtree:true, attributes:true,
     attributeFilter:['class','style','hidden','aria-hidden','data-settings-panel-slug']
   });
+  window.addEventListener('resize',schedule);
   render(); mount();
 })();

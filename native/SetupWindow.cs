@@ -22,14 +22,15 @@ internal sealed class SetupWindow : Form {
     internal SetupWindow(string destination,Action operation,Action launch,Func<string> detect=null,Action configure=null){
         original=Destination=destination;this.operation=operation;this.launch=launch;this.configure=configure;this.detect=detect??SetupSupport.FindCodex;
         Text="Codex Quota Sidebar by KEFEN";MeterTheme.Style(this,1000,710);
-        body=MeterTheme.Body();Controls.Add(body);var header=MeterTheme.Header("Setup","Windows 0.11.1-beta.1");Controls.Add(header);
+        body=MeterTheme.Body();Controls.Add(body);var header=MeterTheme.Header("Setup","Windows 0.12.0-beta.1");Controls.Add(header);
         rail=new Panel{Dock=DockStyle.Left,Width=190,Padding=new Padding(18,28,14,20),BackColor=Color.FromArgb(246,247,249)};Controls.Add(rail);
-        var list=new TableLayoutPanel{Dock=DockStyle.Top,ColumnCount=1,RowCount=4,Height=224};
+        var list=new TableLayoutPanel{Dock=DockStyle.Top,ColumnCount=1,RowCount=4,Height=184};
         string[] names={"Environment","Install location","Display options","Install and connect"};
-        for(int i=0;i<4;i++){list.RowStyles.Add(new RowStyle(SizeType.Absolute,56));steps[i]=MeterTheme.Label(names[i],10,MeterTheme.Muted);steps[i].Padding=new Padding(10,0,0,0);list.Controls.Add(steps[i]);}rail.Controls.Add(list);
-        var github=new LinkLabel{Text="GitHub",Dock=DockStyle.Bottom,Height=32};github.LinkClicked+=(s,e)=>System.Diagnostics.Process.Start(Locale.Repository);rail.Controls.Add(github);
-        var top=new Panel{Dock=DockStyle.Top,Height=110};title=MeterTheme.Label("",19,MeterTheme.Ink);title.Dock=DockStyle.Top;title.Height=48;
-        detail=MeterTheme.Label("",10,MeterTheme.Muted);detail.Dock=DockStyle.Top;detail.Height=58;top.Controls.Add(detail);top.Controls.Add(title);body.Controls.Add(top);
+        for(int i=0;i<4;i++){list.RowStyles.Add(new RowStyle(SizeType.Absolute,46));steps[i]=MeterTheme.Label(names[i],10,MeterTheme.Muted);steps[i].Padding=new Padding(10,0,0,0);list.Controls.Add(steps[i]);}rail.Controls.Add(list);
+        var version=MeterTheme.Label("v0.12.0-beta.1",8,MeterTheme.Muted);version.Dock=DockStyle.Bottom;version.Height=26;rail.Controls.Add(version);
+        var github=new LinkLabel{Text="About project",Dock=DockStyle.Bottom,Height=36,LinkColor=MeterTheme.Blue,LinkBehavior=LinkBehavior.HoverUnderline};github.LinkClicked+=(s,e)=>System.Diagnostics.Process.Start(Locale.Repository);rail.Controls.Add(github);github.BringToFront();
+        var top=new Panel{Dock=DockStyle.Top,Height=88};title=MeterTheme.Label("",18,MeterTheme.Ink);title.Dock=DockStyle.Top;title.Height=40;
+        detail=MeterTheme.Label("",10,MeterTheme.Muted);detail.Dock=DockStyle.Top;detail.Height=40;top.Controls.Add(detail);top.Controls.Add(title);body.Controls.Add(top);
         content=new Panel{Dock=DockStyle.Fill,AutoScroll=true};body.Controls.Add(content);content.BringToFront();
         var footer=MeterTheme.Footer();Controls.Add(footer);body.BringToFront();Controls.SetChildIndex(header,Controls.Count-1);
         install=MeterTheme.Button("install","Continue",true);install.Width=180;back=MeterTheme.Button("back","Back",false);close=MeterTheme.Button("cancel","Cancel",false);
@@ -46,19 +47,23 @@ internal sealed class SetupWindow : Form {
         if(step==0){
             title.Text=environmentReady?"Environment ready":"Checking environment";detail.Text="Official Microsoft Store Codex is required.";
             install.Text=environmentReady?"Continue":"Check again";
-            Note(environmentReady?"Codex was found. The meter installs separately.":"Checking the current user's Codex installation.",80);
-            Note("Run as a normal user. Administrator privileges are not required.",70);
-            Note("No sign-up or purchase for this tool. Records are optional.",70);
+            Note(environmentReady?"01 / Codex was found. The meter installs separately.":"Checking the current user's Codex installation.",52);
+            Note("02 / Run as a normal user. Administrator privileges are not required.",52);
+            Note("03 / No sign-up or purchase for this tool. Records are optional.",52);
         }else if(step==1){
             title.Text="Select install location";detail.Text="Upgrade in the original folder to preserve your settings.";install.Text="Check and continue";
-            var actions=new FlowLayoutPanel{Dock=DockStyle.Top,Height=50};
+            var actions=new FlowLayoutPanel{Dock=DockStyle.Top,Height=58,Padding=new Padding(0,10,0,10)};
             var browse=MeterTheme.Button("browse","Browse...",false);var reset=MeterTheme.Button("recommended","Recommended location",false);reset.Width=205;
             actions.Controls.Add(browse);actions.Controls.Add(reset);content.Controls.Add(actions);
             path=new TextBox{Name="destination",Text=Destination,Dock=DockStyle.Top};content.Controls.Add(path);
             var label=MeterTheme.Label("Install folder",10,MeterTheme.Ink);label.Dock=DockStyle.Top;label.Height=30;content.Controls.Add(label);
             browse.Click+=(s,e)=>{using(var picker=new FolderBrowserDialog{Description=Locale.T("Select install location"),SelectedPath=path.Text})if(picker.ShowDialog(this)==DialogResult.OK)path.Text=picker.SelectedPath;};reset.Click+=(s,e)=>path.Text=original;
             var note=MeterTheme.Label("The same disk as Codex is convenient, not required. Do not use WindowsApps.",10,MeterTheme.Muted);note.Dock=DockStyle.Bottom;note.Height=65;content.Controls.Add(note);
-            if(SetupSupport.Owned(Destination)&&SetupSupport.IsRunning(Destination)){var stop=MeterTheme.Button("stopOld","Exit old meter",false);stop.Width=150;actions.Controls.Add(stop);stop.Click+=(s,e)=>Run(()=>SetupSupport.StopOwned(Destination),()=>{error="Old meter stopped. Codex stays open.";Render();});}
+            if(SetupSupport.Owned(Destination)&&SetupSupport.IsRunning(Destination)){
+                var row=new FlowLayoutPanel{Dock=DockStyle.Top,Height=72,Padding=new Padding(0,12,0,8)};var info=MeterTheme.Label("Exit the old meter, then continue. Codex stays open.",9,MeterTheme.Muted);info.Dock=DockStyle.None;info.Width=390;info.Height=44;row.Controls.Add(info);
+                var stop=MeterTheme.Button("stopOld","Exit old meter",false);stop.Width=170;row.Controls.Add(stop);content.Controls.Add(row);row.BringToFront();
+                stop.Click+=(s,e)=>{if(MessageBox.Show(Locale.T("Quit the meter? Codex stays open."),Text,MessageBoxButtons.OKCancel,MessageBoxIcon.Question,MessageBoxDefaultButton.Button2)==DialogResult.OK)Run(()=>SetupSupport.StopOwned(Destination),()=>{error="Old meter stopped. Codex stays open.";Render();});};
+            }
         }else if(step==2){
             title.Text="Choose sidebar content";detail.Text="You can change these options later in Settings.";install.Text="Install";
             choices=DisplayOptions.List(Path.Combine(Destination,".runtime"));if(SelectedVisibility!=null)for(int i=0;i<DisplayOptions.Keys.Length;i++)choices.SetItemChecked(i,SelectedVisibility[DisplayOptions.Keys[i]]);
@@ -67,10 +72,10 @@ internal sealed class SetupWindow : Form {
             title.Text=complete?"Installed. Connect next.":failed?"Installation incomplete":"Installing";
             detail.Text=complete?"Installed files are ready. Codex is not connected yet.":"Verifying files and creating your shortcut.";
             install.Text=complete?"Connect Codex":"Reinstall";
-            Note(Destination,62);
-            Note("Work saved? Reconnecting may restart Codex with your consent.",65);
+            Note(Destination,44);
+            Note("Work saved? Reconnecting may restart Codex with your consent.",48);
             if(complete&&configure!=null){
-                Note("No sign-up or purchase for this tool. Records are optional.",65);
+                Note("No sign-up or purchase for this tool. Records are optional.",44);
                 var prefs=new LinkLabel{Name="membership",Text="Optional: record your Codex subscription",Dock=DockStyle.Top,Height=42};prefs.LinkClicked+=(s,e)=>configure();content.Controls.Add(prefs);prefs.BringToFront();
             }
             if(failed){back.Visible=true;back.Enabled=true;}

@@ -18,7 +18,7 @@ const run=(file,args)=>{
 const plist=(app,key)=>run('/usr/libexec/PlistBuddy',['-c',`Print :${key}`,join(app,'Contents/Info.plist')]);
 let ownsLock=false;
 try {
-  if(process.platform!=='darwin' || process.arch!=='arm64')throw new Error('This package requires Apple Silicon macOS.');
+  if(process.platform!=='darwin' || !['arm64','x64'].includes(process.arch))throw new Error('This package requires Intel or Apple Silicon macOS.');
   await mkdir(runtime,{recursive:true});
   if(process.argv.includes('--stop')){await writeFile(stop,'stop');process.exit(0);}
   if(!focusOnly){try{

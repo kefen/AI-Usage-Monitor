@@ -1,5 +1,33 @@
 import { validateTarget } from './core.mjs';
 
+// A fixed UI action only: no paths, commands or account data are accepted.
+export function watchOverview(target,port,onOpen,Socket=WebSocket){
+  if(!validateTarget(target,port))throw new Error('Refused untrusted debug target');
+  const socket=new Socket(target.webSocketDebuggerUrl);
+  let closed=false,lastOpen=0;
+  const timer=setTimeout(()=>close(),4000);
+  socket.addEventListener('open',()=>{
+    socket.send(JSON.stringify({id:1,method:'Runtime.enable'}));
+    socket.send(JSON.stringify({id:2,method:'Runtime.addBinding',params:{name:'__cqsOpenOverview'}}));
+  });
+  socket.addEventListener('message',event=>{
+    if(closed)return;
+    let message;try{message=JSON.parse(event.data);}catch{return;}
+    if(message.error){close();return;}
+    if(message.id===2){
+      clearTimeout(timer);
+      socket.send(JSON.stringify({id:3,method:'Runtime.evaluate',params:{expression:'window.__localCodexMeter?.refreshLayout?.()',returnByValue:true}}));
+    }
+    if(message.method!=='Runtime.bindingCalled'||message.params?.name!=='__cqsOpenOverview'||message.params?.payload!=='open-overview')return;
+    if(Date.now()-lastOpen<1000)return;
+    lastOpen=Date.now();Promise.resolve().then(onOpen).catch(()=>{});
+  });
+  function close(){if(closed)return;closed=true;clearTimeout(timer);if(socket.readyState<2)socket.close();}
+  socket.addEventListener('close',()=>{closed=true;clearTimeout(timer);});
+  socket.addEventListener('error',close);
+  return {close,active:()=>!closed};
+}
+
 export async function listTargets(port, fetcher = fetch) {
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Invalid local debug port');
   const response = await fetcher(`http://127.0.0.1:${port}/json/list`, {

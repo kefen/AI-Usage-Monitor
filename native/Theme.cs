@@ -27,12 +27,12 @@ internal static class MeterTheme {
     }
     internal static Label Label(string text,float size,Color color){return new Label{Text=text,Font=Font(size),ForeColor=color,AutoSize=false,TextAlign=ContentAlignment.MiddleLeft,Dock=DockStyle.Fill,UseMnemonic=false};}
     internal static Panel Header(string section,string version){
-        var panel=new Panel{Dock=DockStyle.Top,Height=92,Padding=new Padding(24,20,24,16),BackColor=Surface};
-        var icon=new PictureBox{Dock=DockStyle.Left,Width=48,SizeMode=PictureBoxSizeMode.Zoom};
+        var panel=new Panel{Dock=DockStyle.Top,Height=78,Padding=new Padding(24,15,24,12),BackColor=Surface};
+        var icon=new PictureBox{Dock=DockStyle.Left,Width=40,SizeMode=PictureBoxSizeMode.Zoom};
         try{using(var source=Image.FromFile(Asset("cqs-128.png")))icon.Image=new Bitmap(source);}catch{using(var stream=System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("brand.png")){if(stream!=null)using(var source=Image.FromStream(stream))icon.Image=new Bitmap(source);}}
         var words=new Panel{Dock=DockStyle.Fill,Padding=new Padding(16,0,0,0)};
-        var title=Label("Codex Quota Sidebar",16,Ink);title.Dock=DockStyle.Top;title.Height=31;
-        var caption=Label("by KEFEN  /  "+section+"  /  "+version,9,Muted);caption.Dock=DockStyle.Top;caption.Height=24;
+        var title=Label("Codex Quota Sidebar",14,Ink);title.Dock=DockStyle.Top;title.Height=27;
+        var caption=Label("by KEFEN  /  "+section,9,Muted);caption.Dock=DockStyle.Top;caption.Height=22;
         words.Controls.Add(caption);words.Controls.Add(title);panel.Controls.Add(words);panel.Controls.Add(icon);
         var language=Locale.Picker();language.Dock=DockStyle.Right;panel.Controls.Add(language);words.BringToFront();
         panel.Paint+=(s,e)=>{using(var pen=new Pen(Line))e.Graphics.DrawLine(pen,24,panel.Height-1,panel.Width-24,panel.Height-1);};

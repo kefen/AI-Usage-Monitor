@@ -10,6 +10,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var headline = NSTextField(labelWithString: CqsLocale.t("Connecting"))
     var detail = NSTextField(wrappingLabelWithString: CqsLocale.t("Waiting for client and data."))
     var rows: [NSTextField] = []
+    var displayChecks: [(String, NSButton)] = []
     var metricFields: [NSTextField] = []
     let languagePicker = NSPopUpButton()
     var retry: NSButton!
@@ -51,7 +52,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "yyyy-MM-dd"; return text.flatMap { f.date(from: $0) }
     }
     func applicationDidFinishLaunching(_ notification: Notification) {
-        do { try FileManager.default.createDirectory(at: runtime, withIntermediateDirectories: true) }
+        do { try Bootstrap.install(at: root); try FileManager.default.createDirectory(at: runtime, withIntermediateDirectories: true) }
         catch { alert(error.localizedDescription); NSApp.terminate(nil); return }
         if let languageData = try? JSONSerialization.data(withJSONObject: CqsLocale.language, options: [.fragmentsAllowed]) { try? languageData.write(to: runtime.appendingPathComponent("language.json"), options: .atomic) }
         NSApp.setActivationPolicy(.accessory)
@@ -69,7 +70,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         icon.widthAnchor.constraint(equalToConstant: 48).isActive = true; icon.heightAnchor.constraint(equalToConstant: 48).isActive = true
         let words = NSStackView(); words.orientation = .vertical; words.alignment = .leading; words.spacing = 4
         let title = NSTextField(labelWithString: "Codex Quota Sidebar"); title.font = .systemFont(ofSize: 21, weight: .regular)
-        let version = NSTextField(labelWithString: "macOS 0.3.1-alpha.1 · KEFEN"); version.textColor = .secondaryLabelColor
+        let version = NSTextField(labelWithString: "by KEFEN"); version.textColor = .secondaryLabelColor
         words.addArrangedSubview(title); words.addArrangedSubview(version); header.addArrangedSubview(icon); header.addArrangedSubview(words); container.addArrangedSubview(header)
         languagePicker.identifier = NSUserInterfaceItemIdentifier("language")
         languagePicker.addItems(withTitles: ["English", "简体中文", "繁體中文"])
@@ -80,11 +81,18 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let navigation = NSStackView(); navigation.orientation = .vertical; navigation.alignment = .leading; navigation.spacing = 14
         navigation.wantsLayer = true; navigation.layer?.backgroundColor = NSColor(calibratedWhite: 0.96, alpha: 1).cgColor
         navigation.edgeInsets = NSEdgeInsets(top: 18, left: 12, bottom: 18, right: 12)
-        for (label, action) in [("Usage overview", #selector(showStatus)), ("Sidebar content", #selector(showDisplay)), ("Codex subscription record", #selector(showSettings)), ("GitHub", #selector(openGitHub)), ("Exit software", #selector(stop))] { navigation.addArrangedSubview(button(label, action)) }
+        for (label, action) in [("Usage overview", #selector(showStatus)), ("Sidebar content", #selector(showDisplay)), ("Codex subscription record", #selector(showSettings)), ("Diagnostics", #selector(showHelp)), ("About project", #selector(showAbout))] { navigation.addArrangedSubview(button(label, action)) }
         navigation.widthAnchor.constraint(equalToConstant: 205).isActive = true
         body.orientation = .vertical; body.alignment = .leading; body.spacing = 14; split.addArrangedSubview(navigation); split.addArrangedSubview(body); container.addArrangedSubview(split)
         body.widthAnchor.constraint(equalTo: container.widthAnchor, constant: -283).isActive = true
         let spacer = NSView(); container.addArrangedSubview(spacer); spacer.setContentHuggingPriority(.defaultLow, for: .vertical)
+        let footer = NSStackView(); footer.spacing = 8
+        let build = NSTextField(labelWithString: "macOS 0.4.0-alpha.1"); build.textColor = .secondaryLabelColor
+        footer.addArrangedSubview(build)
+        let gap = NSView(); footer.addArrangedSubview(gap); gap.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        retry = button("Reconnect", #selector(reconnect))
+        footer.addArrangedSubview(button("Exit software", #selector(stop))); footer.addArrangedSubview(retry); footer.addArrangedSubview(button("Open Codex", #selector(openCodex), primary: true))
+        container.addArrangedSubview(footer); footer.widthAnchor.constraint(equalTo: container.widthAnchor, constant: -48).isActive = true
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let image = NSImage(contentsOf: root.appendingPathComponent("assets/tray-template.png")) { image.isTemplate = true; image.size = NSSize(width: 18, height: 18); statusItem.button?.image = image }
         statusItem.button?.toolTip = "Codex Quota Sidebar"
@@ -136,8 +144,6 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             column.addArrangedSubview(name); column.addArrangedSubview(value); metrics.addArrangedSubview(column); metricFields.append(value)
         }
         body.addArrangedSubview(metrics)
-        let commands = NSStackView(); commands.spacing = 8
-        retry = button(CqsLocale.t("Reconnect"), #selector(reconnect)); commands.addArrangedSubview(button(CqsLocale.t("Open Codex"), #selector(openCodex))); commands.addArrangedSubview(retry); commands.addArrangedSubview(button(CqsLocale.t("Settings"), #selector(showSettings))); commands.addArrangedSubview(button(CqsLocale.t("Exit software"), #selector(stop))); body.addArrangedSubview(commands)
         tick(); present()
     }
     @objc func showSettings() {
@@ -165,14 +171,47 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
     @objc func planChanged() { if ["business","enterprise","edu","free"].contains(planIDs[plan.indexOfSelectedItem]) { enabled.state = .off; mode.selectItem(at: 1) }; updateFields() }
     @objc func showDisplay() {
+        showingSettings = true; clear(); displayChecks = []
         let keys = ["plan","short","week","reset","renewal","daily","average","weekly","lifetime"]
         let labels = [CqsLocale.t("Plan badge"),CqsLocale.t("5-hour remaining"),CqsLocale.t("Weekly remaining"),CqsLocale.t("Quota reset"),CqsLocale.t("Renewal date"),CqsLocale.t("Daily tokens"),CqsLocale.t("Daily average"),CqsLocale.t("Weekly tokens"),CqsLocale.t("Lifetime tokens")]
         let values = read("display.json"), stack = NSStackView(); stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = 8
-        var checks: [NSButton] = []
-        for (key,label) in zip(keys,labels) { let check = NSButton(checkboxWithTitle: label, target: nil, action: nil); check.state = values[key] as? Bool == false ? .off : .on; checks.append(check); stack.addArrangedSubview(check) }
-        stack.frame = NSRect(x: 0,y: 0,width: 300,height: 270)
-        let dialog = NSAlert(); dialog.messageText = CqsLocale.t("Sidebar display content"); dialog.accessoryView = stack; dialog.addButton(withTitle: CqsLocale.t("Save")); dialog.addButton(withTitle: CqsLocale.t("Cancel"))
-        if dialog.runModal() == .alertFirstButtonReturn { var result: [String: Any] = [:]; for (key,check) in zip(keys,checks) { result[key] = check.state == .on }; do { try write("display.json",result) } catch { alert(error.localizedDescription) } }
+        paragraph("Sidebar display content")
+        for (key,label) in zip(keys,labels) { let check = NSButton(checkboxWithTitle: label, target: nil, action: nil); check.state = values[key] as? Bool == false ? .off : .on; displayChecks.append((key,check)); stack.addArrangedSubview(check) }
+        body.addArrangedSubview(stack)
+        paragraph("Official controls have priority. Scroll first; collapse only when space is very limited.")
+        body.addArrangedSubview(button("Save", #selector(saveDisplay), primary: true)); present()
+    }
+    @objc func saveDisplay() {
+        do { try write("display.json", Dictionary(uniqueKeysWithValues: displayChecks.map { ($0.0, $0.1.state == .on) })); showStatus() }
+        catch { alert(error.localizedDescription) }
+    }
+    func paragraph(_ text: String) {
+        let label = NSTextField(wrappingLabelWithString: CqsLocale.t(text)); label.font = .systemFont(ofSize: 13)
+        label.widthAnchor.constraint(lessThanOrEqualToConstant: 640).isActive = true; body.addArrangedSubview(label)
+    }
+    @objc func showHelp() {
+        showingSettings = true; clear(); paragraph("Diagnostics")
+        paragraph("1. Check that official Codex can chat. Enlarge the window if the sidebar is hidden, then reconnect.")
+        paragraph("2. Export diagnostics: version, system, connection state and error codes. No keys, chats, accounts or installation paths.")
+        paragraph("3. Review the file, describe how to reproduce the problem, then attach it to a GitHub issue. Hide personal information in screenshots.")
+        body.addArrangedSubview(button("Export diagnostics", #selector(exportDiagnostics)))
+        body.addArrangedSubview(button("Submit feedback on GitHub", #selector(openIssues)))
+        paragraph("No automatic uploads. You choose what to submit. A GitHub account is required to post an issue."); present()
+    }
+    @objc func exportDiagnostics() {
+        let dialog = NSSavePanel(); dialog.nameFieldStringValue = "Codex-Quota-Sidebar-diagnostics.json"
+        guard dialog.runModal() == .OK, let url = dialog.url else { return }
+        do {
+            let report: [String: Any] = ["version": "0.4.0-alpha.1", "platform": "macOS", "stage": stage, "monitorRunning": child?.isRunning == true, "exportedAt": ISO8601DateFormatter().string(from: Date())]
+            try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]).write(to: url, options: .atomic)
+        } catch { alert(error.localizedDescription) }
+    }
+    @objc func openIssues() { NSWorkspace.shared.open(URL(string: "https://github.com/kefen/codex-quota-sidebar/issues/new")!) }
+    @objc func showAbout() {
+        showingSettings = true; clear(); paragraph("About project"); paragraph("Codex Quota Sidebar by KEFEN")
+        paragraph("Unofficial software. Not affiliated with or endorsed by OpenAI.")
+        paragraph("Author: KEFEN / License: MIT")
+        body.addArrangedSubview(button("Visit GitHub project", #selector(openGitHub))); present()
     }
     @objc func skip() { enabled.state = .off; save() }
     @objc func save() {

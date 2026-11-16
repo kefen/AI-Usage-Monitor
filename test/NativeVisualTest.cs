@@ -37,6 +37,13 @@ internal static class NativeVisualTest {
                 Capture(window,"overview-"+language);
             }
             Locale.Set("en");
+            foreach(string section in new[]{"Sidebar content","Codex subscription record","Data and settings","Diagnostics","About project","Usage overview"}){
+                var buttons=window.Controls.Find(section,true);Assert(buttons.Length==1,"Missing navigation: "+section);
+                ((Button)buttons[0]).PerformClick();Application.DoEvents();
+                int topLevel=0;foreach(Form f in Application.OpenForms)if(f.TopLevel&&f.Visible)topLevel++;
+                Assert(topLevel==1,"Navigation opened a separate top-level window");
+                Capture(window,"page-"+section.Replace(" ","-"));
+            }
             ((Button)window.Controls.Find("openCodex",true)[0]).PerformClick();Assert(opens==1,"Open action not dispatched");
             window.Feedback("Activation requested");window.UpdateState("mounted",new Dictionary<string,object>());Assert(window.Controls.Find("statusDetail",true)[0].Text=="Activation requested","Polling erased action feedback");
             window.Scale(new SizeF(1.5f,1.5f));Capture(window,"connected-150");window.Finish();

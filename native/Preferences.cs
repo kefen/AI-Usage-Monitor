@@ -25,15 +25,17 @@ internal static class MeterPreferences {
         if(Value(prefs,"setupComplete","")!="True")Edit(root);
         return true;
     }
-    internal static void Edit(string root){
+    internal static void Edit(string root){using(var form=Create(root,false))form.ShowDialog();}
+    internal static Form Create(string root,bool embedded){
         Directory.CreateDirectory(root);
         var data=Read(Path.Combine(root,"membership.json"));
-        using(var form=new Form()){
+        {
+            var form=new Form();
             form.Text=Locale.T("Codex Quota Sidebar - Settings");MeterTheme.Style(form,900,640);form.MinimizeBox=false;
-            var body=MeterTheme.Body();form.Controls.Add(body);form.Controls.Add(MeterTheme.Header(Locale.T("Codex subscription record"),"Windows 0.11.1-beta.1"));
-            var grid=new TableLayoutPanel{Dock=DockStyle.Fill,Padding=new Padding(0),ColumnCount=2,RowCount=8};
-            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,180));grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
-            for(int i=0;i<8;i++)grid.RowStyles.Add(new RowStyle(SizeType.Absolute,42));body.Controls.Add(grid);
+            var body=MeterTheme.Body();form.Controls.Add(body);if(!embedded)form.Controls.Add(MeterTheme.Header(Locale.T("Codex subscription record"),"Windows"));else body.Padding=new Padding(0);
+            var grid=new TableLayoutPanel{Dock=DockStyle.Top,Height=270,Padding=new Padding(0),ColumnCount=2,RowCount=5};
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,145));grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
+            for(int i=0;i<5;i++)grid.RowStyles.Add(new RowStyle(SizeType.Absolute,48));body.Controls.Add(grid);
             var optional=MeterTheme.Label(Locale.T("No sign-up or purchase for this tool. Records are optional."),10,MeterTheme.Muted);optional.Dock=DockStyle.Top;optional.Height=46;body.Controls.Add(optional);grid.BringToFront();
             var enabled=new CheckBox{Name="membershipEnabled",Text=Locale.T("Show Codex renewal date"),AutoSize=true,Checked=data.Count>0&&Value(data,"enabled","True")!="False"};
             grid.Controls.Add(enabled,0,0);grid.SetColumnSpan(enabled,2);
@@ -53,15 +55,9 @@ internal static class MeterPreferences {
             if(DateTime.TryParse(Value(data,"date",""),out date))next.Value=date;
             grid.Controls.Add(new Label{Text=Locale.T("Renewal / expiry"),AutoSize=true},0,4);grid.Controls.Add(next,1,4);
             Action update=()=>{bool free=ids[plan.SelectedIndex]=="free";enabled.Enabled=!free;if(free)enabled.Checked=false;if(mode.SelectedIndex==3&&ids[plan.SelectedIndex]!="business")mode.SelectedIndex=1;purchase.Enabled=mode.Enabled=enabled.Checked;next.Enabled=enabled.Checked&&mode.SelectedIndex!=0&&mode.SelectedIndex!=3;if(mode.SelectedIndex==0)next.Value=purchase.Value.AddMonths(1);if(mode.SelectedIndex==3)next.Value=purchase.Value.AddYears(1);};
-            plan.SelectedIndexChanged+=(s,e)=>{if(new[]{"business","enterprise","edu","free"}.Contains(ids[plan.SelectedIndex])){enabled.Checked=false;mode.SelectedIndex=1;}};
+            plan.SelectedIndexChanged+=(s,e)=>{if(Locale.IsTranslating||plan.SelectedIndex<0)return;if(new[]{"business","enterprise","edu","free"}.Contains(ids[plan.SelectedIndex])){enabled.Checked=false;mode.SelectedIndex=1;}};
             Action guardMode=()=>{if(new[]{"enterprise","edu"}.Contains(ids[plan.SelectedIndex])&&mode.SelectedIndex==0)mode.SelectedIndex=1;};
             enabled.CheckedChanged+=(s,e)=>{guardMode();update();};mode.SelectedIndexChanged+=(s,e)=>{guardMode();update();};purchase.ValueChanged+=(s,e)=>update();guardMode();update();
-            var reset=MeterTheme.Button("clearHistory",Locale.T("Clear observation history"),false);reset.Width=215;reset.Margin=new Padding(0,0,0,0);
-            var result=MeterTheme.Label("",9,MeterTheme.Green);result.Name="clearResult";
-            var display=MeterTheme.Button("display",Locale.T("Sidebar items"),false);display.Width=130;display.Click+=(s,e)=>DisplayOptions.Edit(root);grid.Controls.Add(display,0,5);
-            reset.Click+=(s,e)=>{File.WriteAllText(Path.Combine(root,"clear-history.request"),"clear");result.Text=Locale.T("Clear request sent");};grid.Controls.Add(reset,1,5);grid.Controls.Add(result,1,6);
-            var backup=MeterTheme.Button("backupSettings",Locale.T("Backup settings"),false);backup.Click+=(s,e)=>SettingsTransfer.Export(root);grid.Controls.Add(backup,0,7);
-            var restore=MeterTheme.Button("restoreSettings",Locale.T("Restore settings"),false);restore.Width=160;backup.Width=160;restore.Click+=(s,e)=>{if(SettingsTransfer.Import(root)){form.Close();Edit(root);}};grid.Controls.Add(restore,1,7);
             foreach(Control control in grid.Controls){if(control is Label)control.ForeColor=MeterTheme.Muted;if(control is ComboBox || control is DateTimePicker)control.Margin=new Padding(0,4,0,6);}
             var buttons=MeterTheme.Footer();form.Controls.Add(buttons);body.BringToFront();
             var save=MeterTheme.Button("save",Locale.T("Save"),true);var skip=MeterTheme.Button("skip",Locale.T("Skip / hide"),false);var cancel=MeterTheme.Button("cancel",Locale.T("Cancel"),false);cancel.DialogResult=DialogResult.Cancel;buttons.Controls.Add(save);buttons.Controls.Add(skip);buttons.Controls.Add(cancel);form.CancelButton=cancel;form.AcceptButton=save;
@@ -76,7 +72,16 @@ internal static class MeterPreferences {
                     var prefs=Read(Path.Combine(root,"preferences.json"));prefs["setupComplete"]=true;Save(Path.Combine(root,"preferences.json"),prefs);form.DialogResult=DialogResult.OK;form.Close();
                 }catch(Exception ex){MeterTheme.Error(ex.Message);}
             };
-            save.Click+=(s,e)=>persist(enabled.Checked);skip.Click+=(s,e)=>persist(false);form.ShowDialog();
+            bool dirty=false;
+            foreach(Control c in new Control[]{enabled,plan,purchase,mode,next}){
+                var cb=c as CheckBox;if(cb!=null)cb.CheckedChanged+=(s,e)=>{if(!Locale.IsTranslating)dirty=true;};
+                var combo=c as ComboBox;if(combo!=null)combo.SelectedIndexChanged+=(s,e)=>{if(!Locale.IsTranslating)dirty=true;};
+                var datePicker=c as DateTimePicker;if(datePicker!=null)datePicker.ValueChanged+=(s,e)=>{if(!Locale.IsTranslating)dirty=true;};
+            }
+            form.Tag=new Func<bool>(()=>!dirty||MessageBox.Show(Locale.T("Discard unsaved changes?"),"Codex Quota Sidebar",MessageBoxButtons.OKCancel,MessageBoxIcon.Question,MessageBoxDefaultButton.Button2)==DialogResult.OK);
+            save.Click+=(s,e)=>persist(enabled.Checked);skip.Click+=(s,e)=>persist(false);
+            form.FormClosing+=(s,e)=>{if(form.DialogResult!=DialogResult.OK&&dirty&&!((Func<bool>)form.Tag)())e.Cancel=true;};
+            return form;
         }
     }
 }

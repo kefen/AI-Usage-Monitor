@@ -48,7 +48,7 @@ internal static class TrayHost {
     }
     static void Report() {
         using(var self=Process.GetCurrentProcess()) {
-            var data=new Dictionary<string,object>{{"version","0.11.1-beta.1"},{"stage",stage},{"pid",self.Id},{"monitorPid",child==null?0:child.Id},{"host","native"},{"workingSetBytes",self.WorkingSet64},{"cpuSeconds",self.TotalProcessorTime.TotalSeconds},{"updatedAt",DateTime.UtcNow.ToString("o")}};
+            var data=new Dictionary<string,object>{{"version","0.12.0-beta.1"},{"stage",stage},{"pid",self.Id},{"monitorPid",child==null?0:child.Id},{"host","native"},{"workingSetBytes",self.WorkingSet64},{"cpuSeconds",self.TotalProcessorTime.TotalSeconds},{"updatedAt",DateTime.UtcNow.ToString("o")}};
             if(!preparing && child!=null && !child.HasExited){child.Refresh();data["nodeWorkingSetBytes"]=child.WorkingSet64;data["nodeCpuSeconds"]=child.TotalProcessorTime.TotalSeconds;}
             File.WriteAllText(Path.Combine(Runtime,"background.json"),Json.Serialize(data),Encoding.UTF8);
         }
@@ -114,13 +114,13 @@ internal static class TrayHost {
                 child=Launch(node,Q(Path.Combine(Root,"src\\cli.mjs"))+" attach --port "+port+" --codex "+Q(cli)+" --stop-file "+Q(StopPath));
                 preparing=false;stage="running";Report();
             }
-            if(File.Exists(OpenPath)){File.Delete(OpenPath);window.Present();}
+            if(File.Exists(OpenPath)){File.Delete(OpenPath);autoHidden=true;window.Present();}
             string reconnectRequest=Path.Combine(Runtime,"reconnect.request");
             if(File.Exists(reconnectRequest)){File.Delete(reconnectRequest);Reconnect();return;}
             string focusRequest=Path.Combine(Runtime,"focus.request");
             if(File.Exists(focusRequest)){File.Delete(focusRequest);OpenCodex();}
             string settings=Path.Combine(Runtime,"settings.request");
-            if(File.Exists(settings)){File.Delete(settings);MeterPreferences.Edit(Runtime);}
+            if(File.Exists(settings)){File.Delete(settings);window.ShowPage("Codex subscription record");window.Present();}
             if(!preparing && child!=null && !stopping){
                 Dictionary<string,object> state=null;try{state=Read("status.json");}catch{}
                 DateTime updated;
@@ -155,7 +155,7 @@ internal static class TrayHost {
                 tray=new NotifyIcon{Icon=MeterTheme.TrayIcon(),Text=Title,Visible=true};
                 var menu=new ContextMenuStrip();
                 menu.Items.Add(Locale.T("Open Codex"),null,(s,e)=>OpenCodex());
-                menu.Items.Add(Locale.T("Settings"),null,(s,e)=>MeterPreferences.Edit(Runtime));
+                menu.Items.Add(Locale.T("Settings"),null,(s,e)=>{window.ShowPage("Codex subscription record");window.Present();});
                 menu.Items.Add(Locale.T("Refresh data"),null,(s,e)=>File.WriteAllText(Path.Combine(Runtime,"refresh.request"),"refresh"));
                 menu.Items.Add(Locale.T("View status"),null,(s,e)=>window.Present());
                 menu.Items.Add(Locale.T("Exit software"),null,(s,e)=>Stop());

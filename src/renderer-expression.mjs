@@ -8,6 +8,6 @@ export function rendererExpression(widget, state) {
     if (!mainShell) return { mounted:false, reason:'not-main-shell' };
     ${widget}
     window.__localCodexMeter.receive(${JSON.stringify(state)});
-    return { mounted:window.__localCodexMeter.mounted(), reason:'sidebar-check' };
+    return { mounted:window.__localCodexMeter.mounted(), reason:'sidebar-check', layout:window.__localCodexMeter.layout?.() };
   })()`;
 }

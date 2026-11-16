@@ -1,5 +1,15 @@
 # Changelog
 
+## Windows 0.11.2-beta.1 (local candidate, awaiting user acceptance)
+
+- Measure official navigation controls before allocating sidebar space.
+- Collapse to a quota icon or hide safely when controls need the space; restore automatically.
+- Open the native usage overview through a fixed, local-only CDP action.
+- Report compact/hidden states in English, Simplified Chinese and Traditional Chinese.
+- Cover update buttons, small windows, 100-200% scaling and layout changes with browser tests.
+- macOS Intel/Apple Silicon packaging and other Windows targets are deferred until Windows acceptance.
+- No GitHub publication or installed-user configuration changes in this candidate build.
+
 ## Windows 0.11.1-beta.1 / macOS 0.3.1-alpha.1 / Chrome 0.2.1
 
 - Standardize all current first-party attribution and native messaging on KEFEN.
