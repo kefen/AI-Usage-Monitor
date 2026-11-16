@@ -96,6 +96,8 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let title = NSTextField(labelWithString: "Codex Quota Sidebar"); title.font = .systemFont(ofSize: 21, weight: .regular)
         let version = NSTextField(labelWithString: "by KEFEN"); version.textColor = .secondaryLabelColor
         words.addArrangedSubview(title); words.addArrangedSubview(version); header.addArrangedSubview(icon); header.addArrangedSubview(words); container.addArrangedSubview(header)
+        header.widthAnchor.constraint(equalTo: container.widthAnchor, constant: -48).isActive = true
+        let headerGap = NSView(); header.addArrangedSubview(headerGap); headerGap.setContentHuggingPriority(.defaultLow, for: .horizontal)
         languagePicker.identifier = NSUserInterfaceItemIdentifier("language")
         languagePicker.addItems(withTitles: ["English", "简体中文", "繁體中文"])
         languagePicker.selectItem(at: CqsLocale.language == "en" ? 0 : CqsLocale.language == "zh-CN" ? 1 : 2)
@@ -197,7 +199,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
     @objc func showSettings() {
         guard beginPage("subscription") else { return }; showingSettings = true; let member = read("membership.json")
-        paragraph("Codex subscription record"); paragraph("No sign-up or purchase for this tool. Records are optional.")
+        heading("Codex subscription record"); paragraph("No sign-up or purchase for this tool. Records are optional.")
         enabled.state = member["enabled"] as? Bool == true ? .on : .off; enabled.target = self; enabled.action = #selector(updateFields); body.addArrangedSubview(enabled)
         plan.removeAllItems(); plan.addItems(withTitles: ["Plus",CqsLocale.t("Pro / unknown tier"),"Pro 100","Pro 200","Pro 500",CqsLocale.t("Business / unknown seat"),"Business Standard","Business Premium","Enterprise","Edu","Free","Go",CqsLocale.t("Other / unknown")])
         let index = planIDs.indices.first { planIDs[$0] == (member["plan"] as? String) && (planTiers[$0] == (member["tier"] as? String ?? "unknown") || planTiers[$0].isEmpty) } ?? 12
@@ -226,7 +228,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let keys = ["plan","short","week","reset","renewal","daily","average","weekly","lifetime"]
         let labels = [CqsLocale.t("Plan badge"),CqsLocale.t("5-hour remaining"),CqsLocale.t("Weekly remaining"),CqsLocale.t("Quota reset"),CqsLocale.t("Renewal date"),CqsLocale.t("Daily tokens"),CqsLocale.t("Daily average"),CqsLocale.t("Weekly tokens"),CqsLocale.t("Lifetime tokens")]
         let values = read("display.json"), stack = NSStackView(); stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = 8
-        paragraph("Sidebar display content")
+        heading("Sidebar display content")
         for (key,label) in zip(keys,labels) { let check = NSButton(checkboxWithTitle: label, target: self, action: #selector(markDirty)); check.state = values[key] as? Bool == false ? .off : .on; displayChecks.append((key,check)); stack.addArrangedSubview(check) }
         body.addArrangedSubview(stack)
         paragraph("Official controls have priority. Scroll first; collapse only when space is very limited.")
@@ -241,8 +243,11 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let label = NSTextField(wrappingLabelWithString: CqsLocale.t(text)); label.font = .systemFont(ofSize: 13)
         label.widthAnchor.constraint(lessThanOrEqualToConstant: 640).isActive = true; body.addArrangedSubview(label)
     }
+    func heading(_ text: String) {
+        let label = NSTextField(labelWithString: CqsLocale.t(text)); label.font = .systemFont(ofSize: 24, weight: .regular); body.addArrangedSubview(label)
+    }
     @objc func showHelp() {
-        guard beginPage("help") else { return }; showingSettings = true; paragraph("Diagnostics")
+        guard beginPage("help") else { return }; showingSettings = true; heading("Diagnostics")
         paragraph("1. Check that official Codex can chat. Enlarge the window if the sidebar is hidden, then reconnect.")
         paragraph("2. Export diagnostics: version, system, connection state and error codes. No keys, chats, accounts or installation paths.")
         paragraph("3. Review the file, describe how to reproduce the problem, then attach it to a GitHub issue. Hide personal information in screenshots.")
@@ -251,7 +256,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         paragraph("No automatic uploads. You choose what to submit. A GitHub account is required to post an issue."); present()
     }
     @objc func showData() {
-        guard beginPage("data") else { return }; showingSettings = true; paragraph("Data and settings")
+        guard beginPage("data") else { return }; showingSettings = true; heading("Data and settings")
         paragraph("Export display choices, language and your manually recorded subscription.")
         body.addArrangedSubview(button("Backup settings", #selector(backupSettings)))
         paragraph("Select a backup and confirm before replacing your current settings.")
@@ -295,7 +300,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
     @objc func openIssues() { NSWorkspace.shared.open(URL(string: "https://github.com/kefen/codex-quota-sidebar/issues/new")!) }
     @objc func showAbout() {
-        guard beginPage("about") else { return }; showingSettings = true; paragraph("About project"); paragraph("Codex Quota Sidebar by KEFEN")
+        guard beginPage("about") else { return }; showingSettings = true; heading("About project"); paragraph("Codex Quota Sidebar by KEFEN")
         paragraph("Local, read-only quota and Token indicators in the Codex sidebar. Choose the metrics you need; official controls always have priority.")
         paragraph("Unofficial software. Not affiliated with or endorsed by OpenAI.")
         paragraph("Author: KEFEN / License: MIT")
