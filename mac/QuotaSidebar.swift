@@ -48,6 +48,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var runtimeProbe: RuntimeProbe?
     var runtimeReady = false
     var runtimeIssue = false
+    var runtimeAction: NSButton?
     var feedback = ""
     var feedbackUntil = Date.distantPast
     func notify(_ message: String) { feedback = message; feedbackUntil = Date().addingTimeInterval(10); detail.stringValue = message; present() }
@@ -351,8 +352,10 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         stage = "checking"; runtimeIssue = false
         feedbackUntil = .distantPast; errorText = ""; tick()
         let probe = RuntimeProbe(); runtimeProbe = probe; retry.isEnabled = false
+        runtimeAction?.title = CqsLocale.t("Checking runtime"); runtimeAction?.isEnabled = false
         probe.run(root.appendingPathComponent("runtime/node")) { [weak self] outcome in
             guard let self = self else { return }; self.runtimeProbe = nil
+            self.runtimeAction?.title = CqsLocale.t("Check runtime and connect"); self.runtimeAction?.isEnabled = true
             if outcome == .ready {
                 self.runtimeReady = true; self.runtimeIssue = false
                 self.stage = previousStage == "checking" ? "stopped" : previousStage
@@ -376,7 +379,8 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         paragraph("2. After a system warning, review the exact item in System Settings > Privacy & Security. If available, choose Open Anyway only if you trust it.")
         paragraph("3. Return here and check the runtime again. Do not disable system protections or grant unrelated permissions.")
         authorizationButtons()
-        body.addArrangedSubview(button("Check runtime and connect", #selector(start), primary: true)); present()
+        runtimeAction = button("Check runtime and connect", #selector(start), primary: true)
+        body.addArrangedSubview(runtimeAction!); present()
     }
     func authorizationButtons() {
         let actions = NSStackView(); actions.spacing = 12

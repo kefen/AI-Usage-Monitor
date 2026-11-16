@@ -149,3 +149,14 @@
 - Package both native Mac architectures; explicitly retain experimental status
   and disclose the official client's Intel compatibility prerequisite.
 - Update illustrated English documentation and checksummed release automation.
+
+# macOS 0.4.2-alpha.1 test candidate
+
+- Preserve upstream Node.js bytes and Developer ID signature instead of replacing
+  them with an ad-hoc signature. Verify the Node.js publisher during the build.
+- Bundle an offline Simplified Chinese / Traditional Chinese / English installation
+  guide in the DMG and the app; show security guidance before first connection.
+- Probe Node startup before running the monitor; distinguish missing/failed/timed-out
+  runtime from Codex connection errors and restore retry controls.
+- Restore a missing runtime during reinstall; keep Windows and Chrome release
+  versions unchanged. Apple notarization and real-account acceptance remain pending.

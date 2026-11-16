@@ -104,6 +104,20 @@ only when space is severely constrained.
 
 ## macOS Experimental Installation
 
+**0.4.1 known issue:** the app can open while its bundled `node` runtime is blocked
+by Gatekeeper. This does not prove the official Codex client's signature is wrong.
+The 0.4.2 test candidate preserves Node's upstream signature and adds runtime checks.
+It is not a notarized release and still needs real-machine acceptance.
+
+Read [the offline three-language installation guide](../mac/READ-ME-FIRST.html).
+It is also included at the root of the new DMG as `READ-ME-FIRST.html` and inside
+the app via **Installation and approval guide**. After verifying the exact item,
+source and integrity, you can review the available per-item approval in Privacy
+& Security. The app and `node` may be separate items. Never approve a malware or
+damage warning; do not disable security controls. After handling a runtime prompt,
+return to the panel and select Reconnect. Runtime failures have a distinct code,
+such as E_RUNTIME_START, E_RUNTIME_MISSING or E_RUNTIME_TIMEOUT.
+
 Choose `arm64` for Apple Silicon or `x86_64` for Intel. Open the DMG, drag
 Codex Quota Sidebar into Applications, then open it. Keep the application there;
 do not run from the mounted disk image. The first run creates its private payload
