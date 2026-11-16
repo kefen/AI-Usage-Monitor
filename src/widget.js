@@ -48,7 +48,7 @@
     '以订阅页面为准。不自动顺延。':['Check your subscription page. Not automatically rolled forward.','以訂閱頁面為準。不自動順延。'],
     '会员日期未设置，不从周额度推测':['Subscription date not set; never inferred from weekly quota','訂閱日期未設定，不從週額度推測'],
     '积分无限制（不代表时段额度无限）':['Unlimited credits (not unlimited quota windows)','點數無限制（不代表時段額度無限）'],
-    '余额':['Credits','餘額'],'重置次数':['Resets','重設次數'],'积分余额':['Credit balance','點數餘額'],'可用额度重置次数':['Available quota resets','可用額度重設次數'],
+    '余额':['Credits','餘額'],'次数':['Resets','次數'],'积分余额':['Credit balance','點數餘額'],'可用额度重置次数':['Available quota resets','可用額度重設次數'],
     '仅展示，不自动使用':['Display only; never used automatically','僅顯示，不自動使用'],
     '暂无可用每日 Token 数据，已隐藏日用量':['No daily Token data; daily metric hidden','暫無可用每日 Token 資料，已隱藏日用量'],
     '本机首次观测':['First observed locally','本機首次觀測'],'上次尚未返回':['Last observed absent','上次尚未回傳'],
@@ -113,7 +113,7 @@
     }
     if(visible('resetCredits')) {
       const block=text('div','','window');block.dataset.metric='resetCredits';
-      block.append(text('div','\u91cd\u7f6e\u6b21\u6570','label'),text('div',!['expired','unavailable'].includes(freshness)&&Number.isSafeInteger(state.resetCredits)?String(state.resetCredits):'--','value'));
+      block.append(text('div','\u6b21\u6570','label'),text('div',!['expired','unavailable'].includes(freshness)&&Number.isSafeInteger(state.resetCredits)?String(state.resetCredits):'--','value'));
       block.title='Available quota resets; read-only. No reset is performed.';section.append(block);
     }
     for (const bucket of buckets) {

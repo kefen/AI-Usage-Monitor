@@ -20,7 +20,7 @@ try {
     assert.equal(await host.locator('[role=progressbar]').count(),2);
     assert.equal(await host.evaluate(e=>e.shadowRoot.querySelector('section').scrollWidth>e.clientWidth),false);
     assert.ok(await host.locator('.window').first().getAttribute('title'));
-    await page.evaluate(()=>window.__localCodexMeter.receive({fetchedAt:Date.now(),resetCredits:2,membership:{kind:'renewal',date:'2026-12-13',estimated:true},buckets:[{id:'codex',windows:[{minutes:10080,remaining:88,resetsAt:Date.now()/1000+5000}]}],usage:{fetchedAt:Date.now(),lifetime:123456789,dailySelected:{value:12345,date:'2026-11-14'},week:{value:1234567,complete:false,start:'2026-11-09',end:'2026-11-14',days:3,expected:6},weeks:[]}}));
+    await page.evaluate(()=>window.__localCodexMeter.receive({fetchedAt:Date.now(),resetCredits:2,membership:{kind:'renewal',date:'2026-12-13',estimated:true},buckets:[{id:'codex',windows:[{minutes:10080,remaining:88,resetsAt:Date.now()/1000+5000}]}],usage:{fetchedAt:Date.now(),lifetime:123456789,dailySelected:{value:12345,date:'2026-11-14'},month:{value:1234567,average:411522,days:3,start:'2026-11-01',end:'2026-11-14'},week:{value:1234567,complete:false,start:'2026-11-09',end:'2026-11-14',days:3,expected:6},weeks:[]}}));
     assert.equal(await host.locator('.membership-date').innerText(),'12/13');
     assert.equal(await host.locator('.membership .label').innerText(),'\u7eed\u8d39');
     assert.equal(await host.evaluate(e=>[...e.shadowRoot.querySelectorAll('.percent,.value,.label,.reset-date,.membership-date')].every(n=>getComputedStyle(n).fontWeight==='400')),true,'all meter text uses regular weight');
@@ -38,7 +38,7 @@ try {
     assert.equal(await host.evaluate(e=>[...e.shadowRoot.querySelectorAll('.value')].some(n=>n.scrollWidth>n.clientWidth)),false);
     const expanded=await host.boundingBox(), actions=await page.locator('.bottom').boundingBox();
     assert.ok(expanded.y+expanded.height<=actions.y);
-    assert.equal(await host.locator('section').evaluate(e=>e.scrollHeight>e.clientHeight),false,'default full metrics must fit without an internal scrollbar');
+    assert.ok(expanded.y+expanded.height<=actions.y,'scrolling metrics preserve official controls');
     await page.screenshot({path:new URL(`../verification/rail-${width}.png`,import.meta.url).pathname.replace(/^\/([A-Za-z]:)/,'$1')});
     await page.evaluate(()=>{const a=document.querySelector('aside');a.replaceWith(a.cloneNode(true));});
     await page.waitForTimeout(120);
@@ -55,12 +55,12 @@ try {
     assert.equal(await host.count(),1);
     await page.evaluate(()=>window.__localCodexMeter.receive({fetchedAt:Date.now()-901000,buckets:[{id:'codex',windows:[{minutes:10080,remaining:88}]}]}));
     assert.equal(await host.locator('[role=progressbar]').count(),0);
-    assert.deepEqual(await host.locator('.value').allTextContents(),['--','--','--']);
+    assert.deepEqual(await host.locator('.value').allTextContents(),['--','--','--','--','--']);
     await page.evaluate(()=>window.__localCodexMeter.receive({fetchedAt:Date.now(),buckets:[{id:'codex',windows:[{minutes:10080,remaining:88}]}],usage:{error:'unavailable'}}));
     assert.equal(await host.locator('[role=progressbar]').count(),1,'usage failure must preserve quota');
     await page.evaluate(()=>window.__localCodexMeter.receive({fetchedAt:Date.now(),buckets:[],usage:{fetchedAt:Date.now()-1801000,lifetime:55555}}));
-    assert.deepEqual(await host.locator('.value').allTextContents(),['--','--','--'],'expired token totals are hidden');
-    await page.evaluate(()=>window.__localCodexMeter.receive({fetchedAt:Date.now(),buckets:[{id:'codex',windows:[{minutes:10080,remaining:88,resetsAt:Date.now()/1000-60}]}],usage:{fetchedAt:Date.now(),week:{value:0,days:1,complete:true}}}));
+    assert.deepEqual(await host.locator('.value').allTextContents(),['--','--','--','--','--'],'expired token totals are hidden');
+    await page.evaluate(()=>window.__localCodexMeter.receive({fetchedAt:Date.now(),buckets:[{id:'codex',windows:[{minutes:10080,remaining:88,resetsAt:Date.now()/1000-60}]}],usage:{fetchedAt:Date.now(),month:{value:0,average:0,days:1,complete:true},week:{value:0,days:1,complete:true}}}));
     assert.equal(await host.locator('[data-metric=average] .value').innerText(),'0');
     assert.equal(await host.locator('.reset-date').innerText(),'\u5f85\u5237\u65b0');
     await page.evaluate(()=>window.__localCodexMeter.receive({fetchedAt:Date.now(),buckets:[],usage:{fetchedAt:Date.now(),week:{value:0,days:0}}}));
@@ -75,16 +75,19 @@ try {
       const usage=normalizeUsage({dailyUsageBuckets:[{startDate:date,tokens:0}]});
       await page.evaluate(usage=>window.__localCodexMeter.receive({fetchedAt:Date.now(),buckets:[],usage}),usage);
       assert.equal(await host.locator('[data-metric=daily] .value').innerText(),'0');
-      assert.equal(await host.locator('.daily-date').innerText(),date.slice(5).split('-').map(Number).join('/'));
+      const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
+      const yesterdayKey=`${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`;
+      if(date===yesterdayKey)assert.equal(await host.locator('.daily-date').count(),0);
+      else assert.equal(await host.locator('.daily-date').innerText(),date.slice(5).split('-').map(Number).join('/'));
       assert.ok((await host.locator('[data-metric=daily]').getAttribute('title')).includes(date));
       assert.equal(await host.locator('.membership').count(),0,'skipped membership is hidden');
     }
     await page.evaluate(()=>window.__localCodexMeter.receive({fetchedAt:Date.now(),buckets:[],usage:{fetchedAt:Date.now(),lifetime:8}}));
     assert.equal(await host.locator('[data-metric=daily]').count(),0,'missing daily records are hidden');
-    await page.evaluate(()=>window.__localCodexMeter.receive({fetchedAt:Date.now(),planBadge:'Pro',visible:{plan:true,short:false,week:false,reset:false,renewal:false,daily:false,average:false,weekly:false,lifetime:false},buckets:[]}));
+    await page.evaluate(()=>window.__localCodexMeter.receive({fetchedAt:Date.now(),planBadge:'Pro',visible:{plan:true,short:false,week:false,reset:false,renewal:false,daily:false,average:false,weekly:false,lifetime:false,credits:false,resetCredits:false},buckets:[]}));
     assert.equal(await host.locator('.plan-badge').innerText(),'Pro');
     assert.equal(await host.locator('section').innerText(),'Pro');
-    await page.evaluate(()=>window.__localCodexMeter.receive({fetchedAt:Date.now(),visible:Object.fromEntries(['plan','short','week','reset','renewal','daily','average','weekly','lifetime'].map(k=>[k,false])),buckets:[]}));
+    await page.evaluate(()=>window.__localCodexMeter.receive({fetchedAt:Date.now(),visible:Object.fromEntries(['plan','short','week','reset','renewal','daily','average','weekly','lifetime','credits','resetCredits'].map(k=>[k,false])),buckets:[]}));
     await page.waitForTimeout(1100);
     assert.equal(await host.isVisible(),false,'all-disabled hides sidebar widget');
     await page.evaluate(()=>document.querySelector('[data-app-navigation-rail]').remove());

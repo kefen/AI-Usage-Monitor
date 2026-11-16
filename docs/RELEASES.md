@@ -1,5 +1,29 @@
 # Release Record
 
+## Public Baseline: 2026-11-16 Follow-up
+
+| Platform | Version | Package distinction |
+| --- | --- | --- |
+| Windows 10/11 x64 | 0.12.4 | Windows-x64-Setup.exe |
+| macOS Apple Silicon | 0.4.6-alpha.1 | macOS-arm64-unsigned-test.dmg |
+| macOS Intel | 0.4.6-alpha.1 | macOS-x86_64-unsigned-test.dmg |
+| Chrome MV3 | 0.3.2 | Chrome ZIP; desktop native host required |
+
+All share the monthly returned-day average, unchanged Monday weekly total,
+local-midnight yesterday label without a numeric date, and read-only credit
+balance / available quota-reset count. Older daily fallback values remain dated.
+Mac includes compact typography and install/launch guidance. No reset is spent.
+
+This is the authorized new public release baseline, not a reset of version numbers.
+After all three releases and their attached SHA256 digests are verified, the
+explicitly approved older Releases and assets are removed. Source commits and Git
+tags remain; subsequent releases accumulate normally. Historical entries below
+document earlier behavior and are not current download instructions.
+
+Mac remains ad-hoc signed and not notarized. Prior Apple Silicon connection was
+user-confirmed; Intel real-account acceptance and browser-profile acceptance are
+still separate from automated build/UI tests.
+
 ## 2026-11-16 Mac Follow-up
 
 - macOS **0.4.5-alpha.1**: Apple Silicon and Intel experimental DMGs; native UI tests, compact metrics, small separate data dates, installation and next-launch guidance.
@@ -47,3 +71,4 @@ independent security audit.
 - The Windows accepted UI is unchanged from 0.12.3-beta.1; only stable metadata was promoted.
 - Final installer hardening: Unicode legacy shortcuts are inspected through an ASCII-named copy when WSH cannot read the original name. Foreign shortcuts remain untouched; English Windows CI covers both cases.
 - Official Mac CLI and loopback CDP startup without an account passed in Actions run 43806636066. Authenticated quota retrieval is not covered.
+

@@ -8,8 +8,8 @@ Windows UI using test fixtures, not real account data.
 
 Open [Releases](https://github.com/kefen/codex-quota-sidebar/releases).
 For Windows 10/11 x64, download the asset ending in
-`Windows-0.12.3-x64-Setup.exe`, plus its SHA256 file if verifying integrity.
-Chrome uses the separate `Chrome-0.3.1.zip`. Mac has experimental architecture-specific DMGs (see below).
+`Windows-0.12.4-x64-Setup.exe`, plus its SHA256 file if verifying integrity.
+Chrome uses the separate `Chrome-0.3.2.zip`. Mac has experimental architecture-specific DMGs (see below).
 The unsigned Windows executable may trigger an unknown-publisher warning.
 Verify its origin; never disable security software to get around a detection.
 
@@ -104,7 +104,7 @@ only when space is severely constrained.
 
 ## macOS Experimental Installation
 
-**Current version: 0.4.5-alpha.1.** Download `arm64` for Apple Silicon (M-series)
+**Current version: 0.4.6-alpha.1.** Download `arm64` for Apple Silicon (M-series)
 or `x86_64` for Intel. The companion requires macOS 13.5+ and a compatible official
 client. It is not Developer ID signed or notarized. The user confirmed live
 connection on Apple Silicon; Intel account testing remains pending.
@@ -176,19 +176,24 @@ Quota refresh is approximately every minute; Token activity is read at startup
 and hourly. Daily data may refer to yesterday or the most recent available date.
 The date is always important. Calendar-week totals and quota-reset windows differ.
 
-**Why are weekly Tokens and daily average both `--`?** Weekly Tokens sum returned
-records from Monday onward; daily average divides that sum by the number of returned
-days in the same week. When Monday arrives but the latest available daily record is
-Sunday, neither metric has a current-week record yet. Yesterday and lifetime can
-still show values. Missing data is not zero and is not a connection failure by
-itself. Hourly refresh will use new records when the source returns them; no exact
-source publication time is promised. The quota percentage uses its separate reset
-window. Server bucket timezone is unverified; the tool compares date labels in UTC.
+**Daily average now means this month:** sum valid returned records from the first
+day of the current month and divide by the number of returned days. Missing dates
+are not zero. Weekly Tokens still start Monday. Thus a new week can show `--`
+while the monthly daily average remains available.
 
-**简体中文：** 周一开始新一周，但最新日数据仍为上周日时，“本周”和“日均”会显示
-`--`，而“昨日”和“累计”仍可显示。日均是本周已返回记录的平均值，不是历史日均；
-没有数据不等于消耗为零。“周余”采用独立的额度重置周期。数据每小时刷新，源端何时
-返回新记录无法保证。
+Today/yesterday labels switch at device-local midnight; the source is not guaranteed
+to publish at midnight. The true yesterday record omits its numeric date. Older
+fallback data remains dated and is never relabeled as yesterday. Hover for exact
+dates and freshness. Quota resets are a separate cycle.
+
+**Credits and resets:** enable **Credit balance** and **Available quota resets** in
+Sidebar content. Both are read-only; this tool never spends a reset, purchases credits,
+or changes your limits. Missing fields show `--`, not zero; distinct balances are
+not added together. Reset count is not a recharge-card count.
+
+**简体中文：** 日均改为本月已返回记录总和 ÷ 有记录天数，缺失日期不按零算；
+本周仍从周一计算。昨日按本机零点切换标签并省略数字日期，更早记录仍显示日期。
+新增“额度余额”“可用重置次数”，仅展示，不会执行重置或扣除次数。
 
 ## 8. Browser Companion
 

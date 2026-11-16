@@ -185,3 +185,12 @@
 - Unify regular-weight headings, labels, compact status rows, grouped sidebar choices and stable Save feedback. Keep the window visible after connecting until the user closes it.
 - Explain drag-to-Applications installation before running from a DMG or AppTranslocation path. Add Show application in Finder to About and a three-language next-launch guide.
 - Add native populated-data screenshots and formatter tests. Preserve the 0.4.4 connection policy and Windows 0.12.3.
+
+# Windows 0.12.4 / macOS 0.4.6-alpha.1 / Chrome 0.3.2
+
+- Daily average now uses current-month returned days; weekly calculation unchanged.
+- Yesterday hides the numeric date, follows local midnight, and never disguises older records.
+- Optional read-only credit balance and available quota-reset count.
+- Fix Mac caption layout constraint that stalled native UI startup.
+- Document Apple Silicon versus Intel installation and retained version history.
+

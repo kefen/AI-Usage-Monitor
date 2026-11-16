@@ -8,7 +8,7 @@ export function browserSnapshot(state,usage,now=Date.now()){
   return {schema:1,author:'KEFEN',generatedAt:now,quotaAt:numeric(state?.fetchedAt),usageAt:numeric(usage?.fetchedAt),
     windows:fresh?(state.buckets||[]).slice(0,8).flatMap(b=>(b.windows||[]).slice(0,4).filter(w=>numeric(w.minutes)!==null&&numeric(w.remaining)!==null&&w.remaining<=100).map(w=>({minutes:w.minutes,remaining:w.remaining,resetsAt:numeric(w.resetsAt)}))):[],
     lifetime:usageFresh?count(usage.lifetime):null,week:usageFresh?count(usage.week?.value):null,
-    monthAverage:usageFresh?count(usage.month?.average):null,monthStart:usageFresh?usage.month?.start:null,
+    monthAverage:usageFresh&&usage.month?.start===new Date(now).toISOString().slice(0,7)+'-01'?count(usage.month?.average):null,
     creditBalance:fresh&&typeof balance==='string'&&/^\d+(\.\d+)?$/.test(balance)?balance:null,resetCredits:fresh?count(state.resetCredits):null,
     daily:usageFresh&&/^\d{4}-\d{2}-\d{2}$/.test(usage.dailySelected?.date)&&count(usage.dailySelected?.value)!==null?{date:usage.dailySelected.date,value:usage.dailySelected.value}:null};
 }
