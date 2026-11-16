@@ -12,7 +12,8 @@ enum Bootstrap {
                 throw NSError(domain: "CQS", code: 3, userInfo: [NSLocalizedDescriptionKey: "Linked installation folders are not supported."])
             }
         }
-        if let installedVersion = try? Data(contentsOf: marker), installedVersion == packagedVersion { return }
+        if let installedVersion = try? Data(contentsOf: marker), installedVersion == packagedVersion,
+           fm.isExecutableFile(atPath: root.appendingPathComponent("runtime/node").path) { return }
         let lock = root.appendingPathComponent(".runtime/mac.pid")
         if let text = try? String(contentsOf: lock, encoding: .utf8), let pid = Int32(text.trimmingCharacters(in: .whitespacesAndNewlines)), pid > 1, kill(pid, 0) == 0 {
             throw NSError(domain: "CQS", code: 1, userInfo: [NSLocalizedDescriptionKey: "Exit the previous Codex Quota Sidebar before installing this update."])

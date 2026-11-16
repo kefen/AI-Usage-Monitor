@@ -1,4 +1,64 @@
 {
+  "Runtime unavailable": [
+    "运行组件无法启动",
+    "執行元件無法啟動"
+  ],
+  "Checking runtime": [
+    "正在检查运行组件",
+    "正在檢查執行元件"
+  ],
+  "Before connecting on Mac": [
+    "Mac 连接前须知",
+    "Mac 連線前須知"
+  ],
+  "Open Privacy & Security": [
+    "打开隐私与安全性",
+    "開啟隱私權與安全性"
+  ],
+  "Installation and approval guide": [
+    "安装与授权说明",
+    "安裝與授權說明"
+  ],
+  "Check runtime and connect": [
+    "检查组件并连接",
+    "檢查元件並連線"
+  ],
+  "This experimental app is not notarized. The app and its Node runtime may require separate approval.": [
+    "此实验版未经 Apple 公证。主程序和 Node 运行组件可能需要分别确认授权。",
+    "此實驗版未經 Apple 公證。主程式與 Node 執行元件可能需要分別確認授權。"
+  ],
+  "1. Verify the download source and checksum. You may stop and wait for a notarized version.": [
+    "1. 请核实下载来源与校验和。你也可以退出，等待公证版。",
+    "1. 請核對下載來源與校驗和。你也可以退出，等待公證版。"
+  ],
+  "2. After a system warning, review the exact item in System Settings > Privacy & Security. If available, choose Open Anyway only if you trust it.": [
+    "2. 出现系统警告后，在“系统设置 → 隐私与安全性”核对被拦截的项目。仅在确认可信且有该选项时，选择“仍要打开”。",
+    "2. 出現系統警告後，在「系統設定 → 隱私權與安全性」核對被阻擋的項目。僅在確認可信且有該選項時，選擇「強制打開」。"
+  ],
+  "3. Return here and check the runtime again. Do not disable system protections or grant unrelated permissions.": [
+    "3. 回到此处检查组件并重试。不要关闭系统安全保护，也不需要授予无关权限。",
+    "3. 回到此處檢查元件並重試。請勿關閉系統安全保護，也不需授予無關權限。"
+  ],
+  "Runtime file missing. Exit and reinstall the complete package.": [
+    "运行组件文件缺失。请退出工具，重新安装完整安装包。",
+    "執行元件檔案遺失。請退出工具，重新安裝完整套件。"
+  ],
+  "Node runtime did not start. If macOS blocked node, review Privacy & Security and the installation guide, then reconnect. This does not establish a Codex signature error.": [
+    "Node 运行组件未能启动。如果 macOS 拦截了 node，请查看“隐私与安全性”及安装说明，处理后再重新连接。这不能说明 Codex 签名有误。",
+    "Node 執行元件未能啟動。若 macOS 阻擋了 node，請查看「隱私權與安全性」及安裝說明，處理後再重新連線。這不代表 Codex 簽署有誤。"
+  ],
+  "Open System Settings manually, then choose Privacy & Security.": [
+    "请手动打开“系统设置”，选择“隐私与安全性”。",
+    "請手動開啟「系統設定」，選擇「隱私權與安全性」。"
+  ],
+  "Open READ-ME-FIRST.html in the downloaded disk image.": [
+    "请打开下载的磁盘映像中的 READ-ME-FIRST.html。",
+    "請開啟下載的磁碟映像中的 READ-ME-FIRST.html。"
+  ],
+  "The monitor exited without a connection report. Open Diagnostics and review the installation guide.": [
+    "监控程序退出，未返回连接结果。请查看“诊断与帮助”和安装说明。",
+    "監控程式已退出，未回傳連線結果。請查看「診斷與幫助」及安裝說明。"
+  ],
   "Saved successfully": ["保存成功", "儲存成功"],
   "Changes apply automatically while connected. No reconnect is needed.": ["已连接时保存后自动生效，无需重新连接。", "已連線時儲存後自動生效，無需重新連線。"],
   "1. Codex is running without the required local connection.": ["1. Codex 仍在运行，尚未开启侧栏所需的本机连接。", "1. Codex 仍在執行，尚未開啟側欄所需的本機連線。"],

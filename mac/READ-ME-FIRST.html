@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Codex Quota Sidebar - Mac installation and help</title>
+<style>body{font:16px/1.7 system-ui,sans-serif;color:#253040;background:#f5f7fa;margin:0}main{max-width:860px;margin:auto;padding:32px 24px;background:white}h1{font-size:26px;font-weight:500}h2{font-size:21px;font-weight:500;border-top:1px solid #dde3eb;padding-top:24px}h3{font-size:17px}a{color:#245fd3}li{margin:10px 0}code{overflow-wrap:anywhere}nav{display:flex;gap:20px;flex-wrap:wrap}.warning{border-left:3px solid #b17a18;padding:8px 16px;background:#fff8e8}p{margin:12px 0}</style>
+<main><h1>Codex Quota Sidebar</h1><p>by KEFEN · macOS experimental build</p>
+<nav><a href="#cn">简体中文</a><a href="#tw">繁體中文</a><a href="#en">English</a></nav>
+<section id="cn"><h2>安装与首次打开</h2>
+<p class="warning">此测试版未经 Apple 开发者签名和公证。校验和只能确认文件一致，不能代替安全审计。只在确认来源可信、文件未被篡改且接受风险后继续；也可以退出并等待公证版。</p>
+<ol><li>苹果芯片下载 arm64，Intel 下载 x86_64。还需单独安装兼容本机的官方 Codex 客户端并登录。</li>
+<li>先退出旧版额度面板，再打开 DMG，将应用拖到 Applications（应用程序），替换旧版。不要从磁盘映像直接运行。</li>
+<li>尝试从“应用程序”打开。若提示无法验证开发者或未公证，先关闭警告，再到 Apple 菜单 → 系统设置 → 隐私与安全性 → 安全性，查看是否有对应项目的“仍要打开”，核实名称后自行决定授权。系统可能再次要求确认。</li>
+<li>面板还需要 Node.js 运行组件，系统提示中名称为 <code>node</code>。主程序获准打开不代表组件已获准。若 node 被拦截，请先关闭提示，再按上一步核对该组件；不要误授权其他同名程序。</li>
+<li>处理系统提示后，回到面板点击“重新连接”。若误将组件移到废纸篓，请退出工具并重新安装完整包，不要下载来历不明的 node。</li></ol>
+<h3>使用中出现问题</h3>
+<p>“运行组件无法启动”不等于 Codex 签名错误。可用“打开隐私与安全性”和“安装与授权说明”查看下一步。没有“仍要打开”选项、设备由公司管理，或系统明确提示恶意软件、将损坏电脑、文件损坏时，请停止，不要绕过安全检测；联系管理员或反馈诊断。</p>
+<p>组件通过检查后仍连接失败：先从“应用程序”确认官方 Codex 可以打开；保存工作并完全退出 Codex，再回面板重连。不要授予“完全磁盘访问”“辅助功能”等无关权限。诊断文件不会自动上传，提交前请检查内容。</p>
+<p>请勿关闭 Gatekeeper、关闭 SIP、批量删除隔离属性或自行重签名。升级后系统可能重新检查。当前仍需真实 Mac 账号验收。</p></section>
+<section id="tw"><h2>安裝與首次開啟</h2>
+<p class="warning">此測試版未經 Apple 開發者簽署及公證。校驗和不等於安全審計。請確認來源、檔案完整性與風險後再繼續，或等待公證版。</p>
+<ol><li>Apple 晶片選 arm64，Intel 選 x86_64；另行安裝相容的官方 Codex 並登入。</li>
+<li>退出舊版面板。開啟 DMG，將應用程式拖到 Applications，替換舊版；不要從磁碟映像執行。</li>
+<li>嘗試開啟後若遭系統阻擋，關閉警告，前往 Apple 選單 → 系統設定 → 隱私權與安全性 → 安全性，核對該項目是否提供「強制打開／仍要開啟」。確認來源後自行決定是否允許。</li>
+<li>內附的 Node.js 元件會以 <code>node</code> 顯示，可能需要另外確認。請核對元件，不要授權其他同名程式。完成後回面板按「重新連線」。</li>
+<li>若誤刪元件，請退出工具並重新安裝完整套件。不要停用 Gatekeeper、SIP，或批次移除隔離屬性。</li></ol>
+<p>沒有允許選項、企業管控、明確惡意軟體或損壞警告時請停止並聯絡管理員。元件檢查通過後仍失敗，先確認官方 Codex 可開啟，儲存工作並完全退出，再重新連線。診斷檔不會自動上傳，送出前請檢查；不需要授予完整磁碟存取等無關權限。</p></section>
+<section id="en"><h2>Install and open safely</h2>
+<p class="warning">Experimental, not Developer ID signed or notarized. Checksums establish file consistency, not a security audit. Continue only if you trust the source and accept the risk, or wait for a notarized version.</p>
+<ol><li>Choose arm64 for Apple Silicon or x86_64 for Intel. Install a compatible official Codex client separately and sign in.</li>
+<li>Exit the previous companion, open the DMG and drag the app to Applications. Replace the old app; do not run from the disk image.</li>
+<li>Try opening it first. For an unidentified-developer/unnotarized warning, dismiss the alert. In Apple menu → System Settings → Privacy &amp; Security → Security, check for Open Anyway for the exact item. Authorize only after verifying its origin.</li>
+<li>The bundled Node.js runtime appears as <code>node</code>. It can require a separate decision even after the app opens. Verify the item, handle the system prompt, then return and choose Reconnect.</li>
+<li>If the runtime was moved to Trash, exit and reinstall the complete package. Do not fetch a random replacement executable.</li></ol>
+<p>If no approval option exists, the device is managed, or macOS reports malware, damage or tampering, stop and seek help. Never disable Gatekeeper/SIP, remove quarantine in bulk or re-sign files. Runtime startup failure is not proof of a Codex signature error. Once the runtime works, verify official Codex launches, save your work, fully quit it, then reconnect. No unrelated Full Disk Access or Accessibility permission is required. Review exported diagnostics before sharing; there is no automatic upload.</p></section>
+<h2>官方说明 / Official guidance</h2><p><a href="https://support.apple.com/102445">Apple: Safely open apps on your Mac</a> · <a href="https://github.com/kefen/codex-quota-sidebar">GitHub project</a></p>
+</main></html>

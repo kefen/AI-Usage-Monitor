@@ -45,6 +45,9 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var stopping = false
     var reconnecting = false
     var opening: Process?
+    var runtimeProbe: RuntimeProbe?
+    var runtimeReady = false
+    var runtimeIssue = false
     var feedback = ""
     var feedbackUntil = Date.distantPast
     func notify(_ message: String) { feedback = message; feedbackUntil = Date().addingTimeInterval(10); detail.stringValue = message; present() }
@@ -117,7 +120,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         body.widthAnchor.constraint(equalTo: container.widthAnchor, constant: -283).isActive = true
         let spacer = NSView(); container.addArrangedSubview(spacer); spacer.setContentHuggingPriority(.defaultLow, for: .vertical)
         let footer = NSStackView(); footer.spacing = 8
-        let build = NSTextField(labelWithString: "macOS 0.4.1-alpha.1"); build.textColor = .secondaryLabelColor
+        let build = NSTextField(labelWithString: "macOS 0.4.2-alpha.1"); build.textColor = .secondaryLabelColor
         footer.addArrangedSubview(build)
         let gap = NSView(); footer.addArrangedSubview(gap); gap.setContentHuggingPriority(.defaultLow, for: .horizontal)
         retry = button("Reconnect", #selector(reconnect))
@@ -141,8 +144,9 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             do { var prefs = read("preferences.json"); prefs["cdpConsent"] = true; try write("preferences.json", prefs) }
             catch { alert(error.localizedDescription); NSApp.terminate(nil); return }
         }
-        start()
         timer = Timer.scheduledTimer(withTimeInterval: 4, repeats: true) { [weak self] _ in self?.tick() }
+        if read("preferences.json")["macGuideVersion"] as? String != "0.4.2-alpha.1" { stage = "stopped"; showAuthorizationHelp() }
+        else { start() }
     }
     func button(_ title: String, _ action: Selector, primary: Bool = false) -> NSButton {
         let result = NSButton(title: CqsLocale.t(title), target: self, action: action); result.bezelStyle = .rounded; result.font = .systemFont(ofSize: 13, weight: .regular)
@@ -154,7 +158,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             let output = URL(fileURLWithPath: CommandLine.arguments.last!); try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
             for language in ["en", "zh-CN", "zh-TW"] {
                 CqsLocale.language = language; languagePicker.selectItem(at: language == "en" ? 0 : language == "zh-CN" ? 1 : 2)
-                for action in [showStatus, showDisplay, showSettings, showData, showHelp, showAbout] {
+                for action in [showAuthorizationHelp, showStatus, showDisplay, showSettings, showData, showHelp, showAbout] {
                     action(); CqsLocale.apply(window.contentView!); window.contentView!.layoutSubtreeIfNeeded(); window.displayIfNeeded()
                     if page == "subscription" { plan.selectItem(at: 2); enabled.state = .on; updateFields(); save(); precondition(!dirty && page == "subscription" && saveButton?.isEnabled == false) }
                     if page == "display" { saveDisplay(); precondition(!dirty && page == "display") }
@@ -165,6 +169,13 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     view.cacheDisplay(in: view.bounds, to: bitmap)
                     try bitmap.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent(page + "-" + language + ".png"))
                 }
+                runtimeIssue = true; stage = "failed"; errorText = CqsLocale.t("Node runtime did not start. If macOS blocked node, review Privacy & Security and the installation guide, then reconnect. This does not establish a Codex signature error.") + "\nE_RUNTIME_START"
+                showStatus(); tick(); window.contentView!.layoutSubtreeIfNeeded()
+                precondition(retry.isEnabled && headline.stringValue == CqsLocale.t("Runtime unavailable"))
+                let failedView = window.contentView!, failedBitmap = failedView.bitmapImageRepForCachingDisplay(in: failedView.bounds)!
+                failedView.cacheDisplay(in: failedView.bounds, to: failedBitmap)
+                try failedBitmap.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("runtime-failure-" + language + ".png"))
+                runtimeIssue = false; stage = "stopped"; page = ""
             }
             let backup = try SettingsTransfer.exportData(runtime); try SettingsTransfer.restore(backup, at: runtime)
             do { _ = try SettingsTransfer.checked(Data("{\"auth.json\":{\"token\":\"do-not-import\"}}".utf8)); fatalError("Unknown settings accepted") } catch {}
@@ -187,9 +198,11 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         key.widthAnchor.constraint(equalToConstant: 130).isActive = true; row.addArrangedSubview(key); row.addArrangedSubview(value); body.addArrangedSubview(row)
     }
     @objc func showStatus() {
+        if page == "overview" { tick(); present(); return }
         guard beginPage("overview") else { return }; showingSettings = false; rows = []
         headline.font = .systemFont(ofSize: 26, weight: .regular); body.addArrangedSubview(headline); body.addArrangedSubview(detail)
         detail.widthAnchor.constraint(lessThanOrEqualToConstant: 600).isActive = true
+        if runtimeIssue { authorizationButtons() }
         for title in [CqsLocale.t("Client"), CqsLocale.t("Quota data"), CqsLocale.t("Token data"), CqsLocale.t("Last sync")] { let field = NSTextField(labelWithString: "--"); rows.append(field); line(title, field) }
         metricFields = []
         let metrics = NSStackView(); metrics.orientation = .horizontal; metrics.spacing = 12
@@ -254,6 +267,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
     @objc func showHelp() {
         guard beginPage("help") else { return }; showingSettings = true; heading("Diagnostics")
+        authorizationButtons()
         paragraph("1. Check that official Codex can chat. Enlarge the window if the sidebar is hidden, then reconnect.")
         paragraph("2. Export diagnostics: version, system, connection state and error codes. No keys, chats, accounts or installation paths.")
         paragraph("3. Review the file, describe how to reproduce the problem, then attach it to a GitHub issue. Hide personal information in screenshots.")
@@ -300,7 +314,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let dialog = NSSavePanel(); dialog.nameFieldStringValue = "Codex-Quota-Sidebar-diagnostics.json"
         guard dialog.runModal() == .OK, let url = dialog.url else { return }
         do {
-            let report: [String: Any] = ["version": "0.4.1-alpha.1", "platform": "macOS", "stage": stage, "monitorRunning": child?.isRunning == true, "exportedAt": ISO8601DateFormatter().string(from: Date())]
+            let report: [String: Any] = ["version": "0.4.2-alpha.1", "platform": "macOS", "stage": stage, "runtimeReady": runtimeReady, "runtimeIssue": runtimeIssue, "monitorRunning": child?.isRunning == true, "exportedAt": ISO8601DateFormatter().string(from: Date())]
             try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]).write(to: url, options: .atomic)
         } catch { alert(error.localizedDescription) }
     }
@@ -328,7 +342,62 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
     @objc func start() {
         guard child == nil, !stopping, read("preferences.json")["cdpConsent"] as? Bool == true else { return }
+        ensureRuntime { [weak self] in self?.launchMonitor() }
+    }
+    func ensureRuntime(_ next: @escaping () -> Void) {
+        if runtimeReady { next(); return }
+        guard runtimeProbe == nil else { return }
+        let previousStage = stage
+        stage = "checking"; runtimeIssue = false
+        feedbackUntil = .distantPast; errorText = ""; tick()
+        let probe = RuntimeProbe(); runtimeProbe = probe; retry.isEnabled = false
+        probe.run(root.appendingPathComponent("runtime/node")) { [weak self] outcome in
+            guard let self = self else { return }; self.runtimeProbe = nil
+            if outcome == .ready {
+                self.runtimeReady = true; self.runtimeIssue = false
+                self.stage = previousStage == "checking" ? "stopped" : previousStage
+                var prefs = self.read("preferences.json"); prefs["macGuideVersion"] = "0.4.2-alpha.1"
+                try? self.write("preferences.json", prefs); self.tick(); next()
+            } else {
+                self.stage = "failed"; self.runtimeIssue = true
+                let code = outcome == .missing ? "E_RUNTIME_MISSING" : outcome == .timedOut ? "E_RUNTIME_TIMEOUT" : "E_RUNTIME_START"
+                self.errorText = CqsLocale.t(outcome == .missing ? "Runtime file missing. Exit and reinstall the complete package." : "Node runtime did not start. If macOS blocked node, review Privacy & Security and the installation guide, then reconnect. This does not establish a Codex signature error.") + "\n" + code
+                self.feedbackUntil = .distantPast
+                if self.page == "overview" { self.page = "" }
+                self.showStatus(); self.tick()
+            }
+        }
+    }
+    @objc func showAuthorizationHelp() {
+        guard beginPage("authorization") else { return }; showingSettings = true
+        heading("Before connecting on Mac")
+        paragraph("This experimental app is not notarized. The app and its Node runtime may require separate approval.")
+        paragraph("1. Verify the download source and checksum. You may stop and wait for a notarized version.")
+        paragraph("2. After a system warning, review the exact item in System Settings > Privacy & Security. If available, choose Open Anyway only if you trust it.")
+        paragraph("3. Return here and check the runtime again. Do not disable system protections or grant unrelated permissions.")
+        authorizationButtons()
+        body.addArrangedSubview(button("Check runtime and connect", #selector(start), primary: true)); present()
+    }
+    func authorizationButtons() {
+        let actions = NSStackView(); actions.spacing = 12
+        actions.addArrangedSubview(button("Open Privacy & Security", #selector(openSecuritySettings)))
+        actions.addArrangedSubview(button("Installation and approval guide", #selector(openInstallGuide)))
+        body.addArrangedSubview(actions)
+    }
+    @objc func openSecuritySettings() {
+        if !NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security")!) {
+            alert(CqsLocale.t("Open System Settings manually, then choose Privacy & Security."))
+        }
+    }
+    @objc func openInstallGuide() {
+        guard let url = Bundle.main.url(forResource: "READ-ME-FIRST", withExtension: "html") else {
+            alert(CqsLocale.t("Open READ-ME-FIRST.html in the downloaded disk image.")); return
+        }
+        NSWorkspace.shared.open(url)
+    }
+    func launchMonitor() {
         hiddenAfterMount = false; stage = "starting"; errorText = ""; startedAt = Date()
+        if page == "authorization" { showStatus() }
         do {
             try? FileManager.default.removeItem(at: runtime.appendingPathComponent("mac-error.txt"))
             let logURL = runtime.appendingPathComponent("mac-ui.log"); try Data().write(to: logURL); log = try FileHandle(forWritingTo: logURL)
@@ -338,7 +407,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 if self.stopping { NSApp.terminate(nil); return }
                 if self.reconnecting { self.reconnecting = false; self.start(); return }
                 self.stage = process.terminationStatus == 0 ? "stopped" : "failed"
-                self.errorText = (try? String(contentsOf: self.runtime.appendingPathComponent("mac-error.txt"), encoding: .utf8)) ?? ""
+                self.errorText = (try? String(contentsOf: self.runtime.appendingPathComponent("mac-error.txt"), encoding: .utf8)) ?? CqsLocale.t("The monitor exited without a connection report. Open Diagnostics and review the installation guide.")
                 self.showStatus()
             }}
             child = process; try process.run(); tick()
@@ -347,7 +416,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func tick() {
         let request = runtime.appendingPathComponent("background-open.request")
         if FileManager.default.fileExists(atPath: request.path) { try? FileManager.default.removeItem(at: request); present() }
-        retry.isEnabled = !stopping && !reconnecting && stage != "starting"
+        retry.isEnabled = runtimeProbe == nil && !stopping && !reconnecting && stage != "starting"
         guard !showingSettings, rows.count == 4 else { return }
         var state: [String: Any] = [:]
         if child?.isRunning == true { state = read("status.json") }
@@ -357,13 +426,13 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             if let date = f.date(from: stamp), date >= startedAt, abs(date.timeIntervalSinceNow) < 35 { stage = state["stage"] as? String ?? stage } else { state = [:] }
         }
         let mounted = stage.hasPrefix("mounted")
-        headline.stringValue = mounted ? CqsLocale.t("Connected") : stage == "failed" ? CqsLocale.t("Connection incomplete") : stage == "stopped" ? CqsLocale.t("Stopped") : CqsLocale.t("Connecting")
+        headline.stringValue = runtimeIssue ? CqsLocale.t("Runtime unavailable") : stage == "checking" ? CqsLocale.t("Checking runtime") : mounted ? CqsLocale.t("Connected") : stage == "failed" ? CqsLocale.t("Connection incomplete") : stage == "stopped" ? CqsLocale.t("Stopped") : CqsLocale.t("Connecting")
         headline.textColor = mounted ? green : .labelColor
         detail.stringValue = stage == "failed" ? String(errorText.prefix(240)) : mounted ? CqsLocale.t("Sidebar attached.") : CqsLocale.t("Waiting for client and data.")
         rows[0].stringValue = mounted ? CqsLocale.t("Connected") : CqsLocale.t("Not connected")
         for (index, key) in [(1, "quotaAvailable"), (2, "usageAvailable")] { rows[index].stringValue = (state[key] as? Bool).map { $0 ? CqsLocale.t("Synced") : CqsLocale.t("Unavailable") } ?? "--" }
         if let stamp = state["updatedAt"] as? String { let f = ISO8601DateFormatter(); f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]; rows[3].stringValue = f.date(from: stamp).map { DateFormatter.localizedString(from: $0, dateStyle: .short, timeStyle: .medium) } ?? "--" } else { rows[3].stringValue = "--" }
-        retry.isEnabled = !stopping && !reconnecting && stage != "starting"
+        retry.isEnabled = runtimeProbe == nil && !stopping && !reconnecting && stage != "starting"
         if feedbackUntil > Date() { detail.stringValue = feedback }
         updateMetrics(mounted)
         CqsLocale.apply(window.contentView!)
@@ -402,6 +471,9 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         catch { alert(error.localizedDescription) }
     }
     @objc func openCodex() {
+        ensureRuntime { [weak self] in self?.launchCodexFocus() }
+    }
+    func launchCodexFocus() {
         guard opening == nil else { notify(CqsLocale.t("Opening Codex. Please wait.")); return }
         notify(CqsLocale.t("Opening Codex..."))
         let process = Process(); process.executableURL = root.appendingPathComponent("runtime/node"); process.arguments = [root.appendingPathComponent("mac/launch.mjs").path,"--native-ui","--focus"]
@@ -409,6 +481,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         do { opening = process; try process.run() } catch { opening = nil; notify(error.localizedDescription) }
     }
     @objc func stop() {
+        if let probe = runtimeProbe { runtimeProbe = nil; probe.cancel() }
         guard child?.isRunning == true else { NSApp.terminate(nil); return }
         do { try Data("stop".utf8).write(to: runtime.appendingPathComponent("background-stop.request"), options: .atomic); stopping = true
             stopTimer?.invalidate(); stopTimer = Timer.scheduledTimer(withTimeInterval: 40, repeats: false) { [weak self] _ in

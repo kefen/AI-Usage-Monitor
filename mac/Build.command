@@ -9,7 +9,8 @@ nodeversion=$(node -p "JSON.parse(require('fs').readFileSync('dependency-pins.js
 stage="build/mac-$arch"
 app="$stage/Codex Quota Sidebar.app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
-/usr/bin/xcrun swiftc -O -target "$arch-apple-macosx13.5" -framework AppKit mac/Localization.swift mac/Bootstrap.swift mac/SettingsTransfer.swift mac/QuotaSidebar.swift -o "$app/Contents/MacOS/QuotaSidebar"
+/usr/bin/xcrun swiftc -O -target "$arch-apple-macosx13.5" -framework AppKit mac/Localization.swift mac/Bootstrap.swift mac/SettingsTransfer.swift mac/RuntimeProbe.swift mac/QuotaSidebar.swift -o "$app/Contents/MacOS/QuotaSidebar"
+cp mac/READ-ME-FIRST.html "$app/Contents/Resources/READ-ME-FIRST.html"
 cp ui/strings.json "$app/Contents/Resources/strings.json"
 cp mac/Info.plist "$app/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${version%%-*}" "$app/Contents/Info.plist"
@@ -22,15 +23,22 @@ curl --fail --location --proto '=https' "https://nodejs.org/dist/v$nodeversion/S
 mkdir -p "$app/Contents/Resources/payload/runtime"
 cp "$stage/node-v$nodeversion-darwin-$nodearch/bin/node" "$app/Contents/Resources/payload/runtime/node"
 cp "$stage/node-v$nodeversion-darwin-$nodearch/LICENSE" "$app/Contents/Resources/payload/runtime/LICENSE"
-/usr/bin/codesign --force --sign - "$app/Contents/Resources/payload/runtime/node"
+# Preserve the upstream runtime exactly; signing our wrapper must not re-sign Node.
+cmp "$stage/node-v$nodeversion-darwin-$nodearch/bin/node" "$app/Contents/Resources/payload/runtime/node"
+/usr/bin/codesign -dv --verbose=2 "$app/Contents/Resources/payload/runtime/node" 2>&1 || true
 /usr/bin/codesign --force --sign - "$app"
 /usr/bin/codesign --verify --deep --strict "$app"
+cmp "$stage/node-v$nodeversion-darwin-$nodearch/bin/node" "$app/Contents/Resources/payload/runtime/node"
 if [[ "$(uname -m)" == "$arch" ]]; then
+  /usr/bin/xcrun swiftc mac/RuntimeProbe.swift test/MacRuntimeProbeTest.swift -o "$stage/RuntimeProbeTest"
+  "$stage/RuntimeProbeTest"
+  "$app/Contents/Resources/payload/runtime/node" --version
   "$app/Contents/MacOS/QuotaSidebar" --ui-smoke "$PWD/verification/mac-$arch"
 fi
 file "$app/Contents/MacOS/QuotaSidebar" "$app/Contents/Resources/payload/runtime/node"
 mkdir -p "build/dmg-$arch" dist
 ditto "$app" "build/dmg-$arch/Codex Quota Sidebar.app"
+cp mac/READ-ME-FIRST.html "build/dmg-$arch/READ-ME-FIRST.html"
 ln -s /Applications "build/dmg-$arch/Applications"
 hdiutil create -size 512m -fs HFS+ -volname 'Codex Quota Sidebar Test' -srcfolder "build/dmg-$arch" -ov -format UDZO "dist/Codex-Quota-Sidebar-macOS-$version-$arch-unsigned-test.dmg"
 echo 'Local, ad-hoc signed test build only. Not notarized; no production Mac package created.'

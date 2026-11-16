@@ -24,7 +24,7 @@
   "Background.ps1", "Background.vbs", "Install.ps1", "Uninstall.cmd", "Uninstall.ps1", "Lifecycle.ps1", "RestartSafety.ps1",
   "native/TrayHost.cs", "native/Preferences.cs", "native/Installer.cs", "native/Theme.cs", "native/LaunchWindow.cs", "native/SetupWindow.cs", "native/app.manifest",
   "tools/BrandAssets.cs", "assets/cqs.ico", "assets/cqs.icns", "assets/cqs-128.png", "assets/cqs-256.png", "assets/cqs-1024.png", "assets/tray-light.ico", "assets/tray-dark.ico", "assets/tray-template.png",
-  "mac/Bootstrap.swift", "mac/SettingsTransfer.swift", "mac/package-payload.mjs", ".github/workflows/r2-test-packages.yml",
+  "mac/Bootstrap.swift", "mac/SettingsTransfer.swift", "mac/RuntimeProbe.swift", "mac/READ-ME-FIRST.html", "test/MacRuntimeProbeTest.swift", "test/mac-runtime-contract.test.mjs", "mac/package-payload.mjs", ".github/workflows/r2-test-packages.yml",
   "mac/QuotaSidebar.swift", "mac/Build.command", "mac/Info.plist", "test/visual-contract.test.mjs", "test/NativeVisualTest.cs",
   "mac/launch.mjs", "mac/trust.json", "mac/Launcher.applescript", "mac/Install.command", "mac/Stop.command", "mac/Uninstall.command",
   "vendor/codex-quota/codex-cdp.ps1", "vendor/codex-quota/LICENSE",
