@@ -1,5 +1,5 @@
 (() => {
-  if (window.__localCodexMeter?.version === '0.12.3') return;
+  if (window.__localCodexMeter?.version === '0.12.4') return;
   if (window.__localCodexMeter?.controllerId === 'local-codex-sidebar-meter-v1') window.__localCodexMeter.dispose();
   else if (window.__localCodexMeter) return;
   const id = 'local-codex-sidebar-meter';
@@ -48,7 +48,7 @@
     '以订阅页面为准。不自动顺延。':['Check your subscription page. Not automatically rolled forward.','以訂閱頁面為準。不自動順延。'],
     '会员日期未设置，不从周额度推测':['Subscription date not set; never inferred from weekly quota','訂閱日期未設定，不從週額度推測'],
     '积分无限制（不代表时段额度无限）':['Unlimited credits (not unlimited quota windows)','點數無限制（不代表時段額度無限）'],
-    '积分余额':['Credit balance','點數餘額'],'可用额度重置次数':['Available quota resets','可用額度重設次數'],
+    '余额':['Credits','餘額'],'重置次数':['Resets','重設次數'],'积分余额':['Credit balance','點數餘額'],'可用额度重置次数':['Available quota resets','可用額度重設次數'],
     '仅展示，不自动使用':['Display only; never used automatically','僅顯示，不自動使用'],
     '暂无可用每日 Token 数据，已隐藏日用量':['No daily Token data; daily metric hidden','暫無可用每日 Token 資料，已隱藏日用量'],
     '本机首次观测':['First observed locally','本機首次觀測'],'上次尚未返回':['Last observed absent','上次尚未回傳'],
@@ -104,6 +104,18 @@
     }[freshness];
     const hints = ['\u5269\u4f59\u989d\u5ea6: ' + statusLabel];
     const buckets = ['expired','unavailable'].includes(freshness) ? [] : (state.buckets || []);
+    if(visible('credits')) {
+      const creditBuckets=buckets.filter(b=>b.credits);
+      const credits=creditBuckets.length===1?creditBuckets[0].credits:null;
+      const block=text('div','','window');block.dataset.metric='credits';
+      block.append(text('div','\u4f59\u989d','label'),text('div',credits?.unlimited?'∞':credits?.balance??'--','value'));
+      block.title='Credit balance; separate from quota percentage. No purchase or reset action.';section.append(block);
+    }
+    if(visible('resetCredits')) {
+      const block=text('div','','window');block.dataset.metric='resetCredits';
+      block.append(text('div','\u91cd\u7f6e\u6b21\u6570','label'),text('div',!['expired','unavailable'].includes(freshness)&&Number.isSafeInteger(state.resetCredits)?String(state.resetCredits):'--','value'));
+      block.title='Available quota resets; read-only. No reset is performed.';section.append(block);
+    }
     for (const bucket of buckets) {
       for (const w of bucket.windows) {
         const showWindow=visible(w.minutes===10080?'week':'short');
@@ -161,9 +173,12 @@
     usageBox.append(text('div','TOKEN','unit'));
     const calendar='\u670d\u52a1\u7aef\u65e5\u671f\u6807\u7b7e\uff0c\u5206\u6876\u65f6\u533a\u672a\u6838\u5b9e\uff1b\u76f8\u5bf9\u65e5\u671f\u6309 UTC \u6bd4\u8f83\u3002\u5468\u6c47\u603b\u4ece\u5468\u4e00\u8d77\uff0c\u4e0d\u662f\u8ba2\u9605\u989d\u5ea6\u5468\u671f\u3002';
     const week=usage.week;
-    const average={...week,value:Number.isSafeInteger(week?.value)&&week.value>=0&&Number.isInteger(week?.days)&&week.days>0?Math.round(week.value/week.days):null};
+    const month=usage.month;
+    const average={...month,value:Number.isSafeInteger(month?.average)&&month.average>=0?month.average:null};
     const daily=usage.dailySelected;
-    const utcDate=new Date().toISOString().slice(0,10),previousDate=new Date(Date.now()-86400000).toISOString().slice(0,10);
+    const localDay=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
+    const utcDate=localDay(new Date()),previousDate=localDay(yesterday);
     const dailyLabel=daily?.date===utcDate?'\u4eca\u65e5':daily?.date===previousDate?'\u6628\u65e5':'\u6700\u8fd1';
     const metrics=[['average','\u65e5\u5747',average],['week','\u672c\u5468',week],['lifetime','\u7d2f\u8ba1',{value:usage.lifetime,complete:true}]];
     if(usageValid && daily && /^\d{4}-\d{2}-\d{2}$/.test(daily.date) && Number.isSafeInteger(daily.value) && daily.value>=0)metrics.unshift(['daily',dailyLabel,{...daily,start:daily.date,end:daily.date,complete:true}]);
@@ -172,7 +187,7 @@
       if(!visible(key==='week'?'weekly':key))continue;
       const dayKey=stamp=>new Date(stamp).toISOString().slice(0,10);
       const monday=stamp=>{const d=new Date(dayKey(stamp));d.setUTCDate(d.getUTCDate()-(d.getUTCDay()+6)%7);return dayKey(d);};
-      const samePeriod=usageValid && (key==='today'?dayKey(usage.fetchedAt)===dayKey(Date.now()):['week','average'].includes(key)?monday(usage.fetchedAt)===monday(Date.now()):true);
+      const samePeriod=usageValid && (key==='average'?dayKey(usage.fetchedAt).slice(0,7)===dayKey(Date.now()).slice(0,7):key==='week'?monday(usage.fetchedAt)===monday(Date.now()):true);
       const value=samePeriod?metric?.value:null, partial=value!==null&&value!==undefined&&metric?.complete===false;
       const block=text('div','','usage-metric');block.dataset.metric=key;
       const detail=[`${label}: ${exact(value)} Token${key==='average'?' / \u5929':''}`];
@@ -182,7 +197,7 @@
         if(Number.isFinite(observed?.lastAbsentAt))detail.push('\u4e0a\u6b21\u5c1a\u672a\u8fd4\u56de: '+beijingTime(observed.lastAbsentAt));
         detail.push('\u89c2\u6d4b\u65f6\u95f4\u4e0d\u7b49\u4e8e\u5b98\u65b9\u53d1\u5e03\u65f6\u95f4\uff1b\u5173\u95ed\u671f\u95f4\u4e0d\u89c2\u6d4b');
       }
-      if(key==='average' && usageValid && value!==null) detail.push(`\u672c\u5468\u5df2\u8fd4\u56de\u8bb0\u5f55 ${exact(week.value)} / ${week.days} \u5929\uff0c\u56db\u820d\u4e94\u5165\uff1b\u4e0d\u542b\u7f3a\u5931\u65e5\u671f`);
+      if(key==='average' && usageValid && value!==null) detail.push(`Month: ${exact(month.value)} Token / ${month.days} returned days`);
       if(key!=='lifetime') {
         if(metric?.start) detail.push(`${metric.start} ~ ${metric.end}`);
         if(partial) detail.push(`\u6570\u636e\u4e0d\u5b8c\u6574: ${metric.days}/${metric.expected} \u5929\uff0c\u7f3a\u5931\u65e5\u671f\u4e0d\u6309 0 \u8ba1\u7b97`);
@@ -195,7 +210,7 @@
       if(nextRefresh!==null) detail.push(`\u542f\u52a8\u65f6\u8bfb\u53d6\uff0c\u4e4b\u540e\u6bcf 60 \u5206\u949f\u5237\u65b0\n\u4e0b\u6b21\uff08\u5317\u4eac\u65f6\u95f4\uff09: ${beijingTime(nextRefresh)}`);
       block.title=detail.join('\n');
       block.append(text('div',label,'label'));
-      if(key==='daily')block.append(text('div',metric.date.slice(5).split('-').map(Number).join('/'),'daily-date'));
+      if(key==='daily'&&metric.date!==previousDate)block.append(text('div',metric.date.slice(5).split('-').map(Number).join('/'),'daily-date'));
       block.append(text('div',compact(value),'value'));
       usageBox.append(block);hints.push(detail.join('\n'));
     }
@@ -288,7 +303,7 @@
     delete window.__localCodexMeter;
   }
   window.__localCodexMeter = {
-    version:'0.12.3',
+    version:'0.12.4',
     controllerId:'local-codex-sidebar-meter-v1',
     receive(value) { state = value; heartbeat = Date.now(); render(); mount(); },
     dispose,

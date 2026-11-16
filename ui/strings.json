@@ -262,6 +262,10 @@
     "日均 Token",
     "日均 Token"
   ],
+  "Monthly daily average": ["本月日均", "本月日均"],
+  "Credit balance": ["额度余额", "額度餘額"],
+  "Available quota resets": ["可用重置次数", "可用重設次數"],
+  "Yesterday": ["昨日", "昨日"],
   "Plan badge": [
     "套餐标识",
     "方案標示"

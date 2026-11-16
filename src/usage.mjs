@@ -24,8 +24,10 @@ export function normalizeUsage(result, now=Date.now()) {
     return {start:dateKey(start),end:dateKey(end),value:days?count(sum):null,days,expected,complete:days===expected};
   };
   const weeks=Array.from({length:5},(_,i)=>period(monday-i*7*dayMs,i?monday-(i-1)*7*dayMs-dayMs:midnight));
+  const month=period(Date.parse(today.slice(0,7)+'-01T00:00:00Z'),midnight);
+  month.average=month.days&&month.value!==null?Math.round(month.value/month.days):null;
   const days=[...daily].filter(([,value])=>value!==null).sort(([a],[b])=>b.localeCompare(a)).slice(0,45).map(([date,value])=>({date,value}));
-  return {fetchedAt:now,lifetime:count(result?.summary?.lifetimeTokens),today:period(midnight,midnight),daily:days,dailySelected:selectDailyUsage({daily:days},now),week:weeks[0],weeks,error:null};
+  return {fetchedAt:now,lifetime:count(result?.summary?.lifetimeTokens),today:period(midnight,midnight),daily:days,dailySelected:selectDailyUsage({daily:days},now),week:weeks[0],month,weeks,error:null};
 }
 
 export function selectDailyUsage(usage,now=Date.now()) {

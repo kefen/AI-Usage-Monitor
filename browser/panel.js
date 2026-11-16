@@ -5,8 +5,8 @@ locale=allowed.includes(locale)?locale:locale.startsWith('zh')?(locale.includes(
 const t=key=>locale==='en'?key:(CQS_STRINGS[key]?.[locale==='zh-TW'?1:0]||key);
 document.querySelector('#extension-id').textContent=chrome.runtime.id;
 document.querySelector('#help-id').textContent=chrome.runtime.id;
-document.querySelector('#version').textContent='v'+(chrome.runtime.getManifest?.().version||'0.3.1');
-const choices=['5-hour remaining','Weekly remaining','Daily tokens','Weekly tokens','Lifetime tokens'];
+document.querySelector('#version').textContent='v'+(chrome.runtime.getManifest?.().version||'0.3.2');
+const choices=['5-hour remaining','Weekly remaining','Daily tokens','Daily average','Weekly tokens','Lifetime tokens','Credit balance','Available quota resets'];
 let visible={};try{visible=JSON.parse(localStorage.getItem('cqs-visible')||'{}');if(!visible||typeof visible!=='object')visible={};}catch{}
 function switchPage(id){document.querySelectorAll('main>section').forEach(el=>el.hidden=el.id!==id);document.querySelectorAll('[data-page]').forEach(el=>el.setAttribute('aria-current',el.dataset.page===id?'page':'false'));}
 document.querySelectorAll('[data-page]').forEach(el=>el.addEventListener('click',()=>switchPage(el.dataset.page)));
@@ -24,8 +24,12 @@ function render(){
  if(!data||!data.ok){status.textContent=t(data?.code==='STALE'?'Snapshot expired':'Local snapshot unavailable');stamp.textContent=t('Check the desktop monitor and native host registration.');return;}
  status.textContent=t('Quota snapshot read');
  for(const w of data.windows||[]){const key=w.minutes===300?'5-hour remaining':w.minutes===10080?'Weekly remaining':'Remaining quota';if(visible[key]!==false)row(t(key),w.remaining+'%');}
+ if(visible['Credit balance']!==false)row(t('Credit balance'),data.creditBalance??'--');
+ if(visible['Available quota resets']!==false)row(t('Available quota resets'),count(data.resetCredits));
  if(!data.windows?.length)row(t('Remaining quota'),t('Unavailable'));
- if(data.daily&&visible['Daily tokens']!==false)row(data.daily.date+' · '+t('Daily tokens'),count(data.daily.value));
+ const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);const day=`${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`;
+ if(data.daily&&visible['Daily tokens']!==false)row(data.daily.date===day?t('Yesterday'):data.daily.date+' · '+t('Daily tokens'),count(data.daily.value));
+ if(visible['Daily average']!==false)row(t('Monthly daily average'),count(data.monthAverage));
  if(visible['Weekly tokens']!==false)row(t('Weekly tokens'),count(data.week));if(visible['Lifetime tokens']!==false)row(t('Lifetime tokens'),count(data.lifetime));
  stamp.textContent=t('Quota synced')+': '+(data.quotaAt?new Date(data.quotaAt).toLocaleString(locale):'--')+' / '+t('Tokens synced')+': '+(data.usageAt?new Date(data.usageAt).toLocaleString(locale):'--');
 }
@@ -39,7 +43,7 @@ language.addEventListener('change',()=>{locale=language.value;try{localStorage.s
 button.addEventListener('click',refresh);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});setInterval(refresh,60000);render();refresh();
 document.querySelector('#retry').addEventListener('click',refresh);
 document.querySelector('#export').addEventListener('click',()=>{
- const report={tool:'Codex Quota Sidebar by KEFEN',version:chrome.runtime.getManifest?.().version||'0.3.1',connection:error?'helper-unavailable':data?.ok?'snapshot-read':'snapshot-unavailable',exportedAt:new Date().toISOString()};
+ const report={tool:'Codex Quota Sidebar by KEFEN',version:chrome.runtime.getManifest?.().version||'0.3.2',connection:error?'helper-unavailable':data?.ok?'snapshot-read':'snapshot-unavailable',exportedAt:new Date().toISOString()};
  const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download='Codex-Quota-Sidebar-browser-diagnostics.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
  document.querySelector('#help-feedback').textContent=t('Review diagnostics before attaching them to a GitHub issue. No files are uploaded automatically.');
 });

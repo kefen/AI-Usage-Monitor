@@ -48,7 +48,7 @@ internal static class TrayHost {
     }
     static void Report() {
         using(var self=Process.GetCurrentProcess()) {
-            var data=new Dictionary<string,object>{{"version","0.12.3"},{"stage",stage},{"pid",self.Id},{"monitorPid",child==null?0:child.Id},{"host","native"},{"workingSetBytes",self.WorkingSet64},{"cpuSeconds",self.TotalProcessorTime.TotalSeconds},{"updatedAt",DateTime.UtcNow.ToString("o")}};
+            var data=new Dictionary<string,object>{{"version","0.12.4"},{"stage",stage},{"pid",self.Id},{"monitorPid",child==null?0:child.Id},{"host","native"},{"workingSetBytes",self.WorkingSet64},{"cpuSeconds",self.TotalProcessorTime.TotalSeconds},{"updatedAt",DateTime.UtcNow.ToString("o")}};
             if(!preparing && child!=null && !child.HasExited){child.Refresh();data["nodeWorkingSetBytes"]=child.WorkingSet64;data["nodeCpuSeconds"]=child.TotalProcessorTime.TotalSeconds;}
             File.WriteAllText(Path.Combine(Runtime,"background.json"),Json.Serialize(data),Encoding.UTF8);
         }

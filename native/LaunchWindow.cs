@@ -35,7 +35,7 @@ internal sealed class LaunchWindow : Form {
         body=MeterTheme.Body();Controls.Add(body);var header=MeterTheme.Header("","Windows");Controls.Add(header);
         var rail=new Panel{Dock=DockStyle.Left,Width=184,Padding=new Padding(12,22,12,16),BackColor=Color.FromArgb(245,247,250)};Controls.Add(rail);
         var nav=new FlowLayoutPanel{Dock=DockStyle.Top,Height=340,FlowDirection=FlowDirection.TopDown,WrapContents=false};rail.Controls.Add(nav);
-        var version=MeterTheme.Label("v0.12.3",8,MeterTheme.Muted);version.Dock=DockStyle.Bottom;version.Height=26;rail.Controls.Add(version);
+        var version=MeterTheme.Label("v0.12.4",8,MeterTheme.Muted);version.Dock=DockStyle.Bottom;version.Height=26;rail.Controls.Add(version);
         foreach(string label in new[]{"Usage overview","Sidebar content","Codex subscription record","Data and settings","Diagnostics","About project"}){
             string key=label;var b=MeterTheme.Button(key,key,false);b.Width=160;b.Height=40;b.TextAlign=ContentAlignment.MiddleLeft;b.Margin=new Padding(0,0,0,6);b.BackColor=rail.BackColor;b.FlatAppearance.BorderSize=0;b.Click+=(s,e)=>ShowPage(key);nav.Controls.Add(b);navigation[b]=key;
         }

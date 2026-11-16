@@ -2,6 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeUsage } from '../src/usage.mjs';
 const now=Date.parse('2026-11-14T12:00:00Z');
+test('monthly average uses returned month days, not week or missing days',()=>{
+  const s=normalizeUsage({dailyUsageBuckets:[{startDate:'2026-11-01',tokens:20},{startDate:'2026-11-15',tokens:40},{startDate:'2026-10-31',tokens:1000}]},Date.parse('2026-11-16T12:00:00Z'));
+  assert.equal(s.month.value,60);assert.equal(s.month.days,2);assert.equal(s.month.average,30);assert.equal(s.week.value,null);
+  assert.equal(normalizeUsage({},now).month.average,null);
+});
 test('account lifetime remains separate from calendar-week sums',()=>{
   const s=normalizeUsage({summary:{lifetimeTokens:9999},dailyUsageBuckets:[
     ...Array.from({length:6},(_,i)=>({startDate:`2026-11-${9+i<10?'0':''}${9+i}`,tokens:10})),

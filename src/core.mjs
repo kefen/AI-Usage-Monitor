@@ -17,7 +17,7 @@ export function normalizeLimits(result, now = Date.now()) {
     })).sort((a, b) => a.minutes - b.minutes);
     const credits=bucket.credits;
     const balance=typeof credits?.balance==='string' && /^\d+(\.\d+)?$/.test(credits.balance) && Number.isFinite(Number(credits.balance)) ? credits.balance : null;
-    if (windows.length) buckets.push({ id: String(id).slice(0, 80), windows, credits:credits ? {balance,unlimited:credits.unlimited===true,hasCredits:credits.hasCredits===true}:null });
+    if (windows.length || balance!==null || credits?.unlimited===true) buckets.push({ id: String(id).slice(0, 80), windows, credits:credits ? {balance,unlimited:credits.unlimited===true,hasCredits:credits.hasCredits===true}:null });
   }
   const resets=result?.rateLimitResetCredits?.availableCount;
   return { fetchedAt: now, buckets, resetCredits:Number.isSafeInteger(resets)&&resets>=0?resets:null, error: null };

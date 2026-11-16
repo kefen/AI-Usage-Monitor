@@ -36,7 +36,7 @@ internal sealed class UsageOverview : UserControl {
         }
         if(Fresh(data,"usageAt",now,5400000)){
             values[3].Text=Count(N(data,"week"));values[4].Text=Count(N(data,"lifetime"));
-            object daily;if(data.TryGetValue("daily",out daily)&&daily is Dictionary<string,object>){var d=(Dictionary<string,object>)daily;object label;DateTime day;if(d.TryGetValue("date",out label)&&DateTime.TryParseExact(Convert.ToString(label),"yyyy-MM-dd",System.Globalization.CultureInfo.InvariantCulture,System.Globalization.DateTimeStyles.None,out day)){values[2].Text=Count(N(d,"value"));date.Text=Locale.T("Data date")+": "+day.ToString("yyyy-MM-dd");}}
+            object daily;if(data.TryGetValue("daily",out daily)&&daily is Dictionary<string,object>){var d=(Dictionary<string,object>)daily;object label;DateTime day;if(d.TryGetValue("date",out label)&&DateTime.TryParseExact(Convert.ToString(label),"yyyy-MM-dd",System.Globalization.CultureInfo.InvariantCulture,System.Globalization.DateTimeStyles.None,out day)){values[2].Text=Count(N(d,"value"));date.Text=day.Date==new DateTime(1970,1,1,0,0,0,DateTimeKind.Utc).AddMilliseconds(now).ToLocalTime().Date.AddDays(-1)?Locale.T("Yesterday"):Locale.T("Data date")+": "+day.ToString("yyyy-MM-dd");}}
         }
         stamp.Text=Locale.T("Quota synced")+": "+Time(N(data,"quotaAt"))+"\n"+Locale.T("Tokens synced")+": "+Time(N(data,"usageAt"));
     }
