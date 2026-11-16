@@ -1,0 +1,105 @@
+{
+  "publishedAt": "2026-11-16",
+  "sourceCommit": "fa05bfaa5df28967cdae7822790f428721b05471",
+  "workflow": "https://github.com/kefen/codex-quota-sidebar/actions/runs/43882563634",
+  "versions": {
+    "windows": "0.12.6",
+    "macos": "0.4.8-alpha.1",
+    "chrome": "0.3.4"
+  },
+  "features": [
+    "Aligned quota pair and fixed two-column Token metrics: daily / monthly daily average, then weekly / lifetime",
+    "Windows now displays monthly daily average",
+    "Explicit missing, expired and disconnected states; valid zero remains zero",
+    "English native and browser screenshots refreshed; illustrated sample data identified",
+    "Simplified Chinese, Traditional Chinese and English retained"
+  ],
+  "planDetection": {
+    "automatic": false,
+    "reason": "Local CLI account can differ from the desktop account. Reported plan type cannot reliably prove every purchased billing tier, so manual subscription recording is retained."
+  },
+  "verification": {
+    "sharedTests": 75,
+    "windowsNativeAndPackage": true,
+    "macNativeSmoke": [
+      "arm64",
+      "x86_64"
+    ],
+    "browserResponsive": true,
+    "macNotarized": false,
+    "intelLiveAccountAccepted": false
+  },
+  "previousReleasesRetained": true,
+  "commitsAndTagsRetained": true,
+  "releases": [
+    {
+      "tag": "windows/v0.12.6",
+      "url": "https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.12.6",
+      "draft": false,
+      "prerelease": false,
+      "assets": [
+        {
+          "name": "Codex-Quota-Sidebar-source-windows-0.12.6-macos-0.4.8-alpha.1.zip",
+          "digest": "sha256:0922467b6304f661975f0757bc58616e3ecccf0044700dc74725667d7665a2b3",
+          "size": 870721
+        },
+        {
+          "name": "Codex-Quota-Sidebar-Windows-0.12.6-x64-Setup.exe",
+          "digest": "sha256:2ea507c7605e844f58617296512b04a4fb18491efdc2c4c04e3ec01a75425b55",
+          "size": 34799104
+        },
+        {
+          "name": "SHA256SUMS-windows-v0.12.6.txt",
+          "digest": "sha256:da810db8b4eeef0844ad471f26b0f78b43b7fe61cab157b161e3a9e59fde4385",
+          "size": 247
+        }
+      ]
+    },
+    {
+      "tag": "macos/v0.4.8-alpha.1",
+      "url": "https://github.com/kefen/codex-quota-sidebar/releases/tag/macos/v0.4.8-alpha.1",
+      "draft": false,
+      "prerelease": true,
+      "assets": [
+        {
+          "name": "Codex-Quota-Sidebar-macOS-0.4.8-alpha.1-arm64-unsigned-test.dmg",
+          "digest": "sha256:43821f4fcbade9b8f71248bce0daece1afa0a30c52d7685391776f5e5b8463b5",
+          "size": 44041549
+        },
+        {
+          "name": "Codex-Quota-Sidebar-macOS-0.4.8-alpha.1-source.zip",
+          "digest": "sha256:0922467b6304f661975f0757bc58616e3ecccf0044700dc74725667d7665a2b3",
+          "size": 870721
+        },
+        {
+          "name": "Codex-Quota-Sidebar-macOS-0.4.8-alpha.1-x86_64-unsigned-test.dmg",
+          "digest": "sha256:431ae8b0ffd5e01b70ee2ff65635933ae216d01b82c1531f68a846669247a454",
+          "size": 45632739
+        },
+        {
+          "name": "SHA256SUMS-macos-v0.4.8-alpha.1.txt",
+          "digest": "sha256:6f247353f5939593a276b26a94de9c851c92492b50bd1c7284155bee986f20ed",
+          "size": 378
+        }
+      ]
+    },
+    {
+      "tag": "chrome/v0.3.4",
+      "url": "https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.3.4",
+      "draft": false,
+      "prerelease": true,
+      "assets": [
+        {
+          "name": "Codex-Quota-Sidebar-Chrome-0.3.4.zip",
+          "digest": "sha256:142f7b88299ff6e116daf7039fe74a115e3c2593e2ed8c00bf791f5717d7b415",
+          "size": 26039
+        },
+        {
+          "name": "SHA256SUMS-chrome-v0.3.4.txt",
+          "digest": "sha256:ec2150a8220ff00ab49ed5ac7b7541f42dd19ef4b61539032b12dbef09819986",
+          "size": 103
+        }
+      ]
+    }
+  ]
+}
