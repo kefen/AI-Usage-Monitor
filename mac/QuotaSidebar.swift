@@ -306,6 +306,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         guard beginPage("help") else { return }; showingSettings = true; heading("Diagnostics")
         authorizationButtons()
         paragraph("1. Check that official Codex can chat. Enlarge the window if the sidebar is hidden, then reconnect.")
+        paragraph("If Codex is already running, reconnect first. When a restart is required, save work and approve it in Usage overview. You can cancel or quit Codex manually instead.")
         paragraph("2. Export diagnostics: version, system, connection state and error codes. No keys, chats, accounts or installation paths.")
         paragraph("3. Review the file, describe how to reproduce the problem, then attach it to a GitHub issue. Hide personal information in screenshots.")
         body.addArrangedSubview(button("Export sanitized diagnostics", #selector(exportDiagnostics)))

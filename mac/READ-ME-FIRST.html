@@ -13,7 +13,7 @@
 <li>处理系统提示后，回到面板点击“重新连接”。若误将组件移到废纸篓，请退出工具并重新安装完整包，不要下载来历不明的 node。</li></ol>
 <h3>使用中出现问题</h3>
 <p>“运行组件无法启动”不等于 Codex 签名错误。可用“打开隐私与安全性”和“安装与授权说明”查看下一步。没有“仍要打开”选项、设备由公司管理，或系统明确提示恶意软件、将损坏电脑、文件损坏时，请停止，不要绕过安全检测；联系管理员或反馈诊断。</p>
-<p>组件通过检查后仍连接失败：先从“应用程序”确认官方 Codex 可以打开；保存工作并完全退出 Codex，再回面板重连。不要授予“完全磁盘访问”“辅助功能”等无关权限。诊断文件不会自动上传，提交前请检查内容。</p>
+<p>组件通过检查后仍连接失败：先确认官方 Codex 能正常打开，按照下方“Codex 已打开时”的步骤连接。只有缺少端口时才需要确认重启；不愿授权自动化时可手动退出 Codex 再重连。不要授予“完全磁盘访问”“辅助功能”等无关权限。诊断文件不会自动上传，提交前请检查内容。</p>
 <p>请勿关闭 Gatekeeper、关闭 SIP、批量删除隔离属性或自行重签名。升级后系统可能重新检查。当前仍需真实 Mac 账号验收。</p></section>
 <section id="tw"><h2>安裝與首次開啟</h2>
 <p class="warning">此測試版未經 Apple 開發者簽署及公證。校驗和不等於安全審計。請確認來源、檔案完整性與風險後再繼續，或等待公證版。</p>
@@ -22,7 +22,7 @@
 <li>嘗試開啟後若遭系統阻擋，關閉警告，前往 Apple 選單 → 系統設定 → 隱私權與安全性 → 安全性，核對該項目是否提供「強制打開／仍要開啟」。確認來源後自行決定是否允許。</li>
 <li>內附的 Node.js 元件會以 <code>node</code> 顯示，可能需要另外確認。請核對元件，不要授權其他同名程式。完成後回面板按「重新連線」。</li>
 <li>若誤刪元件，請退出工具並重新安裝完整套件。不要停用 Gatekeeper、SIP，或批次移除隔離屬性。</li></ol>
-<p>沒有允許選項、企業管控、明確惡意軟體或損壞警告時請停止並聯絡管理員。元件檢查通過後仍失敗，先確認官方 Codex 可開啟，儲存工作並完全退出，再重新連線。診斷檔不會自動上傳，送出前請檢查；不需要授予完整磁碟存取等無關權限。</p></section>
+<p>沒有允許選項、企業管控、明確惡意軟體或損壞警告時請停止並聯絡管理員。元件檢查通過後仍失敗，請按下方「Codex 已開啟時」的流程操作。缺少連線埠時才需要確認重新啟動，也可手動退出再連線。診斷檔不會自動上傳，送出前請檢查；不需要授予完整磁碟存取等無關權限。</p></section>
 <section><h2>Codex 已打开时 / Codex 已開啟時 / When Codex is already open</h2>
 <p>无需先手动退出。打开面板并点击“重新连接”；有可用端口时直接连接。若提示缺少端口，先保存工作、等待任务结束，再点击“保存工作后重启并连接”并确认。取消不会关闭 Codex。系统如询问自动化权限，请核对是本工具请求控制 Codex；不愿授权可取消，并手动用 ⌘Q 退出 Codex 后重连。关闭红色窗口不等于退出应用。</p>
 <p>無須先手動結束。開啟面板並按「重新連線」；有可用連線埠時直接連線。若缺少連線埠，先儲存工作並等待任務結束，再按「儲存工作後重新啟動並連線」並確認。取消不會關閉 Codex。如系統詢問自動化權限，請核對工具與 Codex；可取消並手動用 ⌘Q 結束 Codex 後重連。</p>
@@ -35,6 +35,6 @@
 <li>Try opening it first. For an unidentified-developer/unnotarized warning, dismiss the alert. In Apple menu → System Settings → Privacy &amp; Security → Security, check for Open Anyway for the exact item. Authorize only after verifying its origin.</li>
 <li>The bundled Node.js runtime appears as <code>node</code>. It can require a separate decision even after the app opens. Verify the item, handle the system prompt, then return and choose Reconnect.</li>
 <li>If the runtime was moved to Trash, exit and reinstall the complete package. Do not fetch a random replacement executable.</li></ol>
-<p>If no approval option exists, the device is managed, or macOS reports malware, damage or tampering, stop and seek help. Never disable Gatekeeper/SIP, remove quarantine in bulk or re-sign files. Runtime startup failure is not proof of a Codex signature error. Once the runtime works, verify official Codex launches, save your work, fully quit it, then reconnect. No unrelated Full Disk Access or Accessibility permission is required. Review exported diagnostics before sharing; there is no automatic upload.</p></section>
+<p>If no approval option exists, the device is managed, or macOS reports malware, damage or tampering, stop and seek help. Never disable Gatekeeper/SIP, remove quarantine in bulk or re-sign files. Runtime startup failure is not proof of a Codex signature error. Once the runtime works, follow the running-client workflow above. Restart is only required when a usable port is missing. No unrelated Full Disk Access or Accessibility permission is required. Review exported diagnostics before sharing; there is no automatic upload.</p></section>
 <h2>官方说明 / Official guidance</h2><p><a href="https://support.apple.com/102445">Apple: Safely open apps on your Mac</a> · <a href="https://github.com/kefen/codex-quota-sidebar">GitHub project</a></p>
 </main></html>

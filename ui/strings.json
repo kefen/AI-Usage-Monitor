@@ -1,4 +1,5 @@
 {
+  "If Codex is already running, reconnect first. When a restart is required, save work and approve it in Usage overview. You can cancel or quit Codex manually instead.": ["Codex 已运行时先点重新连接。若需要重启，请保存工作后在用量概览确认；也可取消，或手动退出 Codex 再连接。", "Codex 已執行時先按重新連線。若需要重新啟動，請儲存工作後在用量概覽確認；也可取消，或手動結束 Codex 再連線。"],
   "Save work, restart and connect": ["保存工作后重启并连接", "儲存工作後重新啟動並連線"],
   "Restart Codex to connect?": ["重启 Codex 以连接侧边栏？", "重新啟動 Codex 以連線側邊欄？"],
   "Codex is open without a connection port. Save your work, then approve a restart to connect.": ["Codex 已打开，但未启用连接端口。请先保存工作，再确认重启并连接。", "Codex 已開啟，但未啟用連線埠。請先儲存工作，再確認重新啟動並連線。"],
