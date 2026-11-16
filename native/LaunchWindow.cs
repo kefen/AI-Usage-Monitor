@@ -35,7 +35,7 @@ internal sealed class LaunchWindow : Form {
         body=MeterTheme.Body();Controls.Add(body);var header=MeterTheme.Header("","Windows");Controls.Add(header);
         var rail=new Panel{Dock=DockStyle.Left,Width=184,Padding=new Padding(12,22,12,16),BackColor=Color.FromArgb(245,247,250)};Controls.Add(rail);
         var nav=new FlowLayoutPanel{Dock=DockStyle.Top,Height=340,FlowDirection=FlowDirection.TopDown,WrapContents=false};rail.Controls.Add(nav);
-        var version=MeterTheme.Label("v0.12.5",8,MeterTheme.Muted);version.Dock=DockStyle.Bottom;version.Height=26;rail.Controls.Add(version);
+        var version=MeterTheme.Label("v0.12.6",8,MeterTheme.Muted);version.Dock=DockStyle.Bottom;version.Height=26;rail.Controls.Add(version);
         var updates=MeterTheme.Button("checkUpdates","Check for updates",false);updates.Dock=DockStyle.Bottom;updates.Height=34;rail.Controls.Add(updates);updates.BringToFront();
         bool updating=false;Action<string> check=null;
         check=operation=>{
@@ -71,7 +71,7 @@ internal sealed class LaunchWindow : Form {
         overviewPage=new Panel{Dock=DockStyle.Fill};body.Controls.Add(overviewPage);
         var grid=new TableLayoutPanel{Dock=DockStyle.Top,Height=460,ColumnCount=2,RowCount=5};
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));
-        foreach(int height in new[]{38,42,270,50,40})grid.RowStyles.Add(new RowStyle(SizeType.Absolute,height));overviewPage.Controls.Add(grid);
+        foreach(int height in new[]{36,30,320,32,28})grid.RowStyles.Add(new RowStyle(SizeType.Absolute,height));overviewPage.Controls.Add(grid);
         headline=MeterTheme.Label("Connecting",17,MeterTheme.Ink);headline.Name="statusHeadline";grid.Controls.Add(headline,0,0);grid.SetColumnSpan(headline,2);
         subtitle=MeterTheme.Label("Waiting for client and data.",10,MeterTheme.Muted);subtitle.Name="statusDetail";grid.Controls.Add(subtitle,0,1);grid.SetColumnSpan(subtitle,2);
         overview=new UsageOverview();grid.Controls.Add(overview,0,2);grid.SetColumnSpan(overview,2);
@@ -146,7 +146,7 @@ internal sealed class LaunchWindow : Form {
         }
         connection.Text=mounted?Locale.T("Connected"):failed?Locale.T("Not connected"):Locale.T("Connection in progress");
         quota.Text=Available(data,"quotaAvailable");usage.Text=Available(data,"usageAvailable");
-        DateTime stamp;lastSync.Text=data.ContainsKey("updatedAt")&&DateTime.TryParse(Convert.ToString(data["updatedAt"]),out stamp)?stamp.ToLocalTime().ToString("MM/dd HH:mm:ss"):"--";
+        DateTime stamp;lastSync.Text=Locale.T("Last checked")+": "+(data.ContainsKey("updatedAt")&&DateTime.TryParse(Convert.ToString(data["updatedAt"]),out stamp)?stamp.ToLocalTime().ToString("MM/dd HH:mm"):"--");
         if(failed&&data.ContainsKey("code"))subtitle.Text=Convert.ToString(data["code"]);
         open.Enabled=mounted||failed||stage=="sidebar-missing";retry.Enabled=mounted||failed||stage=="sidebar-missing";
         retry.BackColor=failed?MeterTheme.Green:MeterTheme.Surface;retry.ForeColor=failed?Color.White:MeterTheme.Ink;

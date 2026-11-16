@@ -6,7 +6,7 @@ if(!token||process.env.GITHUB_REPOSITORY!==repo||process.env.GITHUB_REF!=='refs/
 const accepted=JSON.parse(await readFile('docs/releases/accepted-0.12.json','utf8'));
 const versions=JSON.parse(await readFile('versions.json','utf8'));
 const chrome=JSON.parse(await readFile('browser/manifest.json','utf8')).version;
-if(accepted.windows!=='0.12.5'||accepted.macos!=='0.4.7-alpha.1'||accepted.chrome!=='0.3.3'||accepted.windowsAccepted!==true||accepted.publicReleaseAuthorized!==true||accepted.macAccountAccepted!==true||accepted.browserProfileAccepted!==false)throw Error('Not the authorized release set');
+if(accepted.windows!=='0.12.6'||accepted.macos!=='0.4.8-alpha.1'||accepted.chrome!=='0.3.4'||accepted.windowsAccepted!==true||accepted.publicReleaseAuthorized!==true||accepted.macAccountAccepted!==true||accepted.browserProfileAccepted!==false)throw Error('Not the authorized release set');
 if(versions.windows!==accepted.windows||versions.macos!==accepted.macos||chrome!==accepted.chrome)throw Error('Version mismatch');
 const source='Codex-Quota-Sidebar-source-windows-'+versions.windows+'-macos-'+versions.macos+'.zip';
 const macSource='Codex-Quota-Sidebar-macOS-'+versions.macos+'-source.zip';

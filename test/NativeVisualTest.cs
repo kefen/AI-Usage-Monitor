@@ -33,9 +33,13 @@ internal static class NativeVisualTest {
             foreach(string language in new[]{"en","zh-CN","zh-TW"}){
                 Locale.Set(language);
                 double now=(DateTime.UtcNow-new DateTime(1970,1,1)).TotalMilliseconds;
+                window.UpdateState("mounted",new Dictionary<string,object>{{"quotaAvailable",true},{"usageAvailable",true},{"updatedAt",DateTime.UtcNow.ToString("o")}});
                 var metrics=(UsageOverview)window.Controls.Find("metric0",true)[0].Parent.Parent;
-                metrics.UpdateSnapshot(new Dictionary<string,object>{{"generatedAt",now},{"quotaAt",now},{"usageAt",now},{"week",96900000},{"lifetime",2800000000d},{"daily",new Dictionary<string,object>{{"date","2026-11-14"},{"value",47500000}}},{"windows",new[]{new Dictionary<string,object>{{"minutes",300},{"remaining",75}},new Dictionary<string,object>{{"minutes",10080},{"remaining",68}}}}},true,now);
+                metrics.UpdateSnapshot(new Dictionary<string,object>{{"generatedAt",now},{"quotaAt",now},{"usageAt",now},{"monthAverage",125400000},{"week",96900000},{"lifetime",2800000000d},{"daily",new Dictionary<string,object>{{"date",DateTime.Now.Date.AddDays(-1).ToString("yyyy-MM-dd")},{"value",202650000}}},{"windows",new[]{new Dictionary<string,object>{{"minutes",300},{"remaining",75}},new Dictionary<string,object>{{"minutes",10080},{"remaining",37}}}}},true,now);
                 Capture(window,"overview-"+language);
+                metrics.UpdateSnapshot(new Dictionary<string,object>{{"generatedAt",now},{"quotaAt",now},{"usageAt",now},{"monthAverage",0},{"lifetime",3010000000d},{"daily",new Dictionary<string,object>{{"date",DateTime.Now.Date.AddDays(-1).ToString("yyyy-MM-dd")},{"value",0}}},{"windows",new[]{new Dictionary<string,object>{{"minutes",10080},{"remaining",37}}}}},true,now);
+                Capture(window,"overview-partial-"+language);
+                metrics.UpdateSnapshot(new Dictionary<string,object>(),true,now);Capture(window,"overview-empty-"+language);
             }
             Locale.Set("en");
             foreach(string section in new[]{"Sidebar content","Codex subscription record","Data and settings","Diagnostics","About project","Usage overview"}){

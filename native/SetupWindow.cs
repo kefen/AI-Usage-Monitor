@@ -22,12 +22,12 @@ internal sealed class SetupWindow : Form {
     internal SetupWindow(string destination,Action operation,Action launch,Func<string> detect=null,Action configure=null){
         original=Destination=destination;this.operation=operation;this.launch=launch;this.configure=configure;this.detect=detect??SetupSupport.FindCodex;
         Text="Codex Quota Sidebar by KEFEN";MeterTheme.Style(this,1000,710);
-        body=MeterTheme.Body();Controls.Add(body);var header=MeterTheme.Header("Setup","Windows 0.12.5");Controls.Add(header);
+        body=MeterTheme.Body();Controls.Add(body);var header=MeterTheme.Header("Setup","Windows 0.12.6");Controls.Add(header);
         rail=new Panel{Dock=DockStyle.Left,Width=190,Padding=new Padding(18,28,14,20),BackColor=Color.FromArgb(246,247,249)};Controls.Add(rail);
         var list=new TableLayoutPanel{Dock=DockStyle.Top,ColumnCount=1,RowCount=4,Height=184};
         string[] names={"Environment","Install location","Display options","Install and connect"};
         for(int i=0;i<4;i++){list.RowStyles.Add(new RowStyle(SizeType.Absolute,46));steps[i]=MeterTheme.Label(names[i],10,MeterTheme.Muted);steps[i].Padding=new Padding(10,0,0,0);list.Controls.Add(steps[i]);}rail.Controls.Add(list);
-        var version=MeterTheme.Label("v0.12.5",8,MeterTheme.Muted);version.Dock=DockStyle.Bottom;version.Height=26;rail.Controls.Add(version);
+        var version=MeterTheme.Label("v0.12.6",8,MeterTheme.Muted);version.Dock=DockStyle.Bottom;version.Height=26;rail.Controls.Add(version);
         var github=new LinkLabel{Text="About project",Dock=DockStyle.Bottom,Height=36,LinkColor=MeterTheme.Blue,LinkBehavior=LinkBehavior.HoverUnderline};github.LinkClicked+=(s,e)=>System.Diagnostics.Process.Start(Locale.Repository);rail.Controls.Add(github);github.BringToFront();
         var top=new Panel{Dock=DockStyle.Top,Height=88};title=MeterTheme.Label("",18,MeterTheme.Ink);title.Dock=DockStyle.Top;title.Height=40;
         detail=MeterTheme.Label("",10,MeterTheme.Muted);detail.Dock=DockStyle.Top;detail.Height=40;top.Controls.Add(detail);top.Controls.Add(title);body.Controls.Add(top);

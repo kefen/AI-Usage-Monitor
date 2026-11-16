@@ -16,6 +16,14 @@ final class FlatButton: NSButton {
 }
 
 // Native shell only. The shared Node core remains responsible for quota data.
+final class QuotaTrack: NSView {
+    var fraction: Double? { didSet { needsDisplay = true } }
+    override func draw(_ dirtyRect: NSRect) {
+        NSColor(calibratedWhite: 0.88, alpha: 1).setFill(); bounds.fill()
+        if let value = fraction { NSColor(calibratedRed: 0.14, green: 0.58, blue: 0.43, alpha: 1).setFill(); NSRect(x: 0, y: 0, width: bounds.width * value, height: bounds.height).fill() }
+    }
+}
+
 final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let root = CommandLine.arguments.contains("--ui-smoke") ? FileManager.default.temporaryDirectory.appendingPathComponent("cqs-ui-test-" + UUID().uuidString) : FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/CodexSidebarMeter")
     var runtime: URL { root.appendingPathComponent(".runtime") }
@@ -41,7 +49,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             dialog.addButton(withTitle: CqsLocale.t("Cancel")); dialog.addButton(withTitle: CqsLocale.t("Continue"))
             guard dialog.runModal() == .alertSecondButtonReturn else { return false }
         }
-        dirty = false; editingReady = false; saveButton = nil; page = next
+        dirty = false; editingReady = false; saveButton = nil; page = next; body.spacing = 14
         for (key, control) in navigationButtons {
             control.layer?.backgroundColor = (key == next ? NSColor(calibratedRed: 0.90, green: 0.93, blue: 1, alpha: 1) : .clear).cgColor
             control.contentTintColor = key == next ? green : .secondaryLabelColor
@@ -59,6 +67,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
     var metricFields: [NSTextField] = []
     var metricCaptions: [NSTextField] = []
+    var quotaTracks: [QuotaTrack] = []
     let languagePicker = NSPopUpButton()
     var retry: NSButton!
     var updateButton: NSButton!
@@ -170,7 +179,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         ])
         let spacer = NSView(); container.addArrangedSubview(spacer); spacer.setContentHuggingPriority(.defaultLow, for: .vertical)
         let footer = NSStackView(); footer.spacing = 8
-        let build = NSTextField(labelWithString: "macOS 0.4.7-alpha.1"); build.textColor = .secondaryLabelColor; build.font = .systemFont(ofSize: 11)
+        let build = NSTextField(labelWithString: "macOS 0.4.8-alpha.1"); build.textColor = .secondaryLabelColor; build.font = .systemFont(ofSize: 11)
         let updateArea = NSStackView(); updateArea.orientation = .vertical; updateArea.alignment = .leading; updateArea.spacing = 4
         updateButton = button("Check for updates", #selector(checkUpdates)); updateArea.addArrangedSubview(updateButton); updateArea.addArrangedSubview(build)
         footer.addArrangedSubview(updateArea)
@@ -201,7 +210,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             catch { alert(error.localizedDescription); NSApp.terminate(nil); return }
         }
         timer = Timer.scheduledTimer(withTimeInterval: 4, repeats: true) { [weak self] _ in self?.tick() }
-        if read("preferences.json")["macGuideVersion"] as? String != "0.4.7-alpha.1" { stage = "stopped"; showAuthorizationHelp() }
+        if read("preferences.json")["macGuideVersion"] as? String != "0.4.8-alpha.1" { stage = "stopped"; showAuthorizationHelp() }
         else { start() }
     }
     func button(_ title: String, _ action: Selector, primary: Bool = false) -> NSButton {
@@ -268,14 +277,14 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 ownerView.cacheDisplay(in: ownerView.bounds, to: ownerBitmap)
                 try ownerBitmap.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("owner-failure-" + language + ".png"))
                 let now = Date().timeIntervalSince1970 * 1000
-                try write("browser-state.json", ["generatedAt": now, "quotaAt": now, "usageAt": now, "windows": [["minutes": 10080, "remaining": 43]], "daily": ["date": "2026-11-15", "value": 202600000], "lifetime": 3008200000])
+                try write("browser-state.json", ["generatedAt": now, "quotaAt": now, "usageAt": now, "windows": [["minutes": 300, "remaining": 75],["minutes": 10080, "remaining": 37]], "daily": ["date": dateString(Calendar.current.date(byAdding: .day, value: -1, to: Date())!), "value": 202650000], "monthAverage":125400000, "week":96900000, "lifetime": 3008200000])
                 stage = "mounted"; errorText = ""; page = ""; showStatus(); tick(); window.contentView!.layoutSubtreeIfNeeded()
                 precondition(!metricFields[2].stringValue.contains("\n") && !metricCaptions[2].stringValue.isEmpty)
                 precondition(metricFields[4].stringValue == "3.01B" && metricCaptions[2].font!.pointSize < metricFields[2].font!.pointSize)
                 let connectedView = window.contentView!, connectedBitmap = connectedView.bitmapImageRepForCachingDisplay(in: connectedView.bounds)!
                 connectedView.cacheDisplay(in: connectedView.bounds, to: connectedBitmap)
                 try connectedBitmap.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("connected-fixture-" + language + ".png"))
-                updateMetrics(false); precondition(metricCaptions[2].stringValue.isEmpty && metricFields[2].stringValue == "--")
+                updateMetrics(false); precondition(metricCaptions[2].stringValue == CqsLocale.t("Not connected") && metricFields[2].stringValue == "--")
                 stage = "stopped"; errorText = ""; page = ""
             }
             let backup = try SettingsTransfer.exportData(runtime); try SettingsTransfer.restore(backup, at: runtime)
@@ -312,26 +321,34 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             restartButton = button("Save work, restart and connect", #selector(confirmRestart), primary: true)
             body.addArrangedSubview(restartButton!)
         }
-        let statusLines = NSStackView(); statusLines.orientation = .vertical; statusLines.alignment = .leading; statusLines.spacing = 6
-        for title in [CqsLocale.t("Client"), CqsLocale.t("Quota data"), CqsLocale.t("Token data"), CqsLocale.t("Last sync")] { let field = NSTextField(labelWithString: "--"); rows.append(field); line(title, field, into: statusLines) }
-        body.addArrangedSubview(statusLines)
-        metricFields = []; metricCaptions = []
-        var metrics = NSStackView(); metrics.orientation = .horizontal; metrics.alignment = .top; metrics.spacing = 20
-        for (index, label) in ["5-hour remaining","Weekly remaining","Daily tokens","Weekly tokens","Lifetime tokens","Monthly daily average"].enumerated() {
-            if index == 2 || index == 5 { body.addArrangedSubview(metrics); metrics = NSStackView(); metrics.orientation = .horizontal; metrics.alignment = .top; metrics.spacing = 20 }
-            let column = NSStackView(); column.orientation = .vertical; column.alignment = .leading; column.spacing = 6
-            column.widthAnchor.constraint(equalToConstant: index < 2 ? 280 : 180).isActive = true
-            let name = NSTextField(labelWithString: CqsLocale.t(label)); name.font = .systemFont(ofSize: 12, weight: .regular); name.textColor = .secondaryLabelColor
-            let value = NSTextField(labelWithString: "--"); value.font = .monospacedDigitSystemFont(ofSize: 24, weight: .regular)
-            let caption = NSTextField(labelWithString: ""); caption.font = .systemFont(ofSize: 11, weight: .regular); caption.textColor = .secondaryLabelColor
-            name.heightAnchor.constraint(equalToConstant: 18).isActive = true
-            value.heightAnchor.constraint(equalToConstant: 32).isActive = true
-            caption.heightAnchor.constraint(equalToConstant: 16).isActive = true
-            caption.lineBreakMode = .byTruncatingTail
-            column.addArrangedSubview(name); column.addArrangedSubview(value); column.addArrangedSubview(caption)
-            metrics.addArrangedSubview(column); metricFields.append(value); metricCaptions.append(caption)
+        body.spacing = 10
+        let statusLines = NSStackView(); statusLines.orientation = .horizontal; statusLines.alignment = .top; statusLines.distribution = .fillEqually; statusLines.spacing = 16
+        for title in ["Client","Quota data","Token data","Last sync"] {
+            let cell = NSStackView(); cell.orientation = .vertical; cell.alignment = .leading; cell.spacing = 4
+            let label = NSTextField(labelWithString: CqsLocale.t(title)); label.font = .systemFont(ofSize: 11); label.textColor = .secondaryLabelColor
+            let field = NSTextField(labelWithString: "--"); field.font = .systemFont(ofSize: 11); field.lineBreakMode = .byTruncatingTail
+            cell.addArrangedSubview(label); cell.addArrangedSubview(field); rows.append(field); statusLines.addArrangedSubview(cell)
         }
-        body.addArrangedSubview(metrics)
+        body.addArrangedSubview(statusLines); statusLines.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true
+        metricFields = []; metricCaptions = []; quotaTracks = []
+        let names = ["5-hour remaining","Weekly remaining","Daily tokens","Weekly tokens","Lifetime tokens","Monthly daily average"]
+        var columns: [NSStackView] = []
+        for index in 0..<6 {
+            let column = NSStackView(); column.orientation = .vertical; column.alignment = .leading; column.spacing = 4
+            let name = NSTextField(labelWithString: CqsLocale.t(names[index])); name.font = .systemFont(ofSize: 12); name.textColor = .secondaryLabelColor
+            let value = NSTextField(labelWithString: "--"); value.font = .monospacedDigitSystemFont(ofSize: 24, weight: .regular)
+            let caption = NSTextField(labelWithString: CqsLocale.t("Not returned")); caption.font = .systemFont(ofSize: 11); caption.textColor = .secondaryLabelColor
+            name.heightAnchor.constraint(equalToConstant: 18).isActive = true; value.heightAnchor.constraint(equalToConstant: 34).isActive = true
+            caption.heightAnchor.constraint(equalToConstant: 16).isActive = true; caption.lineBreakMode = .byTruncatingTail
+            column.addArrangedSubview(name); column.addArrangedSubview(value); column.addArrangedSubview(caption)
+            if index < 2 { let track = QuotaTrack(frame: .zero); track.heightAnchor.constraint(equalToConstant: 4).isActive = true; column.addArrangedSubview(track); track.widthAnchor.constraint(equalTo: column.widthAnchor).isActive = true; quotaTracks.append(track) }
+            columns.append(column); metricFields.append(value); metricCaptions.append(caption)
+        }
+        for indices in [[0,1],[2,5],[3,4]] {
+            let row = NSStackView(); row.orientation = .horizontal; row.alignment = .top; row.distribution = .fillEqually; row.spacing = 24
+            for index in indices { row.addArrangedSubview(columns[index]) }
+            body.addArrangedSubview(row); row.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true
+        }
         tick(); present()
     }
     @objc func showSettings() {
@@ -445,7 +462,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         do {
             let code = errorText.trimmingCharacters(in: .whitespacesAndNewlines)
             let allowedCodes = ["E_CDP_OWNER", "E_CDP_NONLOCAL", "E_CDP_HELPER_SIGNATURE", "E_CDP_QUERY", "E_RESTART_REQUIRED", "E_QUIT_CANCELLED"]
-            let report: [String: Any] = ["version": "0.4.7-alpha.1", "platform": "macOS", "stage": stage, "connectionCode": allowedCodes.contains(code) ? code : "", "runtimeReady": runtimeReady, "runtimeIssue": runtimeIssue, "monitorRunning": child?.isRunning == true, "exportedAt": ISO8601DateFormatter().string(from: Date())]
+            let report: [String: Any] = ["version": "0.4.8-alpha.1", "platform": "macOS", "stage": stage, "connectionCode": allowedCodes.contains(code) ? code : "", "runtimeReady": runtimeReady, "runtimeIssue": runtimeIssue, "monitorRunning": child?.isRunning == true, "exportedAt": ISO8601DateFormatter().string(from: Date())]
             try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]).write(to: url, options: .atomic)
         } catch { alert(error.localizedDescription) }
     }
@@ -490,7 +507,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             if outcome == .ready {
                 self.runtimeReady = true; self.runtimeIssue = false
                 self.stage = previousStage == "checking" ? "stopped" : previousStage
-                var prefs = self.read("preferences.json"); prefs["macGuideVersion"] = "0.4.7-alpha.1"
+                var prefs = self.read("preferences.json"); prefs["macGuideVersion"] = "0.4.8-alpha.1"
                 try? self.write("preferences.json", prefs); self.tick(); next()
             } else {
                 self.stage = "failed"; self.runtimeIssue = true
@@ -584,31 +601,14 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         CqsLocale.apply(window.contentView!)
     }
     func updateMetrics(_ connected: Bool) {
-        for field in metricFields { field.stringValue = "--"; field.toolTip = CqsLocale.t("Unavailable") }
-        for caption in metricCaptions { caption.stringValue = "" }
-        guard connected, metricFields.count == 6 else { return }
-        let snapshot = read("browser-state.json"), now = Date().timeIntervalSince1970 * 1000
-        func fresh(_ key: String, _ limit: Double) -> Bool { guard let stamp = snapshot[key] as? Double else { return false }; return now >= stamp && now - stamp < limit }
-        guard fresh("generatedAt",90000) else { return }
-        if fresh("quotaAt",180000) {
-            let windows = snapshot["windows"] as? [[String:Any]] ?? []
-            for (index, minutes) in [(0,300),(1,10080)] {
-                let matches = windows.filter { ($0["minutes"] as? Int) == minutes }
-                if matches.count == 1, let value = matches[0]["remaining"] as? Double, value.isFinite, value >= 0, value <= 100 { metricFields[index].stringValue = String(format: "%.0f%%",value) }
-            }
-        }
-        if fresh("usageAt",5400000) {
-            let daily = snapshot["daily"] as? [String:Any] ?? [:]
-            for (index, value) in [(2,daily["value"]),(3,snapshot["week"]),(4,snapshot["lifetime"]),(5,snapshot["monthAverage"])] {
-                if let count = value as? Double {
-                    metricFields[index].stringValue = MetricPresentation.count(count)
-                    if metricFields[index].stringValue != "--" { metricFields[index].toolTip = String(format: "%.0f", count) + " Token" }
-                }
-            }
-            if let date = daily["date"] as? String, date.range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil {
-                let yesterday = dateString(Calendar.current.date(byAdding: .day, value: -1, to: Date())!)
-                metricCaptions[2].stringValue = date == yesterday ? CqsLocale.t("Yesterday") : CqsLocale.t("Data date") + ": " + date
-            } else { metricFields[2].stringValue = "--"; metricFields[2].toolTip = CqsLocale.t("Unavailable") }
+        guard metricFields.count == 6 else { return }
+        let values = MetricPresentation.values(read("browser-state.json"), connected: connected, now: Date().timeIntervalSince1970 * 1000)
+        for (index, value) in values.enumerated() {
+            metricFields[index].stringValue = value.value
+            metricFields[index].textColor = value.value == "--" ? .secondaryLabelColor : .labelColor
+            metricCaptions[index].stringValue = CqsLocale.t(value.caption)
+            metricFields[index].toolTip = value.value == "--" ? CqsLocale.t(value.caption) : nil
+            if index < quotaTracks.count { quotaTracks[index].fraction = value.fraction }
         }
     }
     @objc func refresh() { do { try Data("refresh".utf8).write(to: runtime.appendingPathComponent("refresh.request"), options: .atomic) } catch { alert(error.localizedDescription) } }

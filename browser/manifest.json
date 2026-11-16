@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Codex Quota Sidebar",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "author": "KEFEN",
   "description": "Read local Codex quota snapshots in a browser side panel. Unofficial companion by KEFEN.",
   "permissions": [

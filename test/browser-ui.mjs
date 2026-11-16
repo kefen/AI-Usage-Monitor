@@ -13,10 +13,11 @@ try{
       return {ok:true,windows:[{minutes:300,remaining:75}],daily:{date:'2026-11-14',value:0},week:1234567,lifetime:987654321,quotaAt:Date.now(),usageAt:Date.now()};
     }}};},mode);
     await page.goto(new URL('../browser/panel.html',import.meta.url).href);
+    await page.locator('#language').selectOption('en');
     await page.waitForTimeout(200);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'No horizontal overflow');
     if(mode==='ok'){assert.ok((await page.locator('#metrics').innerText()).includes('75%'));assert.ok((await page.locator('#metrics').innerText()).includes('2026-11-14'));}
-    else assert.equal(await page.locator('#metrics').innerText(),'');
+    else { assert.ok((await page.locator('#metrics').innerText()).includes('--')); assert.ok((await page.locator('#metrics').innerText()).includes('Not returned')); }
     assert.equal(await page.locator('#refresh').isDisabled(),true,'Refresh throttled');
     for(const [locale,heading] of [['zh-CN','用量概览'],['zh-TW','用量概覽'],['en','Usage overview']]){
       await page.locator('#language').selectOption(locale);
@@ -30,6 +31,7 @@ try{
       }
     }
     if(mode==='ok'){
+      if(width===480)await page.screenshot({path:fileURLToPath(new URL('../verification/browser-overview-en.png',import.meta.url)),fullPage:true});
       await page.locator('[data-page="display"]').click();
       await page.locator('#choices input').first().uncheck();
       await page.locator('#choices input').first().focus();

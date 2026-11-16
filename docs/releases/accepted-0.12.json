@@ -1,12 +1,12 @@
 {
-  "windows": "0.12.5",
-  "macos": "0.4.7-alpha.1",
-  "chrome": "0.3.3",
+  "windows": "0.12.6",
+  "macos": "0.4.8-alpha.1",
+  "chrome": "0.3.4",
   "windowsAccepted": true,
   "publicReleaseAuthorized": true,
   "acceptedDate": "2026-11-16",
-  "verificationRevision": 5,
-  "deletePriorReleasesAfterVerification": true,
+  "verificationRevision": 6,
+  "deletePriorReleasesAfterVerification": false,
   "macAccountAccepted": true,
   "macAcceptanceScope": "User confirmed Apple Silicon connection; Intel real-account acceptance remains pending. UI follow-up publication authorized.",
   "browserProfileAccepted": false

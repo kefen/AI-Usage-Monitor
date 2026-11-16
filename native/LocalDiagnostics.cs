@@ -8,7 +8,7 @@ using System.Windows.Forms;
 
 internal static class LocalDiagnostics {
     internal static string Snapshot(string root){
-        var report=new Dictionary<string,object>{{"tool","Codex Quota Sidebar by KEFEN"},{"version","0.12.5"},{"exportedAt",DateTime.UtcNow.ToString("o")},{"osVersion",Environment.OSVersion.Version.ToString()}};
+        var report=new Dictionary<string,object>{{"tool","Codex Quota Sidebar by KEFEN"},{"version","0.12.6"},{"exportedAt",DateTime.UtcNow.ToString("o")},{"osVersion",Environment.OSVersion.Version.ToString()}};
         foreach(string file in new[]{"status.json","background.json"}){
             var safe=new Dictionary<string,object>();
             try{

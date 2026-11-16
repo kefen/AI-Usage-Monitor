@@ -1,4 +1,7 @@
 {
+  "Not returned": ["未返回数据", "未回傳資料"],
+  "Data expired": ["数据已过期", "資料已過期"],
+  "Last checked": ["最近检查", "最近檢查"],
   "Check for updates": ["检查更新", "檢查更新"],
   "Checking for updates...": ["正在检查更新…", "正在檢查更新…"],
   "Downloading update...": ["正在下载更新…", "正在下載更新…"],
