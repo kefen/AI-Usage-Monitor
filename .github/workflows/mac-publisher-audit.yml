@@ -1,0 +1,28 @@
+name: Audit official Mac publisher
+on:
+  push:
+    branches: ['candidate/release-*']
+    paths: ['.github/workflows/mac-publisher-audit.yml']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - name: Inspect official distribution without launching it
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --proto '=https' --retry 2 https://persistent.oaistatic.com/codex-app-prod/Codex.dmg -o official.dmg
+          mkdir official-mount
+          hdiutil attach -readonly -nobrowse -mountpoint "$PWD/official-mount" official.dmg
+          app="$PWD/official-mount/Codex.app"
+          codesign --verify --deep --strict "$app"
+          codesign -dv --verbose=4 "$app" 2>&1
+          spctl --assess --type execute --verbose=4 "$app" 2>&1
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app/Contents/Info.plist"
+          file "$app/Contents/MacOS/"* "$app/Contents/Resources/codex"
+          shasum -a 256 official.dmg
+          hdiutil detach "$PWD/official-mount"
