@@ -319,7 +319,13 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply { if child?.isRunning == true { stop(); return .terminateCancel }; return .terminateNow }
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool { present(); return true }
 }
-let app = NSApplication.shared
-let delegate = QuotaApp()
-app.delegate = delegate
-app.run()
+@main
+struct QuotaMain {
+    static func main() {
+        let app = NSApplication.shared
+        let delegate = QuotaApp()
+        app.delegate = delegate
+        withExtendedLifetime(delegate) { app.run() }
+    }
+}
+
