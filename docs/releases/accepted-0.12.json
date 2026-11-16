@@ -5,6 +5,7 @@
   "windowsAccepted": true,
   "publicReleaseAuthorized": true,
   "acceptedDate": "2026-11-16",
+  "verificationRevision": 2,
   "macAccountAccepted": true,
   "macAcceptanceScope": "User confirmed Apple Silicon connection; Intel real-account acceptance remains pending. UI follow-up publication authorized.",
   "browserProfileAccepted": false

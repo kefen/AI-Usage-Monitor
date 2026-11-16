@@ -36,6 +36,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func beginPage(_ next: String) -> Bool {
         if page == next { present(); return false }
         if dirty {
+            if CommandLine.arguments.contains("--ui-smoke") { fputs("UI smoke: unexpected unsaved changes before \(next)\n", stderr); exit(1) }
             let dialog = NSAlert(); dialog.messageText = CqsLocale.t("Discard unsaved changes?")
             dialog.addButton(withTitle: CqsLocale.t("Cancel")); dialog.addButton(withTitle: CqsLocale.t("Continue"))
             guard dialog.runModal() == .alertSecondButtonReturn else { return false }
@@ -227,7 +228,9 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             for language in ["en", "zh-CN", "zh-TW"] {
                 CqsLocale.language = language; languagePicker.selectItem(at: language == "en" ? 0 : language == "zh-CN" ? 1 : 2)
                 for action in [showAuthorizationHelp, showStatus, showDisplay, showSettings, showData, showHelp, showAbout] {
+                    fputs("UI smoke: switching page, language \(language)\n", stderr)
                     action(); CqsLocale.apply(window.contentView!); window.contentView!.layoutSubtreeIfNeeded(); window.displayIfNeeded()
+                    fputs("UI smoke: laid out \(page)\n", stderr)
                     precondition(abs(body.frame.maxY - body.superview!.bounds.maxY) < 2, "Page content is not top aligned")
                     if page == "subscription" { plan.selectItem(at: 2); enabled.state = .on; updateFields(); save(); precondition(!dirty && page == "subscription" && saveButton?.isEnabled == false) }
                     if page == "display" { saveDisplay(); precondition(!dirty && page == "display") }
@@ -634,7 +637,10 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             }
         } catch { alert(error.localizedDescription) }
     }
-    func alert(_ text: String) { let a = NSAlert(); a.messageText = "Codex Quota Sidebar"; a.informativeText = text; a.runModal() }
+    func alert(_ text: String) {
+        if CommandLine.arguments.contains("--ui-smoke") { fputs("UI smoke alert: \(text)\n", stderr); exit(1) }
+        let a = NSAlert(); a.messageText = "Codex Quota Sidebar"; a.informativeText = text; a.runModal()
+    }
     func windowShouldClose(_ sender: NSWindow) -> Bool { sender.orderOut(nil); return false }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply { if child?.isRunning == true { stop(); return .terminateCancel }; return .terminateNow }
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool { present(); return true }

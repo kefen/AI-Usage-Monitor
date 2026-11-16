@@ -36,7 +36,7 @@ if [[ "$(uname -m)" == "$arch" ]]; then
   /usr/bin/xcrun swiftc mac/RuntimeProbe.swift test/MacRuntimeProbeTest.swift -o "$stage/RuntimeProbeTest"
   "$stage/RuntimeProbeTest"
   "$app/Contents/Resources/payload/runtime/node" --version
-  "$app/Contents/MacOS/QuotaSidebar" --ui-smoke "$PWD/verification/mac-$arch"
+  node --input-type=module -e 'import {spawnSync} from "node:child_process"; const r=spawnSync(process.argv[1],["--ui-smoke",process.argv[2]],{stdio:"inherit",timeout:120000}); if(r.error)console.error(r.error.message); process.exit(r.status??1);' "$app/Contents/MacOS/QuotaSidebar" "$PWD/verification/mac-$arch"
 fi
 file "$app/Contents/MacOS/QuotaSidebar" "$app/Contents/Resources/payload/runtime/node"
 mkdir -p "build/dmg-$arch" dist
