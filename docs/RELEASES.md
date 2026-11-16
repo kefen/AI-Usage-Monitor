@@ -37,3 +37,5 @@ independent security audit.
 - macOS **0.4.1-alpha.1**: native Intel and Apple Silicon DMGs; unsigned/not notarized; real-account acceptance pending.
 - Mac publisher evidence: Actions run 43805495761, official bundle com.openai.codex, Team ID 2DC432GLL2. The audited official client is ARM-only.
 - The Windows accepted UI is unchanged from 0.12.3-beta.1; only stable metadata was promoted.
+- Final installer hardening: Unicode legacy shortcuts are inspected through an ASCII-named copy when WSH cannot read the original name. Foreign shortcuts remain untouched; English Windows CI covers both cases.
+- Official Mac CLI and loopback CDP startup without an account passed in Actions run 43806636066. Authenticated quota retrieval is not covered.

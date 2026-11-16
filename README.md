@@ -28,6 +28,12 @@ synthetic data. Not a capture of the live Codex application or a real account.
 ### Chrome companion
 ![Chrome side panel](docs/screenshots/chrome-panel.png)
 
+### macOS experimental companion
+![Native macOS subscription settings](docs/screenshots/mac-settings.png)
+
+Actual AppKit view captured on a macOS Actions runner with synthetic settings;
+not evidence of live-account connection acceptance.
+
 ## Status
 
 | Platform | Version | Availability |

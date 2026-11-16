@@ -4,7 +4,7 @@
   "docs/releases/accepted-0.12.json", "tools/publish-release.mjs",
   "docs/USER-GUIDE.md", "docs/RELEASES.md", "docs/releases/accepted-0.11.json", "tools/publish-accepted.mjs",
   "docs/screenshots/setup-environment.png", "docs/screenshots/setup-location.png", "docs/screenshots/connection-consent.png", "docs/screenshots/restart-confirmation.png",
-  "docs/screenshots/codex-sidebar-overview.png",
+  "docs/screenshots/codex-sidebar-overview.png", "docs/screenshots/mac-settings.png",
   "docs/releases/published-0.11.json",
   "ui/strings.json", "native/Locale.cs", "native/UsageOverview.cs", "mac/Localization.swift",
   "test/author-branding.test.mjs",
