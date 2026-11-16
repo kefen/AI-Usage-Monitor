@@ -26,7 +26,7 @@ cp "$stage/node-v$nodeversion-darwin-$nodearch/LICENSE" "$app/Contents/Resources
 # Preserve the upstream runtime exactly; signing our wrapper must not re-sign Node.
 cmp "$stage/node-v$nodeversion-darwin-$nodearch/bin/node" "$app/Contents/Resources/payload/runtime/node"
 /usr/bin/codesign -dv --verbose=2 "$app/Contents/Resources/payload/runtime/node" 2>&1 || true
-/usr/bin/codesign --verify --strict -R 'anchor apple generic and identifier "node" and certificate leaf[subject.OU] = "HX7739G8FX"' "$app/Contents/Resources/payload/runtime/node"
+/usr/bin/codesign --verify --strict -R '=anchor apple generic and identifier "node" and certificate leaf[subject.OU] = "HX7739G8FX"' "$app/Contents/Resources/payload/runtime/node"
 /usr/bin/codesign --force --sign - "$app"
 /usr/bin/codesign --verify --deep --strict "$app"
 cmp "$stage/node-v$nodeversion-darwin-$nodearch/bin/node" "$app/Contents/Resources/payload/runtime/node"

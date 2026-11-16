@@ -154,6 +154,9 @@
 
 - Preserve upstream Node.js bytes and Developer ID signature instead of replacing
   them with an ad-hoc signature. Verify the Node.js publisher during the build.
+- Fix inline codesign requirement syntax: the missing equals prefix previously
+  made macOS interpret the publisher rule as a filename. Keep strict signature
+  validation and allow up to 60 seconds for a full official-app verification.
 - Bundle an offline Simplified Chinese / Traditional Chinese / English installation
   guide in the DMG and the app; show security guidance before first connection.
 - Probe Node startup before running the monitor; distinguish missing/failed/timed-out

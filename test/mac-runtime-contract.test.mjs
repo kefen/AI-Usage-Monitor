@@ -17,3 +17,8 @@ test('Mac runtime failure is separate from official client failure',async()=>{
  const guide=await read('mac/READ-ME-FIRST.html');
  for(const text of ['简体中文','繁體中文','English','Privacy &amp; Security','node','102445'])assert.ok(guide.includes(text),text);
 });
+test('Mac signature rules use inline requirement syntax, not a file path',async()=>{
+ const launcher=await read('mac/launch.mjs'),build=await read('mac/Build.command');
+ assert.ok(launcher.includes('`=anchor apple generic'),'The launcher must prefix inline requirements with =');
+ assert.ok(build.includes("-R '=anchor apple generic"),'The runtime publisher check must use inline requirements');
+});

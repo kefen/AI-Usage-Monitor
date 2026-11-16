@@ -10,6 +10,12 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 15
     steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24.16.0'
       - name: Verify publisher and test local debugging without an account
         shell: bash
         run: |
@@ -18,7 +24,7 @@ jobs:
           mkdir official-mount
           hdiutil attach -readonly -nobrowse -mountpoint "$PWD/official-mount" official.dmg
           for app in "$PWD/official-mount/"*.app; do
-          codesign --verify --deep --strict "$app"
+          codesign --verify --deep --strict -R '=anchor apple generic and identifier "com.openai.codex" and certificate leaf[subject.OU] = "2DC432GLL2"' "$app"
           codesign -dv --verbose=4 "$app" 2>&1
           spctl --assess --type execute --verbose=4 "$app" 2>&1
           /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist"
@@ -26,8 +32,8 @@ jobs:
           file "$app/Contents/MacOS/"* "$app/Contents/Resources/codex"
           find "$app/Contents/Resources" -name codex -type f -print
           "$app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex" --version
-          ditto "$app" /Applications/CQS-Official-Client-Test.app
-          open -a /Applications/CQS-Official-Client-Test.app --args --remote-debugging-address=127.0.0.1 --remote-debugging-port=19299
+          ditto "$app" /Applications/Codex.app
+          open -a /Applications/Codex.app --args --remote-debugging-address=127.0.0.1 --remote-debugging-port=19299
           connected=false
           for attempt in $(seq 1 45); do
             if curl --fail --silent http://127.0.0.1:19299/json/version > debug-version.json; then connected=true; break; fi
@@ -36,6 +42,8 @@ jobs:
           if [[ "$connected" != true ]]; then echo 'No local debug endpoint'; exit 1; fi
           cat debug-version.json
           lsof -nP -iTCP:19299 -sTCP:LISTEN
+          node mac/launch.mjs --native-ui --focus
+          echo 'PASS: actual launcher signature rule and official client activation without an account'
           done
           shasum -a 256 official.dmg
           hdiutil detach "$PWD/official-mount"

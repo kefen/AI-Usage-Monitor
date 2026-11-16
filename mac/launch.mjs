@@ -10,8 +10,8 @@ const root=dirname(dirname(fileURLToPath(import.meta.url)));
 const nativeUI=process.argv.includes('--native-ui');
 const focusOnly=process.argv.includes('--focus');
 const runtime=join(root,'.runtime'),lock=join(runtime,'mac.pid'),stop=join(runtime,'background-stop.request');
-const run=(file,args)=>{
-  const r=spawnSync(file,args,{encoding:'utf8',timeout:15000,maxBuffer:1024*1024});
+const run=(file,args,timeout=15000)=>{
+  const r=spawnSync(file,args,{encoding:'utf8',timeout,maxBuffer:1024*1024});
   if(r.error || r.status!==0)throw new Error(`Local command failed: ${file}`);
   return r.stdout.trim();
 };
@@ -39,7 +39,7 @@ try {
   if(plist(app,'CFBundleIdentifier')!=='com.openai.codex')throw new Error('Unexpected Codex bundle identifier; no application was launched.');
   const trust=JSON.parse(await readFile(new URL('./trust.json',import.meta.url),'utf8'));
   if(!/^[A-Z0-9]{10}$/.test(trust.teamIdentifier||''))throw new Error('Mac acceptance is pending: verify the official signing Team ID before enabling this experimental launcher.');
-  run('/usr/bin/codesign',['--verify','--deep','--strict','-R',`anchor apple generic and identifier "com.openai.codex" and certificate leaf[subject.OU] = "${trust.teamIdentifier}"`,app]);
+  run('/usr/bin/codesign',['--verify','--deep','--strict','-R',`=anchor apple generic and identifier "com.openai.codex" and certificate leaf[subject.OU] = "${trust.teamIdentifier}"`,app],60000);
   if(focusOnly){run('/usr/bin/open',['-a',app]);process.exit(0);}
   const executable=plist(app,'CFBundleExecutable');
   if(!/^[\w .-]+$/.test(executable))throw new Error('Invalid app executable.');
