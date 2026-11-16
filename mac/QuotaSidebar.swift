@@ -134,7 +134,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         languagePicker.selectItem(at: CqsLocale.language == "en" ? 0 : CqsLocale.language == "zh-CN" ? 1 : 2)
         languagePicker.target = self; languagePicker.action = #selector(changeLanguage); header.addArrangedSubview(languagePicker)
         let divider = NSBox(); divider.boxType = .separator; container.addArrangedSubview(divider); divider.widthAnchor.constraint(equalTo: container.widthAnchor, constant: -48).isActive = true
-        let split = NSStackView(); split.orientation = .horizontal; split.alignment = .top; split.spacing = 28
+        let split = NSView(); split.translatesAutoresizingMaskIntoConstraints = false
         let navigation = NSStackView(); navigation.orientation = .vertical; navigation.alignment = .leading; navigation.spacing = 4
         navigation.wantsLayer = true; navigation.layer?.backgroundColor = NSColor(calibratedWhite: 0.96, alpha: 1).cgColor
         navigation.edgeInsets = NSEdgeInsets(top: 18, left: 12, bottom: 18, right: 12)
@@ -149,11 +149,23 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         navigation.heightAnchor.constraint(greaterThanOrEqualToConstant: 490).isActive = true
         let navigationSpace = NSView(); navigation.addArrangedSubview(navigationSpace)
         navigationSpace.setContentHuggingPriority(.defaultLow, for: .vertical)
-        body.orientation = .vertical; body.alignment = .leading; body.spacing = 14; split.addArrangedSubview(navigation); split.addArrangedSubview(body); container.addArrangedSubview(split)
-        body.widthAnchor.constraint(equalTo: container.widthAnchor, constant: -283).isActive = true
+        body.orientation = .vertical; body.alignment = .leading; body.spacing = 14; body.distribution = .fill
+        body.setContentHuggingPriority(.required, for: .vertical)
+        navigation.translatesAutoresizingMaskIntoConstraints = false; body.translatesAutoresizingMaskIntoConstraints = false
+        split.addSubview(navigation); split.addSubview(body); container.addArrangedSubview(split)
+        NSLayoutConstraint.activate([
+            split.widthAnchor.constraint(equalTo: container.widthAnchor, constant: -48),
+            navigation.leadingAnchor.constraint(equalTo: split.leadingAnchor),
+            navigation.topAnchor.constraint(equalTo: split.topAnchor),
+            navigation.bottomAnchor.constraint(equalTo: split.bottomAnchor),
+            body.leadingAnchor.constraint(equalTo: navigation.trailingAnchor, constant: 28),
+            body.trailingAnchor.constraint(equalTo: split.trailingAnchor),
+            body.topAnchor.constraint(equalTo: split.topAnchor),
+            body.bottomAnchor.constraint(lessThanOrEqualTo: split.bottomAnchor)
+        ])
         let spacer = NSView(); container.addArrangedSubview(spacer); spacer.setContentHuggingPriority(.defaultLow, for: .vertical)
         let footer = NSStackView(); footer.spacing = 8
-        let build = NSTextField(labelWithString: "macOS 0.4.3-alpha.1"); build.textColor = .secondaryLabelColor; build.font = .systemFont(ofSize: 11)
+        let build = NSTextField(labelWithString: "macOS 0.4.4-alpha.1"); build.textColor = .secondaryLabelColor; build.font = .systemFont(ofSize: 11)
         footer.addArrangedSubview(build)
         let gap = NSView(); footer.addArrangedSubview(gap); gap.setContentHuggingPriority(.defaultLow, for: .horizontal)
         retry = button("Reconnect", #selector(reconnect))
@@ -178,7 +190,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             catch { alert(error.localizedDescription); NSApp.terminate(nil); return }
         }
         timer = Timer.scheduledTimer(withTimeInterval: 4, repeats: true) { [weak self] _ in self?.tick() }
-        if read("preferences.json")["macGuideVersion"] as? String != "0.4.3-alpha.1" { stage = "stopped"; showAuthorizationHelp() }
+        if read("preferences.json")["macGuideVersion"] as? String != "0.4.4-alpha.1" { stage = "stopped"; showAuthorizationHelp() }
         else { start() }
     }
     func button(_ title: String, _ action: Selector, primary: Bool = false) -> NSButton {
@@ -201,6 +213,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 CqsLocale.language = language; languagePicker.selectItem(at: language == "en" ? 0 : language == "zh-CN" ? 1 : 2)
                 for action in [showAuthorizationHelp, showStatus, showDisplay, showSettings, showData, showHelp, showAbout] {
                     action(); CqsLocale.apply(window.contentView!); window.contentView!.layoutSubtreeIfNeeded(); window.displayIfNeeded()
+                    precondition(abs(body.frame.maxY - body.superview!.bounds.maxY) < 2, "Page content is not top aligned")
                     if page == "subscription" { plan.selectItem(at: 2); enabled.state = .on; updateFields(); save(); precondition(!dirty && page == "subscription" && saveButton?.isEnabled == false) }
                     if page == "display" { saveDisplay(); precondition(!dirty && page == "display") }
                     let view = window.contentView!
@@ -221,6 +234,12 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 let restartView = window.contentView!, restartBitmap = restartView.bitmapImageRepForCachingDisplay(in: restartView.bounds)!
                 restartView.cacheDisplay(in: restartView.bounds, to: restartBitmap)
                 try restartBitmap.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("restart-required-" + language + ".png"))
+                errorText = "E_CDP_OWNER"; page = ""
+                showStatus(); showHelp(); showStatus(); tick(); window.contentView!.layoutSubtreeIfNeeded()
+                precondition(abs(body.frame.maxY - body.superview!.bounds.maxY) < 2, "Failure refresh shifted content")
+                let ownerView = window.contentView!, ownerBitmap = ownerView.bitmapImageRepForCachingDisplay(in: ownerView.bounds)!
+                ownerView.cacheDisplay(in: ownerView.bounds, to: ownerBitmap)
+                try ownerBitmap.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("owner-failure-" + language + ".png"))
                 stage = "stopped"; errorText = ""; page = ""
             }
             let backup = try SettingsTransfer.exportData(runtime); try SettingsTransfer.restore(backup, at: runtime)
@@ -367,7 +386,9 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let dialog = NSSavePanel(); dialog.nameFieldStringValue = "Codex-Quota-Sidebar-diagnostics.json"
         guard dialog.runModal() == .OK, let url = dialog.url else { return }
         do {
-            let report: [String: Any] = ["version": "0.4.3-alpha.1", "platform": "macOS", "stage": stage, "runtimeReady": runtimeReady, "runtimeIssue": runtimeIssue, "monitorRunning": child?.isRunning == true, "exportedAt": ISO8601DateFormatter().string(from: Date())]
+            let code = errorText.trimmingCharacters(in: .whitespacesAndNewlines)
+            let allowedCodes = ["E_CDP_OWNER", "E_CDP_NONLOCAL", "E_CDP_HELPER_SIGNATURE", "E_CDP_QUERY", "E_RESTART_REQUIRED", "E_QUIT_CANCELLED"]
+            let report: [String: Any] = ["version": "0.4.4-alpha.1", "platform": "macOS", "stage": stage, "connectionCode": allowedCodes.contains(code) ? code : "", "runtimeReady": runtimeReady, "runtimeIssue": runtimeIssue, "monitorRunning": child?.isRunning == true, "exportedAt": ISO8601DateFormatter().string(from: Date())]
             try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]).write(to: url, options: .atomic)
         } catch { alert(error.localizedDescription) }
     }
@@ -411,7 +432,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             if outcome == .ready {
                 self.runtimeReady = true; self.runtimeIssue = false
                 self.stage = previousStage == "checking" ? "stopped" : previousStage
-                var prefs = self.read("preferences.json"); prefs["macGuideVersion"] = "0.4.3-alpha.1"
+                var prefs = self.read("preferences.json"); prefs["macGuideVersion"] = "0.4.4-alpha.1"
                 try? self.write("preferences.json", prefs); self.tick(); next()
             } else {
                 self.stage = "failed"; self.runtimeIssue = true
@@ -488,7 +509,13 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         headline.textColor = mounted ? green : .labelColor
         let code = errorText.trimmingCharacters(in: .whitespacesAndNewlines)
         restartButton?.isHidden = stage != "failed" || code != "E_RESTART_REQUIRED"
-        let failure = code == "E_RESTART_REQUIRED" ? CqsLocale.t("Codex is open without a connection port. Save your work, then approve a restart to connect.") : code == "E_QUIT_CANCELLED" ? CqsLocale.t("Codex did not quit. No process was forced closed. Save your work and retry, or quit Codex manually and reconnect.") : String(errorText.prefix(240))
+        let connectionErrors = [
+            "E_CDP_OWNER": "The connection port has an unverified owner. Export diagnostics; do not disable security checks.",
+            "E_CDP_NONLOCAL": "The connection port is not restricted to this computer. Quit Codex normally and reconnect.",
+            "E_CDP_HELPER_SIGNATURE": "The Codex helper could not be verified. Update official Codex or export diagnostics.",
+            "E_CDP_QUERY": "macOS could not inspect the connection port. Retry or export diagnostics."
+        ]
+        let failure = code == "E_RESTART_REQUIRED" ? CqsLocale.t("Codex is open without a connection port. Save your work, then approve a restart to connect.") : code == "E_QUIT_CANCELLED" ? CqsLocale.t("Codex did not quit. No process was forced closed. Save your work and retry, or quit Codex manually and reconnect.") : connectionErrors[code].map { CqsLocale.t($0) + "\n" + code } ?? String(errorText.prefix(240))
         detail.stringValue = stage == "failed" ? failure : mounted ? CqsLocale.t("Sidebar attached.") : CqsLocale.t("Waiting for client and data.")
         rows[0].stringValue = mounted ? CqsLocale.t("Connected") : CqsLocale.t("Not connected")
         for (index, key) in [(1, "quotaAvailable"), (2, "usageAvailable")] { rows[index].stringValue = (state[key] as? Bool).map { $0 ? CqsLocale.t("Synced") : CqsLocale.t("Unavailable") } ?? "--" }

@@ -1,4 +1,8 @@
 {
+  "The connection port has an unverified owner. Export diagnostics; do not disable security checks.": ["连接端口存在未通过验证的进程。请导出诊断，不要关闭安全检查。", "連線埠存在未通過驗證的程序。請匯出診斷，不要停用安全檢查。"],
+  "The connection port is not restricted to this computer. Quit Codex normally and reconnect.": ["连接端口未限制为本机访问。请正常退出 Codex 后重新连接。", "連線埠未限制為本機存取。請正常結束 Codex 後重新連線。"],
+  "The Codex helper could not be verified. Update official Codex or export diagnostics.": ["Codex 辅助程序未通过验证。请更新官方 Codex，或导出诊断。", "Codex 輔助程式未通過驗證。請更新官方 Codex，或匯出診斷。"],
+  "macOS could not inspect the connection port. Retry or export diagnostics.": ["macOS 未能查询连接端口。请重试或导出诊断。", "macOS 未能查詢連線埠。請重試或匯出診斷。"],
   "If Codex is already running, reconnect first. When a restart is required, save work and approve it in Usage overview. You can cancel or quit Codex manually instead.": ["Codex 已运行时先点重新连接。若需要重启，请保存工作后在用量概览确认；也可取消，或手动退出 Codex 再连接。", "Codex 已執行時先按重新連線。若需要重新啟動，請儲存工作後在用量概覽確認；也可取消，或手動結束 Codex 再連線。"],
   "Save work, restart and connect": ["保存工作后重启并连接", "儲存工作後重新啟動並連線"],
   "Restart Codex to connect?": ["重启 Codex 以连接侧边栏？", "重新啟動 Codex 以連線側邊欄？"],

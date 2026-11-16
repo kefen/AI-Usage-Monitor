@@ -2,7 +2,7 @@ name: Audit official Mac publisher
 on:
   push:
     branches: ['candidate/release-*']
-    paths: ['.github/workflows/mac-publisher-audit.yml']
+    paths: ['.github/workflows/mac-publisher-audit.yml', 'mac/launch.mjs', 'mac/listener-policy.mjs']
 permissions:
   contents: read
 jobs:

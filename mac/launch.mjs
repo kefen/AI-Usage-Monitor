@@ -5,6 +5,7 @@ import {join,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import net from 'node:net';
 import {setTimeout as delay} from 'node:timers/promises';
+import {parseListeners,verifyListenerOwners} from './listener-policy.mjs';
 
 const root=dirname(dirname(fileURLToPath(import.meta.url)));
 const nativeUI=process.argv.includes('--native-ui');
@@ -51,7 +52,7 @@ try {
     if((await stat(candidate).catch(()=>null))?.isFile()){cli=candidate;break;}
   }
   if(!cli)throw new Error('Bundled Codex CLI not found.');
-  const processes=()=>run('/bin/ps',['-axo','pid=,command=']).split('\n').map(line=>{
+  const processes=()=>run('/bin/ps',['-ww','-axo','pid=,command=']).split('\n').map(line=>{
     const match=line.trim().match(/^(\d+)\s+(.+)$/);return match?{pid:Number(match[1]),cmd:match[2]}:null;
   }).filter(p=>p&&(p.cmd===main || p.cmd.startsWith(main+' ')));
   let running=processes(),port;
@@ -77,14 +78,27 @@ try {
     run('/usr/bin/open',['-a',app,'--args','--remote-debugging-address=127.0.0.1',`--remote-debugging-port=${port}`]);
   }
   if(!Number.isInteger(port)||port<1024||port>65535)throw new Error('Invalid debug port.');
+  const helperApp=join(homedir(),'.codex/computer-use/Codex Computer Use.app');
+  const helperExecutable=join(helperApp,'Contents/MacOS/SkyComputerUseService');
+  const inspectProcess=pid=>{
+    const value=run('/bin/ps',['-ww','-p',String(pid),'-o','ppid=,comm=']);
+    const match=value.match(/^\s*(\d+)\s+(.+)$/);
+    return match?{parentPid:Number(match[1]),executable:match[2]}:null;
+  };
+  const verifyHelper=()=>{
+    if(plist(helperApp,'CFBundleIdentifier')!=='com.openai.sky.CUAService' || plist(helperApp,'CFBundleExecutable')!=='SkyComputerUseService')return false;
+    run('/usr/bin/codesign',['--verify','--deep','--strict','-R',`=anchor apple generic and identifier "com.openai.sky.CUAService" and certificate leaf[subject.OU] = "${trust.teamIdentifier}"`,helperApp],60000);
+    return true;
+  };
   let verified=false;
   for(let i=0;i<30;i++){
-    running=processes();
     const listeners=spawnSync('/usr/sbin/lsof',['-nP',`-iTCP:${port}`,'-sTCP:LISTEN','-Fpnc'],{encoding:'utf8',timeout:5000});
-    let pid=0;const owners=[];
-    for(const line of (listeners.stdout||'').split('\n')){if(line.startsWith('p'))pid=Number(line.slice(1));if(line.startsWith('n'))owners.push({pid,address:line.slice(1)});}
+    if(listeners.error || ![0,1].includes(listeners.status))throw new Error('E_CDP_QUERY');
+    const owners=parseListeners(listeners.stdout||'');
+    running=processes();
     if(owners.length){
-      if(owners.some(o=>!running.some(p=>p.pid===o.pid)||!['127.0.0.1:'+port,'[::1]:'+port].includes(o.address)))throw new Error('Debug listener is not owned by the verified Codex process on loopback.');
+      const checked=await verifyListenerOwners({owners,mainPids:running.map(p=>p.pid),port,helperExecutable,inspectProcess,verifyHelper});
+      if(!checked.ok)throw new Error(checked.code);
       verified=true;break;
     }
     await delay(1000);

@@ -2,6 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 const read=p=>readFile(new URL('../'+p,import.meta.url),'utf8');
+test('Mac page content is pinned to the top independently of navigation height',async()=>{
+ const ui=await read('mac/QuotaSidebar.swift');
+ assert.match(ui,/body\.topAnchor\.constraint\(equalTo: split\.topAnchor\)/);
+ assert.match(ui,/body\.distribution = \.fill/);
+});
 test('Mac restart is opt-in, graceful and never force-kills the official client',async()=>{
  const launcher=await read('mac/launch.mjs'),ui=await read('mac/QuotaSidebar.swift');
  assert.match(launcher,/if\(!restartApproved\)throw new Error\('E_RESTART_REQUIRED'\)/);

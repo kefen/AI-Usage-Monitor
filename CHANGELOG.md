@@ -171,3 +171,10 @@
 - Align Mac navigation, button sizing, selection colors, typography and two-row metrics with the Windows companion.
 - Extend the offline three-language guide with running-client connection, optional Automation permission and upgrade instructions.
 - Windows 0.12.3 remains unchanged. Real-device acceptance is required before release.
+
+# macOS 0.4.4-alpha.1 (test candidate)
+
+- Accept the official Computer Use helper as a co-owner only with a verified main-process owner, exact helper path, direct parent, expected bundle ID and OpenAI Developer ID signature. Reject unknown owners and non-loopback addresses.
+- Query full-width process paths and distinguish ownership, helper signature, non-local address and query errors in all three languages. Include only allowlisted connection codes in exported diagnostics.
+- Pin page content to the top independently of navigation height. Check failure refresh and page switching in native screenshot tests.
+- Windows remains at 0.12.3. Requires user Mac acceptance before release.
