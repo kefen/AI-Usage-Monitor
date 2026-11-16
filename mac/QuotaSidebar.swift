@@ -210,7 +210,8 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func checkInstallLocation() -> Bool {
         if CommandLine.arguments.contains("--ui-smoke") { return true }
         let path = Bundle.main.bundleURL.path
-        guard path.hasPrefix("/Volumes/") || path.contains("/AppTranslocation/") else { return true }
+        let readOnlyVolume = path.hasPrefix("/Volumes/") && !FileManager.default.isWritableFile(atPath: Bundle.main.bundleURL.deletingLastPathComponent().path)
+        guard readOnlyVolume || path.contains("/AppTranslocation/") else { return true }
         let prompt = NSAlert(); prompt.messageText = CqsLocale.t("Finish installing the app")
         prompt.informativeText = CqsLocale.t("1. Drag Codex Quota Sidebar.app from the disk image into Applications. Replace the old app if upgrading.\n2. Eject the disk image, then open Codex Quota Sidebar from Finder > Applications.\n3. Keep the app in the Dock for next time. You do not need to open the installer again.")
         prompt.addButton(withTitle: CqsLocale.t("Quit"))

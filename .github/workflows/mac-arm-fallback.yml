@@ -16,7 +16,7 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24.16.0'
-      # Build.command uses the arm64 Swift target and the official arm64 Node binary.
+      # 0.4.5 UI candidate: use the arm64 Swift target and the official arm64 Node binary.
       # Native ARM execution tests are deliberately not claimed on this Intel host.
       - run: bash mac/Build.command arm64
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
