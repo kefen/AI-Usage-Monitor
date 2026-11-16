@@ -39,7 +39,7 @@ not evidence of live-account connection acceptance.
 | Platform | Version | Availability |
 | --- | --- | --- |
 | Windows 10/11 x64 | 0.12.3 | User-accepted stable release; unsigned installer |
-| macOS Apple Silicon / Intel | 0.4.1-alpha.1 | Experimental DMGs; unsigned/not notarized; real-account acceptance pending |
+| macOS Apple Silicon / Intel | 0.4.5-alpha.1 | Experimental DMGs; not notarized; Apple Silicon connection user-confirmed, Intel account testing pending |
 | Chrome MV3 | 0.3.1 | Companion extension; requires the local desktop monitor and native host |
 
 The Windows 0.12.3 interface was accepted by the user on 2026-11-16. A final
@@ -54,13 +54,14 @@ does not make an ARM-only official client compatible with Intel.
 
 - [Windows installer and checksums](https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.12.3)
 - [Chrome extension ZIP](https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.3.1)
-- [macOS experimental installers](https://github.com/kefen/codex-quota-sidebar/releases/tag/macos/v0.4.1-alpha.1)
+- [macOS experimental installers, both architectures](https://github.com/kefen/codex-quota-sidebar/releases/tag/macos/v0.4.5-alpha.1)
 - **[Step-by-step illustrated user guide](docs/USER-GUIDE.md)**
 - [Release and acceptance record](docs/RELEASES.md)
 
 Use the named setup/extension assets, not GitHub's automatically generated source
 ZIP, to install Windows or Chrome. Only Windows is promoted to stable; Mac and
-browser remain explicitly experimental until their real-account/profile acceptance.
+browser remain explicitly experimental. Mac's limited user confirmation does not
+establish compatibility with every client version or Intel device.
 
 **Browser upgrade:** the native-host name is now `org.kefen.codex_quota_sidebar`.
 Update both desktop and extension, and register again. Follow the
@@ -167,8 +168,17 @@ Fixture screenshots are not proof of live-account or Mac acceptance.
 
 The AppKit app shares the three-language catalog and six same-window sections.
 Intel and Apple Silicon packages are built and UI-tested on their native GitHub
-macOS runners. Real-account connection acceptance is still pending. The packages
-are ad-hoc signed, not Developer ID signed or notarized.
+macOS runners. The user confirmed live connection on Apple Silicon; Intel
+real-account acceptance remains pending. The packages are ad-hoc signed, not
+Developer ID signed or notarized.
+
+**Install once, launch normally:** quit the previous companion, open the correct
+DMG, drag **Codex Quota Sidebar.app** to **Applications** (replace when upgrading),
+then eject the DMG. Open **Finder > Applications > Codex Quota Sidebar** next time;
+optionally choose **Options > Keep in Dock**. Double-clicking the app inside the
+DMG does not install it. Read `READ-ME-FIRST.html` in the DMG before first launch.
+The app's **About project > Show application in Finder** locates the installed copy.
+Closing its window keeps monitoring in the menu bar; **Exit software** stops it.
 
 `mac/trust.json` pins OpenAI's verified Team ID; the launcher also validates the
 bundle identifier, full signature and loopback listener ownership. See the

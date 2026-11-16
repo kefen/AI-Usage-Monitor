@@ -104,10 +104,40 @@ only when space is severely constrained.
 
 ## macOS Experimental Installation
 
-**0.4.1 known issue:** the app can open while its bundled `node` runtime is blocked
-by Gatekeeper. This does not prove the official Codex client's signature is wrong.
-The 0.4.2 test candidate preserves Node's upstream signature and adds runtime checks.
-It is not a notarized release and still needs real-machine acceptance.
+**Current version: 0.4.5-alpha.1.** Download `arm64` for Apple Silicon (M-series)
+or `x86_64` for Intel. The companion requires macOS 13.5+ and a compatible official
+client. It is not Developer ID signed or notarized. The user confirmed live
+connection on Apple Silicon; Intel account testing remains pending.
+
+### Install, Upgrade And Open Again
+
+1. Quit the previous **Codex Quota Sidebar** using **Exit software**. This does not quit Codex.
+2. Open the downloaded DMG and read `READ-ME-FIRST.html`.
+3. Drag **Codex Quota Sidebar.app** onto **Applications**; select Replace when upgrading.
+4. Eject the DMG. Open **Finder > Applications > Codex Quota Sidebar**.
+5. Optionally right-click its Dock icon and choose **Options > Keep in Dock**.
+6. Check the version in the lower-left corner. Daily launches use Applications or Dock, not the DMG.
+
+Opening the app inside a DMG or temporary AppTranslocation location does not install
+it. The new app shows installation instructions before starting there. **About
+project > Show application in Finder** locates your app. Closing the window leaves
+the monitor in the menu bar; **Exit software** quits it. Settings are retained when
+replacing the app; do not delete its Application Support folder to upgrade.
+
+**简体中文：** 退出旧面板 → 将 DMG 中的应用拖到“应用程序”并替换 → 推出 DMG →
+从 Finder“应用程序”启动；可右键 Dock 图标，选择“选项 → 在程序坞中保留”。
+以后不用再次安装。系统拦截时先核实来源和校验值，再到“系统设置 → 隐私与安全性”
+查看该应用或 node 对应的“仍要打开”；不要关闭系统安全保护。
+
+**繁體中文：** 結束舊面板 → 將 DMG 中的 App 拖到「應用程式」並取代 → 退出 DMG →
+從 Finder「應用程式」啟動；可將圖示保留在 Dock。之後不必重新安裝。
+若遭阻擋，先確認來源與校驗值，再查看「系統設定 → 隱私權與安全性」中的個別允許選項。
+
+### Security Approval And Connection
+
+Older 0.4.1 builds could open while bundled `node` was blocked. The current build
+preserves Node's upstream signature and checks runtime startup separately; a
+runtime failure does not prove the official Codex client's signature is wrong.
 
 Read [the offline three-language installation guide](../mac/READ-ME-FIRST.html).
 It is also included at the root of the new DMG as `READ-ME-FIRST.html` and inside
@@ -131,9 +161,12 @@ client must have bundle ID `com.openai.codex`, the verified OpenAI publisher, an
 bundled CLI. The official audited image now names it ChatGPT.app. The currently
 audited image is ARM-only: the Intel companion needs a separately compatible Intel
 official client. Its existence/availability is not guaranteed by this project.
-If a running client lacks local debugging, save work and fully quit it before
-reconnecting. Mac never silently terminates the official app. Real-account
-connection acceptance remains pending on both Mac architectures.
+If a running client lacks local debugging, Reconnect offers an explicit restart
+confirmation. Save work first; cancellation leaves Codex running. A normal quit
+request may need Automation approval; refusal or timeout never force-kills it.
+You can instead fully quit official Codex with Command-Q and reconnect. A valid
+existing local debugging listener is reused. No Full Disk Access or Accessibility
+permission is required. Mac never silently terminates the official app.
 
 The desktop language is saved and applied to sidebar labels. Settings backup and
 restore do not contain authentication or connection permission, but do contain
@@ -186,10 +219,10 @@ Unregister the browser helper first if used. Exit the meter, then run
 `Uninstall.cmd` in the install directory. Personal settings and modified files
 are retained. Stopping/uninstalling the meter does not close Codex's debug port:
 fully quit Codex and reopen it from the official entry.
-## Mac 0.4.3 test candidate: Codex is already running
+## Mac: Codex Is Already Running
 
 Open the companion and choose **Reconnect**. A usable existing local debugging port is reused. If the app asks for a restart, finish active tasks and save work, then choose **Save work, restart and connect**. Confirming requests a normal quit and relaunch of the verified official Codex app. Cancel leaves Codex running. Quit refusal or timeout never triggers a force-kill.
 
 macOS may ask for Automation permission to send the quit request. Review the exact requesting app and target. You can decline and instead quit official Codex with Command-Q, then reconnect. Do not disable system security. No Full Disk Access or Accessibility permission is required.
 
-The bundled `READ-ME-FIRST.html` contains Simplified Chinese, Traditional Chinese and English guidance. Exit the previous companion, drag the new app into Applications and replace it, eject the DMG, then open the installed app. Check the lower-left version label. This is a test candidate, not a notarized release.
+The bundled `READ-ME-FIRST.html` contains Simplified Chinese, Traditional Chinese and English guidance. Exit the previous companion, drag the new app into Applications and replace it, eject the DMG, then open the installed app. Check the lower-left version label. This is an experimental release, not a notarized release.

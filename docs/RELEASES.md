@@ -1,5 +1,13 @@
 # Release Record
 
+## 2026-11-16 Mac Follow-up
+
+- macOS **0.4.5-alpha.1**: Apple Silicon and Intel experimental DMGs; native UI tests, compact metrics, small separate data dates, installation and next-launch guidance.
+- User confirmed Apple Silicon connection after the shared-listener fix. Intel real-account acceptance remains pending. Publication of this follow-up was authorized; it is not notarized or promoted to stable.
+- Windows **0.12.3 stable** and Chrome **0.3.1 experimental** remain available unchanged. Existing release binaries/tags are not overwritten.
+- Each Mac DMG includes the three-language offline guide. Launch the installed application from Finder > Applications, not from the DMG.
+- The new Mac release also includes the corresponding source archive and SHA256 checksums. Older releases below are historical records, not current installation advice.
+
 ## KEFEN Branding Correction
 
 Windows 0.11.1-beta.1, Chrome 0.2.1 and macOS 0.3.1-alpha.1 are branding-only

@@ -6,7 +6,7 @@ if(!token||process.env.GITHUB_REPOSITORY!==repo||process.env.GITHUB_REF!=='refs/
 const accepted=JSON.parse(await readFile('docs/releases/accepted-0.12.json','utf8'));
 const versions=JSON.parse(await readFile('versions.json','utf8'));
 const chrome=JSON.parse(await readFile('browser/manifest.json','utf8')).version;
-if(accepted.windows!=='0.12.3'||accepted.macos!=='0.4.1-alpha.1'||accepted.chrome!=='0.3.1'||accepted.windowsAccepted!==true||accepted.publicReleaseAuthorized!==true||accepted.macAccountAccepted!==false||accepted.browserProfileAccepted!==false)throw Error('Not the authorized release set');
+if(accepted.windows!=='0.12.3'||accepted.macos!=='0.4.5-alpha.1'||accepted.chrome!=='0.3.1'||accepted.windowsAccepted!==true||accepted.publicReleaseAuthorized!==true||accepted.macAccountAccepted!==true||accepted.browserProfileAccepted!==false)throw Error('Not the authorized release set');
 if(versions.windows!==accepted.windows||versions.macos!==accepted.macos||chrome!==accepted.chrome)throw Error('Version mismatch');
 const source='Codex-Quota-Sidebar-source-windows-'+versions.windows+'-macos-'+versions.macos+'.zip';
 const sets=[
@@ -20,7 +20,10 @@ async function request(path,method='GET',data){
  if(!response.ok)throw Error('GitHub API '+response.status+' '+method+' '+path);
  return response.json();
 }
-for(const set of sets){
+// Windows and Chrome are already published: never rebuild or overwrite their assets.
+for(const set of sets.filter(set=>set.tag.startsWith('macos/'))){
+ set.files.push(source);
+ set.note='Experimental macOS 0.4.5-alpha.1 for Apple Silicon and Intel, macOS 13.5+. Compact typography, separate small daily-data date, grouped settings and clear installation entry. Includes runtime approval guidance and verified shared-listener handling. User confirmed live connection on Apple Silicon; Intel live-account acceptance remains pending and requires a compatible official client. Ad-hoc signed only: NOT Developer ID signed or notarized. Download the correct architecture, quit the previous companion, drag the app to Applications and replace, eject the DMG, then launch from Finder > Applications. Opening the DMG app is not installation. READ-ME-FIRST.html is inside each DMG and available from the app. Review per-item Privacy & Security approval only after checking source/checksums; never disable Gatekeeper. Reconnect reuses a valid port or asks for restart consent. Windows 0.12.3 and Chrome 0.3.1 downloads remain unchanged. See the illustrated guide for all platforms.';
  const files=await Promise.all(set.files.map(async name=>{const bytes=await readFile('dist/'+name);return {name,bytes,digest:'sha256:'+createHash('sha256').update(bytes).digest('hex')};}));
  const sums=files.map(f=>f.digest.slice(7)+'  '+f.name).join('\n')+'\n';
  const sumName='SHA256SUMS-'+set.tag.replaceAll('/','-')+'.txt';
