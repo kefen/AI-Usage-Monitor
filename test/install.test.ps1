@@ -46,12 +46,15 @@ try {
     $legacy=$shortcut
     $garbled=Join-Path $root ('Codex '+[char]0x951f+[char]0x65a4+'.lnk')
     Copy-Item -LiteralPath $shortcut -Destination $garbled
+    $unicodeForeign=Join-Path $root ('Other '+[char]0x951f+'.lnk')
+    Copy-Item -LiteralPath $otherLink -Destination $unicodeForeign
     $shortcut=Join-Path $root 'Codex Quota Sidebar.lnk'
     & (Join-Path $source 'Install.ps1') -Destination $dest -ShortcutPath $shortcut
     Assert (Test-Path -LiteralPath $shortcut) 'English shortcut missing'
     Assert (-not(Test-Path -LiteralPath $legacy)) 'Old shortcut remained'
     Assert (-not(Test-Path -LiteralPath $garbled)) 'Garbled owned duplicate remained'
     Assert (Test-Path -LiteralPath $otherLink) 'Foreign shortcut removed during migration'
+    Assert (Test-Path -LiteralPath $unicodeForeign) 'Unicode foreign shortcut removed during migration'
     Assert ((Get-Content (Join-Path $dest 'installation.json') -Raw -Encoding UTF8 | ConvertFrom-Json).shortcut -eq $shortcut) 'Manifest did not record English shortcut'
     Write-Host 'PASS: English name migration removes only verified duplicates'
 

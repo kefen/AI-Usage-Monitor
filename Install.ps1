@@ -125,7 +125,16 @@ if([IO.Path]::GetFileName($ShortcutPath) -eq 'Codex Quota Sidebar.lnk'){
         if($candidate.FullName -eq $ShortcutPath -or ($candidate.Attributes -band [IO.FileAttributes]::ReparsePoint)){continue}
         try{
             $duplicate=$shell.CreateShortcut($candidate.FullName)
-            if(Test-OwnedMeterShortcut $duplicate $Destination){Remove-Item -LiteralPath $candidate.FullName -Force}
+            $owned=Test-OwnedMeterShortcut $duplicate $Destination
+            if(-not $owned -and $candidate.Name -match '[^\x00-\x7F]'){
+                # WSH can fail to read Unicode link names under a different system code page.
+                $probe=Join-Path ([IO.Path]::GetTempPath()) ('cqs-link-'+[guid]::NewGuid().ToString('N')+'.lnk')
+                try{
+                    [IO.File]::WriteAllBytes($probe,[IO.File]::ReadAllBytes($candidate.FullName))
+                    $owned=Test-OwnedMeterShortcut ($shell.CreateShortcut($probe)) $Destination
+                }finally{if(Test-Path -LiteralPath $probe){Remove-Item -LiteralPath $probe -Force}}
+            }
+            if($owned){Remove-Item -LiteralPath $candidate.FullName -Force}
         }catch{Write-Warning 'An old meter shortcut could not be removed. The new English shortcut is ready.'}
     }
 }

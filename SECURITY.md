@@ -36,8 +36,10 @@ Source bundles use an explicit manifest; .runtime and local build outputs are
 excluded. Third-party Node binaries are checked against official SHA256 hashes;
 vendor helper code is pinned. Checksums detect corruption, not malicious authors.
 The custom Windows binaries are unsigned. Never disable antivirus or Gatekeeper
-to install this tool. macOS remains source-only experimental code until a real
-Apple Silicon acceptance test. Signing/notarization are release follow-ups.
+to install this tool. macOS has experimental ad-hoc signed Intel/Apple Silicon
+DMGs, not Developer ID signed or notarized. Native UI/build tests and publisher
+verification do not establish real-account connection acceptance, which is still
+pending. Signing/notarization and fresh-user install acceptance remain follow-ups.
 
 ## Reporting
 

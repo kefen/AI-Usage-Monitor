@@ -36,7 +36,9 @@ synthetic data. Not a capture of the live Codex application or a real account.
 | macOS Apple Silicon / Intel | 0.4.1-alpha.1 | Experimental DMGs; unsigned/not notarized; real-account acceptance pending |
 | Chrome MV3 | 0.3.1 | Companion extension; requires the local desktop monitor and native host |
 
-Windows 0.12.3 was accepted by the user on 2026-11-16. Platform versions are
+The Windows 0.12.3 interface was accepted by the user on 2026-11-16. A final
+installer-only fix handles legacy Unicode shortcut cleanup on English Windows.
+Platform versions are
 independent; Windows acceptance does not imply macOS or browser-profile acceptance.
 Mac packages require macOS 13.5+ and a compatible official Codex client. The
 currently audited official download is Apple Silicon only; the Intel companion
