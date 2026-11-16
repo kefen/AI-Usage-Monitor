@@ -60,6 +60,6 @@ def main():
         files=list(checked_files('runtime-files.json'))
         files.append(('Install.ps1',(ROOT/'Install.ps1').read_bytes()))
         archive(BUILD/'payload.zip',files)
-    print('Mac binary distribution disabled until real-machine acceptance.')
+    print('Mac experimental DMGs are built separately on native macOS runners; real-account acceptance remains pending.')
 
 if __name__=='__main__':main()

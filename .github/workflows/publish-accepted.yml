@@ -1,8 +1,5 @@
-name: Publish accepted 0.11 release set
+name: Historical 0.11 publisher (disabled)
 on:
-  push:
-    branches: [main]
-    paths: ['docs/releases/accepted-0.11.json']
   workflow_dispatch:
 permissions:
   contents: read
@@ -11,7 +8,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   release:
-    if: github.repository == 'kefen/codex-quota-sidebar' && github.ref == 'refs/heads/main'
+    if: false
     runs-on: windows-2022
     timeout-minutes: 25
     permissions:

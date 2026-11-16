@@ -89,15 +89,19 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         container.translatesAutoresizingMaskIntoConstraints = false
         window.contentView!.addSubview(container)
         NSLayoutConstraint.activate([container.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor), container.trailingAnchor.constraint(equalTo: window.contentView!.trailingAnchor), container.topAnchor.constraint(equalTo: window.contentView!.topAnchor), container.bottomAnchor.constraint(equalTo: window.contentView!.bottomAnchor)])
-        let header = NSStackView(); header.spacing = 16
+        let header = NSStackView(); header.spacing = 16; header.distribution = .fill; header.alignment = .centerY
+        header.heightAnchor.constraint(equalToConstant: 48).isActive = true
         let icon = NSImageView(image: NSImage(contentsOf: root.appendingPathComponent("assets/cqs-128.png")) ?? NSImage())
         icon.widthAnchor.constraint(equalToConstant: 48).isActive = true; icon.heightAnchor.constraint(equalToConstant: 48).isActive = true
         let words = NSStackView(); words.orientation = .vertical; words.alignment = .leading; words.spacing = 4
         let title = NSTextField(labelWithString: "Codex Quota Sidebar"); title.font = .systemFont(ofSize: 21, weight: .regular)
+        title.identifier = NSUserInterfaceItemIdentifier("brand-title")
         let version = NSTextField(labelWithString: "by KEFEN"); version.textColor = .secondaryLabelColor
         words.addArrangedSubview(title); words.addArrangedSubview(version); header.addArrangedSubview(icon); header.addArrangedSubview(words); container.addArrangedSubview(header)
         header.widthAnchor.constraint(equalTo: container.widthAnchor, constant: -48).isActive = true
         let headerGap = NSView(); header.addArrangedSubview(headerGap); headerGap.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        headerGap.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        header.setVisibilityPriority(.mustHold, for: icon); header.setVisibilityPriority(.mustHold, for: words)
         languagePicker.identifier = NSUserInterfaceItemIdentifier("language")
         languagePicker.addItems(withTitles: ["English", "简体中文", "繁體中文"])
         languagePicker.selectItem(at: CqsLocale.language == "en" ? 0 : CqsLocale.language == "zh-CN" ? 1 : 2)
@@ -155,6 +159,8 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     if page == "subscription" { plan.selectItem(at: 2); enabled.state = .on; updateFields(); save(); precondition(!dirty && page == "subscription" && saveButton?.isEnabled == false) }
                     if page == "display" { saveDisplay(); precondition(!dirty && page == "display") }
                     let view = window.contentView!
+                    func findTitle(_ parent: NSView) -> NSView? { if parent.identifier?.rawValue == "brand-title" { return parent }; for child in parent.subviews { if let match = findTitle(child) { return match } }; return nil }
+                    guard let brand = findTitle(view), !brand.isHiddenOrHasHiddenAncestor, brand.bounds.width > 150, brand.bounds.height > 10 else { throw NSError(domain: "CQS", code: 4, userInfo: [NSLocalizedDescriptionKey: "Brand header is hidden or clipped"]) }
                     let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
                     view.cacheDisplay(in: view.bounds, to: bitmap)
                     try bitmap.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent(page + "-" + language + ".png"))
