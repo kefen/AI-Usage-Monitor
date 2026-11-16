@@ -44,7 +44,7 @@ internal sealed class LaunchWindow : Form {
                 string output="",failure=null;
                 try{
                     var info=new System.Diagnostics.ProcessStartInfo(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"runtime","node.exe"),"\""+System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"src","update.mjs")+"\" "+operation+" \""+AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\')+"\" \""+AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\')+"\" "+System.Diagnostics.Process.GetCurrentProcess().Id){UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true};
-                    using(var p=System.Diagnostics.Process.Start(info)){var error=p.StandardError.ReadToEndAsync();output=p.StandardOutput.ReadToEnd();if(!p.WaitForExit(180000))throw new Exception("Update timed out");if(p.ExitCode!=0)throw new Exception("Update could not be verified or downloaded.");}
+                    using(var p=System.Diagnostics.Process.Start(info)){var error=p.StandardError.ReadToEndAsync();var text=p.StandardOutput.ReadToEndAsync();if(!p.WaitForExit(180000)){p.Kill();throw new Exception("Update timed out");}output=text.Result;if(p.ExitCode!=0)throw new Exception("Update could not be verified or downloaded.");}
                 }catch(Exception e){failure=e.Message;}
                 if(IsDisposed)return;BeginInvoke((Action)(()=>{
                     updating=false;updates.Enabled=true;updates.Text=Locale.T("Check for updates");
@@ -63,6 +63,7 @@ internal sealed class LaunchWindow : Form {
             });
         };
         updates.Click+=(s,e)=>check("check");
+        var updateTimer=new System.Windows.Forms.Timer{Interval=86400000};updateTimer.Tick+=(s,e)=>check("auto");Disposed+=(s,e)=>updateTimer.Dispose();updateTimer.Start();
         Shown+=(s,e)=>{if(System.IO.File.Exists(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"installation.json")))check("auto");};
         foreach(string label in new[]{"Usage overview","Sidebar content","Codex subscription record","Data and settings","Diagnostics","About project"}){
             string key=label;var b=MeterTheme.Button(key,key,false);b.Width=160;b.Height=40;b.TextAlign=ContentAlignment.MiddleLeft;b.Margin=new Padding(0,0,0,6);b.BackColor=rail.BackColor;b.FlatAppearance.BorderSize=0;b.Click+=(s,e)=>ShowPage(key);nav.Controls.Add(b);navigation[b]=key;

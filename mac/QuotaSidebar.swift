@@ -189,6 +189,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if CommandLine.arguments.contains("--ui-smoke") { fputs("UI smoke: initial overview\n", stderr) }
         showStatus()
         if !CommandLine.arguments.contains("--ui-smoke") { DispatchQueue.main.asyncAfter(deadline: .now() + 5) { self.runUpdate("auto") } }
+        if !CommandLine.arguments.contains("--ui-smoke") { Timer.scheduledTimer(withTimeInterval: 86400, repeats: true) { [weak self] _ in self?.runUpdate("auto") } }
         if CommandLine.arguments.contains("--ui-smoke") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.smokeTest() }; return
         }

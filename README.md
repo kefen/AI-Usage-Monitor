@@ -185,7 +185,7 @@ close it: fully quit Codex and reopen from the official entry.
 
 The tool does not directly read passwords, authentication files, cookies,
 conversation databases or chat content. No telemetry, remote upload service or
-automatic update installation is added. The official CLI retains its own
+unattended update installation is added. Update checks contact GitHub; installation requires confirmation. The official CLI retains its own
 authentication/network behavior. No independent security audit has been performed.
 
 ## Building

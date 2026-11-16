@@ -61,7 +61,7 @@ is still pending; confirm desktop connection before registering.
 ## Boundaries
 
 - Only `sidePanel` and `nativeMessaging` permissions. No cookies, web host
-  permissions, content scripts, external service or network listener.
+  permissions or content scripts. Update checks contact the fixed repository's GitHub API; no account data is sent and no network listener is added.
 - Helper accepts only a bounded `{ "op": "read" }` request and exact origin.
 - Returns whitelisted numeric/date fields, never raw RPC/authentication data.
 - Visible panels refresh at most once per minute; token source refreshes hourly.
