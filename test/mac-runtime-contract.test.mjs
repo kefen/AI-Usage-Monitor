@@ -2,6 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 const read=p=>readFile(new URL('../'+p,import.meta.url),'utf8');
+test('Mac metric dates use separate captions and packaged launch checks install location',async()=>{
+ const ui=await read('mac/QuotaSidebar.swift');
+ assert.doesNotMatch(ui,/metricFields\[2\]\.stringValue \+=/);
+ assert.match(ui,/metricCaptions\[2\]\.stringValue/);
+ assert.match(ui,/checkInstallLocation\(\)/);
+ assert.match(ui,/AppTranslocation/);
+});
 test('Mac page content is pinned to the top independently of navigation height',async()=>{
  const ui=await read('mac/QuotaSidebar.swift');
  assert.match(ui,/body\.topAnchor\.constraint\(equalTo: split\.topAnchor\)/);

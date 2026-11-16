@@ -9,7 +9,7 @@ nodeversion=$(node -p "JSON.parse(require('fs').readFileSync('dependency-pins.js
 stage="build/mac-$arch"
 app="$stage/Codex Quota Sidebar.app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
-/usr/bin/xcrun swiftc -O -target "$arch-apple-macosx13.5" -framework AppKit mac/Localization.swift mac/Bootstrap.swift mac/SettingsTransfer.swift mac/RuntimeProbe.swift mac/QuotaSidebar.swift -o "$app/Contents/MacOS/QuotaSidebar"
+/usr/bin/xcrun swiftc -O -target "$arch-apple-macosx13.5" -framework AppKit mac/Localization.swift mac/Bootstrap.swift mac/SettingsTransfer.swift mac/RuntimeProbe.swift mac/MetricPresentation.swift mac/QuotaSidebar.swift -o "$app/Contents/MacOS/QuotaSidebar"
 cp mac/READ-ME-FIRST.html "$app/Contents/Resources/READ-ME-FIRST.html"
 cp ui/strings.json "$app/Contents/Resources/strings.json"
 cp mac/Info.plist "$app/Contents/Info.plist"
@@ -31,6 +31,8 @@ cmp "$stage/node-v$nodeversion-darwin-$nodearch/bin/node" "$app/Contents/Resourc
 /usr/bin/codesign --verify --deep --strict "$app"
 cmp "$stage/node-v$nodeversion-darwin-$nodearch/bin/node" "$app/Contents/Resources/payload/runtime/node"
 if [[ "$(uname -m)" == "$arch" ]]; then
+  /usr/bin/xcrun swiftc mac/MetricPresentation.swift test/MacMetricPresentationTest.swift -o "$stage/MetricPresentationTest"
+  "$stage/MetricPresentationTest"
   /usr/bin/xcrun swiftc mac/RuntimeProbe.swift test/MacRuntimeProbeTest.swift -o "$stage/RuntimeProbeTest"
   "$stage/RuntimeProbeTest"
   "$app/Contents/Resources/payload/runtime/node" --version

@@ -27,7 +27,11 @@
 <p>无需先手动退出。打开面板并点击“重新连接”；有可用端口时直接连接。若提示缺少端口，先保存工作、等待任务结束，再点击“保存工作后重启并连接”并确认。取消不会关闭 Codex。系统如询问自动化权限，请核对是本工具请求控制 Codex；不愿授权可取消，并手动用 ⌘Q 退出 Codex 后重连。关闭红色窗口不等于退出应用。</p>
 <p>無須先手動結束。開啟面板並按「重新連線」；有可用連線埠時直接連線。若缺少連線埠，先儲存工作並等待任務結束，再按「儲存工作後重新啟動並連線」並確認。取消不會關閉 Codex。如系統詢問自動化權限，請核對工具與 Codex；可取消並手動用 ⌘Q 結束 Codex 後重連。</p>
 <p>Choose Reconnect first. An existing usable port is reused. Otherwise, finish active tasks and save work before choosing Save work, restart and connect. Confirming requests a normal quit and relaunch; cancellation or timeout never force-kills Codex. Review any macOS Automation prompt for the exact companion and Codex. Alternatively, decline permission and manually quit Codex with Command-Q before reconnecting. Closing its window is not quitting.</p>
-<p>升级 / 升級 / Upgrade: Exit the old companion, replace the app in Applications, eject the DMG, and open the installed app. Confirm version 0.4.4-alpha.1 in the lower-left corner. Settings are retained.</p>
+<p>升级 / 升級 / Upgrade: Exit the old companion, replace the app in Applications, eject the DMG, and open the installed app. Confirm version 0.4.5-alpha.1 in the lower-left corner. Settings are retained.</p>
+<h3>下次如何打开 / 下次如何開啟 / Open next time</h3>
+<p>安装是将应用拖入“应用程序”，不是反复双击 DMG 内的图标。以后从 Finder → 应用程序 → Codex Quota Sidebar 打开；可拖到 Dock 保留入口。“关于项目”内可在 Finder 中显示应用。关闭窗口仍在菜单栏后台运行；“退出软件”才会退出。</p>
+<p>安裝是將程式拖入「應用程式」，而非反覆開啟 DMG 內的圖示。之後從 Finder → 應用程式開啟，也可保留於 Dock。「關於專案」可在 Finder 中顯示應用程式。關閉視窗仍在選單列執行；「結束軟體」才會退出。</p>
+<p>Drag the app into Applications to install it. Next time open it from Finder > Applications, or keep it in the Dock. About project includes Show application in Finder. Closing the window leaves the menu-bar companion running; Exit software quits it. Disk-image or translocated launches show installation instructions instead of being treated as installed.</p>
 <p>端口校验 / 連線埠驗證 / Port validation: 官方 Computer Use 辅助进程可能与主进程共同持有端口。0.4.4 会核对固定路径、父子关系、应用标识和 OpenAI 签名，不需要关闭 Computer Use。官方輔助程序共同持有連線埠時仍須通過上述驗證。A co-owning official Computer Use helper is accepted only after exact-path, direct-parent, bundle-ID and OpenAI signature checks. Unknown owners and non-loopback listeners remain blocked. If blocked, export diagnostics with the displayed error code; do not disable security checks.</p></section>
 <section id="en"><h2>Install and open safely</h2>
 <p class="warning">Experimental, not Developer ID signed or notarized. Checksums establish file consistency, not a security audit. Continue only if you trust the source and accept the risk, or wait for a notarized version.</p>

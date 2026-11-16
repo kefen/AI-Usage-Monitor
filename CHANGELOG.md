@@ -178,3 +178,10 @@
 - Query full-width process paths and distinguish ownership, helper signature, non-local address and query errors in all three languages. Include only allowlisted connection codes in exported diagnostics.
 - Pin page content to the top independently of navigation height. Check failure refresh and page switching in native screenshot tests.
 - Windows remains at 0.12.3. Requires user Mac acceptance before release.
+
+# macOS 0.4.5-alpha.1 (UI test candidate)
+
+- Separate small dated captions from tabular count values, align metric columns and abbreviate K/M/B counts with exact-count tooltips. Clear stale captions with unavailable data.
+- Unify regular-weight headings, labels, compact status rows, grouped sidebar choices and stable Save feedback. Keep the window visible after connecting until the user closes it.
+- Explain drag-to-Applications installation before running from a DMG or AppTranslocation path. Add Show application in Finder to About and a three-language next-launch guide.
+- Add native populated-data screenshots and formatter tests. Preserve the 0.4.4 connection policy and Windows 0.12.3.

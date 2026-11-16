@@ -57,6 +57,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
     var metricFields: [NSTextField] = []
+    var metricCaptions: [NSTextField] = []
     let languagePicker = NSPopUpButton()
     var retry: NSButton!
     var child: Process?
@@ -64,7 +65,6 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var timer: Timer?
     var stopTimer: Timer?
     var showingSettings = false
-    var hiddenAfterMount = false
     var stopping = false
     var reconnecting = false
     var opening: Process?
@@ -101,6 +101,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "yyyy-MM-dd"; return text.flatMap { f.date(from: $0) }
     }
     func applicationDidFinishLaunching(_ notification: Notification) {
+        guard checkInstallLocation() else { NSApp.terminate(nil); return }
         do { try Bootstrap.install(at: root); try FileManager.default.createDirectory(at: runtime, withIntermediateDirectories: true) }
         catch { alert(error.localizedDescription); NSApp.terminate(nil); return }
         if let languageData = try? JSONSerialization.data(withJSONObject: CqsLocale.language, options: [.fragmentsAllowed]) { try? languageData.write(to: runtime.appendingPathComponent("language.json"), options: .atomic) }
@@ -165,7 +166,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         ])
         let spacer = NSView(); container.addArrangedSubview(spacer); spacer.setContentHuggingPriority(.defaultLow, for: .vertical)
         let footer = NSStackView(); footer.spacing = 8
-        let build = NSTextField(labelWithString: "macOS 0.4.4-alpha.1"); build.textColor = .secondaryLabelColor; build.font = .systemFont(ofSize: 11)
+        let build = NSTextField(labelWithString: "macOS 0.4.5-alpha.1"); build.textColor = .secondaryLabelColor; build.font = .systemFont(ofSize: 11)
         footer.addArrangedSubview(build)
         let gap = NSView(); footer.addArrangedSubview(gap); gap.setContentHuggingPriority(.defaultLow, for: .horizontal)
         retry = button("Reconnect", #selector(reconnect))
@@ -190,7 +191,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             catch { alert(error.localizedDescription); NSApp.terminate(nil); return }
         }
         timer = Timer.scheduledTimer(withTimeInterval: 4, repeats: true) { [weak self] _ in self?.tick() }
-        if read("preferences.json")["macGuideVersion"] as? String != "0.4.4-alpha.1" { stage = "stopped"; showAuthorizationHelp() }
+        if read("preferences.json")["macGuideVersion"] as? String != "0.4.5-alpha.1" { stage = "stopped"; showAuthorizationHelp() }
         else { start() }
     }
     func button(_ title: String, _ action: Selector, primary: Bool = false) -> NSButton {
@@ -203,9 +204,22 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         result.layer?.backgroundColor = (primary ? green : .white).cgColor
         result.contentTintColor = primary ? .white : .labelColor
         result.heightAnchor.constraint(equalToConstant: 36).isActive = true
-        result.widthAnchor.constraint(greaterThanOrEqualToConstant: max(108, result.intrinsicContentSize.width + 28)).isActive = true
+        result.widthAnchor.constraint(greaterThanOrEqualToConstant: max(title == "Save" ? 180 : 108, result.intrinsicContentSize.width + 28)).isActive = true
         return result
     }
+    func checkInstallLocation() -> Bool {
+        if CommandLine.arguments.contains("--ui-smoke") { return true }
+        let path = Bundle.main.bundleURL.path
+        guard path.hasPrefix("/Volumes/") || path.contains("/AppTranslocation/") else { return true }
+        let prompt = NSAlert(); prompt.messageText = CqsLocale.t("Finish installing the app")
+        prompt.informativeText = CqsLocale.t("1. Drag Codex Quota Sidebar.app from the disk image into Applications. Replace the old app if upgrading.\n2. Eject the disk image, then open Codex Quota Sidebar from Finder > Applications.\n3. Keep the app in the Dock for next time. You do not need to open the installer again.")
+        prompt.addButton(withTitle: CqsLocale.t("Quit"))
+        prompt.addButton(withTitle: CqsLocale.t("Open Applications"))
+        NSApp.activate(ignoringOtherApps: true)
+        if prompt.runModal() == .alertSecondButtonReturn { NSWorkspace.shared.open(URL(fileURLWithPath: "/Applications")) }
+        return false
+    }
+    @objc func revealApplication() { NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL]) }
     func smokeTest() {
         do {
             let output = URL(fileURLWithPath: CommandLine.arguments.last!); try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
@@ -240,6 +254,15 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 let ownerView = window.contentView!, ownerBitmap = ownerView.bitmapImageRepForCachingDisplay(in: ownerView.bounds)!
                 ownerView.cacheDisplay(in: ownerView.bounds, to: ownerBitmap)
                 try ownerBitmap.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("owner-failure-" + language + ".png"))
+                let now = Date().timeIntervalSince1970 * 1000
+                try write("browser-state.json", ["generatedAt": now, "quotaAt": now, "usageAt": now, "windows": [["minutes": 10080, "remaining": 43]], "daily": ["date": "2026-11-15", "value": 202600000], "lifetime": 3008200000])
+                stage = "mounted"; errorText = ""; page = ""; showStatus(); tick(); window.contentView!.layoutSubtreeIfNeeded()
+                precondition(!metricFields[2].stringValue.contains("\n") && metricCaptions[2].stringValue.contains("2026-11-15"))
+                precondition(metricFields[4].stringValue == "3.01B" && metricCaptions[2].font!.pointSize < metricFields[2].font!.pointSize)
+                let connectedView = window.contentView!, connectedBitmap = connectedView.bitmapImageRepForCachingDisplay(in: connectedView.bounds)!
+                connectedView.cacheDisplay(in: connectedView.bounds, to: connectedBitmap)
+                try connectedBitmap.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("connected-fixture-" + language + ".png"))
+                updateMetrics(false); precondition(metricCaptions[2].stringValue.isEmpty && metricFields[2].stringValue == "--")
                 stage = "stopped"; errorText = ""; page = ""
             }
             let backup = try SettingsTransfer.exportData(runtime); try SettingsTransfer.restore(backup, at: runtime)
@@ -258,31 +281,42 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         CqsLocale.apply(window.contentView!)
         for item in statusItem.menu?.items ?? [] { item.title = CqsLocale.t(item.title) }
     }
-    func line(_ label: String, _ value: NSView) {
+    func line(_ label: String, _ value: NSView, into target: NSStackView? = nil) {
         let row = NSStackView(); row.spacing = 20; let key = NSTextField(labelWithString: CqsLocale.t(label)); key.textColor = .secondaryLabelColor
-        key.widthAnchor.constraint(equalToConstant: 130).isActive = true; row.addArrangedSubview(key); row.addArrangedSubview(value); body.addArrangedSubview(row)
+        key.font = .systemFont(ofSize: 13, weight: .regular)
+        if let field = value as? NSTextField { field.font = .systemFont(ofSize: 13, weight: .regular) }
+        key.widthAnchor.constraint(equalToConstant: 130).isActive = true; row.addArrangedSubview(key); row.addArrangedSubview(value); (target ?? body).addArrangedSubview(row)
         if value is NSPopUpButton || value is NSDatePicker { value.widthAnchor.constraint(equalToConstant: 400).isActive = true }
     }
     @objc func showStatus() {
         if page == "overview" { tick(); present(); return }
         guard beginPage("overview") else { return }; showingSettings = false; rows = []
-        headline.font = .systemFont(ofSize: 26, weight: .regular); body.addArrangedSubview(headline); body.addArrangedSubview(detail)
+        headline.font = .systemFont(ofSize: 22, weight: .regular); body.addArrangedSubview(headline)
+        detail.font = .systemFont(ofSize: 13, weight: .regular); detail.textColor = .secondaryLabelColor; body.addArrangedSubview(detail)
         detail.widthAnchor.constraint(lessThanOrEqualToConstant: 600).isActive = true
         if runtimeIssue { authorizationButtons() }
         if errorText.trimmingCharacters(in: .whitespacesAndNewlines) == "E_RESTART_REQUIRED" {
             restartButton = button("Save work, restart and connect", #selector(confirmRestart), primary: true)
             body.addArrangedSubview(restartButton!)
         }
-        for title in [CqsLocale.t("Client"), CqsLocale.t("Quota data"), CqsLocale.t("Token data"), CqsLocale.t("Last sync")] { let field = NSTextField(labelWithString: "--"); rows.append(field); line(title, field) }
-        metricFields = []
-        var metrics = NSStackView(); metrics.orientation = .horizontal; metrics.spacing = 20
+        let statusLines = NSStackView(); statusLines.orientation = .vertical; statusLines.alignment = .leading; statusLines.spacing = 6
+        for title in [CqsLocale.t("Client"), CqsLocale.t("Quota data"), CqsLocale.t("Token data"), CqsLocale.t("Last sync")] { let field = NSTextField(labelWithString: "--"); rows.append(field); line(title, field, into: statusLines) }
+        body.addArrangedSubview(statusLines)
+        metricFields = []; metricCaptions = []
+        var metrics = NSStackView(); metrics.orientation = .horizontal; metrics.alignment = .top; metrics.spacing = 20
         for (index, label) in ["5-hour remaining","Weekly remaining","Daily tokens","Weekly tokens","Lifetime tokens"].enumerated() {
-            if index == 2 { body.addArrangedSubview(metrics); metrics = NSStackView(); metrics.orientation = .horizontal; metrics.spacing = 20 }
-            let column = NSStackView(); column.orientation = .vertical; column.alignment = .leading; column.spacing = 8
+            if index == 2 { body.addArrangedSubview(metrics); metrics = NSStackView(); metrics.orientation = .horizontal; metrics.alignment = .top; metrics.spacing = 20 }
+            let column = NSStackView(); column.orientation = .vertical; column.alignment = .leading; column.spacing = 6
             column.widthAnchor.constraint(equalToConstant: index < 2 ? 280 : 180).isActive = true
-            let name = NSTextField(wrappingLabelWithString: CqsLocale.t(label)); name.font = .systemFont(ofSize: 11)
-            let value = NSTextField(labelWithString: "--"); value.font = .systemFont(ofSize: 22, weight: .regular)
-            column.addArrangedSubview(name); column.addArrangedSubview(value); metrics.addArrangedSubview(column); metricFields.append(value)
+            let name = NSTextField(labelWithString: CqsLocale.t(label)); name.font = .systemFont(ofSize: 12, weight: .regular); name.textColor = .secondaryLabelColor
+            let value = NSTextField(labelWithString: "--"); value.font = .monospacedDigitSystemFont(ofSize: 24, weight: .regular)
+            let caption = NSTextField(labelWithString: ""); caption.font = .systemFont(ofSize: 11, weight: .regular); caption.textColor = .secondaryLabelColor
+            name.heightAnchor.constraint(equalToConstant: 18).isActive = true
+            value.heightAnchor.constraint(equalToConstant: 32).isActive = true
+            caption.heightAnchor.constraint(equalToConstant: 16).isActive = true
+            caption.widthAnchor.constraint(equalTo: column.widthAnchor).isActive = true
+            column.addArrangedSubview(name); column.addArrangedSubview(value); column.addArrangedSubview(caption)
+            metrics.addArrangedSubview(column); metricFields.append(value); metricCaptions.append(caption)
         }
         body.addArrangedSubview(metrics)
         tick(); present()
@@ -315,11 +349,21 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc func planChanged() { if ["business","enterprise","edu","free"].contains(planIDs[plan.indexOfSelectedItem]) { enabled.state = .off; mode.selectItem(at: 1) }; updateFields() }
     @objc func showDisplay() {
         guard beginPage("display") else { return }; showingSettings = true; displayChecks = []
-        let keys = ["plan","short","week","reset","renewal","daily","average","weekly","lifetime"]
-        let labels = [CqsLocale.t("Plan badge"),CqsLocale.t("5-hour remaining"),CqsLocale.t("Weekly remaining"),CqsLocale.t("Quota reset"),CqsLocale.t("Renewal date"),CqsLocale.t("Daily tokens"),CqsLocale.t("Daily average"),CqsLocale.t("Weekly tokens"),CqsLocale.t("Lifetime tokens")]
-        let values = read("display.json"), stack = NSStackView(); stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = 8
+        let keys = ["short","week","reset","plan","renewal","daily","average","weekly","lifetime"]
+        let labels = [CqsLocale.t("5-hour remaining"),CqsLocale.t("Weekly remaining"),CqsLocale.t("Quota reset"),CqsLocale.t("Plan badge"),CqsLocale.t("Renewal date"),CqsLocale.t("Daily tokens"),CqsLocale.t("Daily average"),CqsLocale.t("Weekly tokens"),CqsLocale.t("Lifetime tokens")]
+        let values = read("display.json"), stack = NSStackView(); stack.orientation = .horizontal; stack.alignment = .top; stack.spacing = 20
+        let left = NSStackView(), right = NSStackView()
+        for column in [left, right] { column.orientation = .vertical; column.alignment = .leading; column.spacing = 8; column.widthAnchor.constraint(equalToConstant: 280).isActive = true; stack.addArrangedSubview(column) }
+        func group(_ text: String, _ column: NSStackView) { let label = NSTextField(labelWithString: CqsLocale.t(text)); label.font = .systemFont(ofSize: 12, weight: .regular); label.textColor = .secondaryLabelColor; column.addArrangedSubview(label) }
+        group("Quota data", left); group("Token data", right)
         heading("Sidebar display content")
-        for (key,label) in zip(keys,labels) { let check = NSButton(checkboxWithTitle: label, target: self, action: #selector(markDirty)); check.state = values[key] as? Bool == false ? .off : .on; displayChecks.append((key,check)); stack.addArrangedSubview(check) }
+        for (index, pair) in Array(zip(keys,labels)).enumerated() {
+            let (key,label) = pair
+            if index == 3 { group("Codex subscription record", left) }
+            let check = NSButton(checkboxWithTitle: label, target: self, action: #selector(markDirty)); check.font = .systemFont(ofSize: 13, weight: .regular)
+            check.heightAnchor.constraint(equalToConstant: 24).isActive = true
+            check.state = values[key] as? Bool == false ? .off : .on; displayChecks.append((key,check)); (index < 5 ? left : right).addArrangedSubview(check)
+        }
         body.addArrangedSubview(stack)
         paragraph("Official controls have priority. Scroll first; collapse only when space is very limited.")
         paragraph("Changes apply automatically while connected. No reconnect is needed.")
@@ -334,7 +378,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         label.widthAnchor.constraint(lessThanOrEqualToConstant: 640).isActive = true; body.addArrangedSubview(label)
     }
     func heading(_ text: String) {
-        let label = NSTextField(labelWithString: CqsLocale.t(text)); label.font = .systemFont(ofSize: 24, weight: .regular); body.addArrangedSubview(label)
+        let label = NSTextField(labelWithString: CqsLocale.t(text)); label.font = .systemFont(ofSize: 22, weight: .regular); body.addArrangedSubview(label)
     }
     @objc func showHelp() {
         guard beginPage("help") else { return }; showingSettings = true; heading("Diagnostics")
@@ -388,7 +432,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         do {
             let code = errorText.trimmingCharacters(in: .whitespacesAndNewlines)
             let allowedCodes = ["E_CDP_OWNER", "E_CDP_NONLOCAL", "E_CDP_HELPER_SIGNATURE", "E_CDP_QUERY", "E_RESTART_REQUIRED", "E_QUIT_CANCELLED"]
-            let report: [String: Any] = ["version": "0.4.4-alpha.1", "platform": "macOS", "stage": stage, "connectionCode": allowedCodes.contains(code) ? code : "", "runtimeReady": runtimeReady, "runtimeIssue": runtimeIssue, "monitorRunning": child?.isRunning == true, "exportedAt": ISO8601DateFormatter().string(from: Date())]
+            let report: [String: Any] = ["version": "0.4.5-alpha.1", "platform": "macOS", "stage": stage, "connectionCode": allowedCodes.contains(code) ? code : "", "runtimeReady": runtimeReady, "runtimeIssue": runtimeIssue, "monitorRunning": child?.isRunning == true, "exportedAt": ISO8601DateFormatter().string(from: Date())]
             try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]).write(to: url, options: .atomic)
         } catch { alert(error.localizedDescription) }
     }
@@ -398,7 +442,8 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         paragraph("Local, read-only quota and Token indicators in the Codex sidebar. Choose the metrics you need; official controls always have priority.")
         paragraph("Unofficial software. Not affiliated with or endorsed by OpenAI.")
         paragraph("Author: KEFEN / License: MIT")
-        body.addArrangedSubview(button("Visit GitHub project", #selector(openGitHub))); present()
+        body.addArrangedSubview(button("Visit GitHub project", #selector(openGitHub)))
+        body.addArrangedSubview(button("Show application in Finder", #selector(revealApplication))); present()
     }
     @objc func skip() { enabled.state = .off; save() }
     @objc func save() {
@@ -432,7 +477,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
             if outcome == .ready {
                 self.runtimeReady = true; self.runtimeIssue = false
                 self.stage = previousStage == "checking" ? "stopped" : previousStage
-                var prefs = self.read("preferences.json"); prefs["macGuideVersion"] = "0.4.4-alpha.1"
+                var prefs = self.read("preferences.json"); prefs["macGuideVersion"] = "0.4.5-alpha.1"
                 try? self.write("preferences.json", prefs); self.tick(); next()
             } else {
                 self.stage = "failed"; self.runtimeIssue = true
@@ -473,7 +518,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSWorkspace.shared.open(url)
     }
     func launchMonitor() {
-        hiddenAfterMount = false; stage = "starting"; errorText = ""; startedAt = Date()
+        stage = "starting"; errorText = ""; startedAt = Date()
         if page == "authorization" { showStatus() }
         do {
             try? FileManager.default.removeItem(at: runtime.appendingPathComponent("mac-error.txt"))
@@ -524,10 +569,10 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if feedbackUntil > Date(), stage != "failed", !runtimeIssue { detail.stringValue = feedback }
         updateMetrics(mounted)
         CqsLocale.apply(window.contentView!)
-        if mounted && !hiddenAfterMount { hiddenAfterMount = true; DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in if let self = self, self.stage.hasPrefix("mounted"), !self.showingSettings { self.window.orderOut(nil) } } }
     }
     func updateMetrics(_ connected: Bool) {
-        for field in metricFields { field.stringValue = "--" }
+        for field in metricFields { field.stringValue = "--"; field.toolTip = CqsLocale.t("Unavailable") }
+        for caption in metricCaptions { caption.stringValue = "" }
         guard connected, metricFields.count == 5 else { return }
         let snapshot = read("browser-state.json"), now = Date().timeIntervalSince1970 * 1000
         func fresh(_ key: String, _ limit: Double) -> Bool { guard let stamp = snapshot[key] as? Double else { return false }; return now >= stamp && now - stamp < limit }
@@ -542,12 +587,14 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if fresh("usageAt",5400000) {
             let daily = snapshot["daily"] as? [String:Any] ?? [:]
             for (index, value) in [(2,daily["value"]),(3,snapshot["week"]),(4,snapshot["lifetime"])] {
-                if let count = value as? Double, count.isFinite, count >= 0, count.rounded() == count, count <= 9007199254740991 { metricFields[index].stringValue = count >= 1000000 ? String(format: "%.1fM",count/1000000) : String(format: "%.0f",count) }
+                if let count = value as? Double {
+                    metricFields[index].stringValue = MetricPresentation.count(count)
+                    if metricFields[index].stringValue != "--" { metricFields[index].toolTip = String(format: "%.0f", count) + " Token" }
+                }
             }
             if let date = daily["date"] as? String, date.range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil {
-                metricFields[2].stringValue += "\n" + date
-                metricFields[2].toolTip = CqsLocale.t("Data date") + ": " + date
-            } else { metricFields[2].stringValue = "--" }
+                metricCaptions[2].stringValue = CqsLocale.t("Data date") + ": " + date
+            } else { metricFields[2].stringValue = "--"; metricFields[2].toolTip = CqsLocale.t("Unavailable") }
         }
     }
     @objc func refresh() { do { try Data("refresh".utf8).write(to: runtime.appendingPathComponent("refresh.request"), options: .atomic) } catch { alert(error.localizedDescription) } }

@@ -25,7 +25,7 @@
   "native/TrayHost.cs", "native/Preferences.cs", "native/Installer.cs", "native/Theme.cs", "native/LaunchWindow.cs", "native/SetupWindow.cs", "native/app.manifest",
   "tools/BrandAssets.cs", "assets/cqs.ico", "assets/cqs.icns", "assets/cqs-128.png", "assets/cqs-256.png", "assets/cqs-1024.png", "assets/tray-light.ico", "assets/tray-dark.ico", "assets/tray-template.png",
   "mac/Bootstrap.swift", "mac/SettingsTransfer.swift", "mac/RuntimeProbe.swift", "mac/READ-ME-FIRST.html", "test/MacRuntimeProbeTest.swift", "test/mac-runtime-contract.test.mjs", "mac/package-payload.mjs", ".github/workflows/r2-test-packages.yml",
-  "mac/QuotaSidebar.swift", "mac/Build.command", "mac/Info.plist", "test/visual-contract.test.mjs", "test/NativeVisualTest.cs",
+  "mac/QuotaSidebar.swift", "mac/MetricPresentation.swift", "test/MacMetricPresentationTest.swift", "mac/Build.command", "mac/Info.plist", "test/visual-contract.test.mjs", "test/NativeVisualTest.cs",
   "mac/launch.mjs", "mac/listener-policy.mjs", "test/mac-listener.test.mjs", "mac/trust.json", "mac/Launcher.applescript", "mac/Install.command", "mac/Stop.command", "mac/Uninstall.command",
   "vendor/codex-quota/codex-cdp.ps1", "vendor/codex-quota/LICENSE",
   "src/cli.mjs", "src/core.mjs", "src/rpc.mjs", "src/cdp.mjs", "src/usage.mjs", "src/settings.mjs", "src/status.mjs", "src/renderer-expression.mjs", "src/widget.js", "src/version.mjs",
