@@ -279,11 +279,20 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 let now = Date().timeIntervalSince1970 * 1000
                 try write("browser-state.json", ["generatedAt": now, "quotaAt": now, "usageAt": now, "windows": [["minutes": 300, "remaining": 75],["minutes": 10080, "remaining": 37]], "daily": ["date": dateString(Calendar.current.date(byAdding: .day, value: -1, to: Date())!), "value": 202650000], "monthAverage":125400000, "week":96900000, "lifetime": 3008200000])
                 stage = "mounted"; errorText = ""; page = ""; showStatus(); tick(); window.contentView!.layoutSubtreeIfNeeded()
+                rows[1].stringValue = CqsLocale.t("Synced"); rows[2].stringValue = CqsLocale.t("Synced"); rows[3].stringValue = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .short)
+                precondition(abs(metricFields[2].convert(metricFields[2].bounds, to: window.contentView).minY - metricFields[5].convert(metricFields[5].bounds, to: window.contentView).minY) < 1)
+                precondition(abs(metricFields[3].convert(metricFields[3].bounds, to: window.contentView).minY - metricFields[4].convert(metricFields[4].bounds, to: window.contentView).minY) < 1)
                 precondition(!metricFields[2].stringValue.contains("\n") && !metricCaptions[2].stringValue.isEmpty)
                 precondition(metricFields[4].stringValue == "3.01B" && metricCaptions[2].font!.pointSize < metricFields[2].font!.pointSize)
                 let connectedView = window.contentView!, connectedBitmap = connectedView.bitmapImageRepForCachingDisplay(in: connectedView.bounds)!
                 connectedView.cacheDisplay(in: connectedView.bounds, to: connectedBitmap)
                 try connectedBitmap.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("connected-fixture-" + language + ".png"))
+                try write("browser-state.json", ["generatedAt": now, "quotaAt": now, "usageAt": now, "windows": []])
+                updateMetrics(true); rows[1].stringValue = CqsLocale.t("Not returned"); rows[2].stringValue = CqsLocale.t("Not returned")
+                precondition(metricFields.allSatisfy { $0.stringValue == "--" } && metricCaptions.allSatisfy { $0.stringValue == CqsLocale.t("Not returned") })
+                let emptyBitmap = connectedView.bitmapImageRepForCachingDisplay(in: connectedView.bounds)!
+                connectedView.cacheDisplay(in: connectedView.bounds, to: emptyBitmap)
+                try emptyBitmap.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("empty-fixture-" + language + ".png"))
                 updateMetrics(false); precondition(metricCaptions[2].stringValue == CqsLocale.t("Not connected") && metricFields[2].stringValue == "--")
                 stage = "stopped"; errorText = ""; page = ""
             }
