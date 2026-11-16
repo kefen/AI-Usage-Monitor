@@ -1,5 +1,20 @@
 import AppKit
 
+final class FlatButton: NSButton {
+    override var intrinsicContentSize: NSSize {
+        let size = (title as NSString).size(withAttributes: [.font: font ?? NSFont.systemFont(ofSize: 13)])
+        return NSSize(width: size.width + 28, height: 36)
+    }
+    override func draw(_ dirtyRect: NSRect) {
+        if isHighlighted { NSColor.labelColor.withAlphaComponent(0.06).setFill(); NSBezierPath(roundedRect: bounds, xRadius: 4, yRadius: 4).fill() }
+        let paragraph = NSMutableParagraphStyle(); paragraph.alignment = alignment
+        paragraph.lineBreakMode = .byTruncatingTail
+        let attributes: [NSAttributedString.Key: Any] = [.font: font ?? NSFont.systemFont(ofSize: 13), .foregroundColor: isEnabled ? (contentTintColor ?? .labelColor) : NSColor.disabledControlTextColor, .paragraphStyle: paragraph]
+        let height = (title as NSString).size(withAttributes: attributes).height
+        (title as NSString).draw(in: NSRect(x: 12, y: (bounds.height - height) / 2, width: bounds.width - 24, height: height), withAttributes: attributes)
+    }
+}
+
 // Native shell only. The shared Node core remains responsible for quota data.
 final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let root = CommandLine.arguments.contains("--ui-smoke") ? FileManager.default.temporaryDirectory.appendingPathComponent("cqs-ui-test-" + UUID().uuidString) : FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/CodexSidebarMeter")
@@ -167,7 +182,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate {
         else { start() }
     }
     func button(_ title: String, _ action: Selector, primary: Bool = false) -> NSButton {
-        let result = NSButton(title: CqsLocale.t(title), target: self, action: action)
+        let result = FlatButton(title: CqsLocale.t(title), target: self, action: action)
         result.isBordered = false; result.font = .systemFont(ofSize: 13, weight: .regular)
         result.alignment = .center
         result.wantsLayer = true; result.layer?.cornerRadius = 4
