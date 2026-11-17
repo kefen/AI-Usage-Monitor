@@ -48,7 +48,7 @@ internal static class NativeDpiTest {
                             int width=save.Width;save.Text=Locale.T("Saved successfully");Check(window);Assert(save.Width==width,"Saved feedback changed button geometry");save.Text=Locale.T("Save");
                         }
                         var overview=window.Controls.Find("usageOverview",true)[0] as UsageOverview;if(page=="Usage overview"){if(overview.HorizontalScroll.Visible){Console.WriteLine("Overflow client="+overview.ClientSize+" display="+overview.DisplayRectangle);foreach(Control c in overview.Controls)Console.WriteLine(c.Name+" "+c.Bounds);}Assert(!overview.HorizontalScroll.Visible,"Overview has horizontal overflow");}
-                        if(page=="Usage overview"&&size.Width==1440)Assert(!overview.VerticalScroll.Visible,"Large overview should not require vertical scrolling");
+                        if(page=="Usage overview"&&size.Width==1440)Assert(!overview.VerticalScroll.Visible,"Large overview should not require vertical scrolling: client="+overview.ClientSize+" display="+overview.DisplayRectangle+" requested="+window.ClientSize);
                         using(var bitmap=new Bitmap(window.Width,window.Height)){using(var g=Graphics.FromImage(bitmap)){IntPtr dc=g.GetHdc();try{Assert(PrintWindow(window.Handle,dc,2),"Native window capture failed");}finally{g.ReleaseHdc(dc);}}bitmap.Save(Path.Combine(args[0],"dpi-"+dpi+"-"+size.Width+"-"+page.Replace(" ","-")+"-"+lang+".png"));}
                     }
                 }

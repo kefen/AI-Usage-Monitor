@@ -421,6 +421,9 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     @objc func revealApplication() { NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL]) }
     func smokeTest() {
         lifecycle("smokeTest entered")
+        func precondition(_ condition: @autoclosure () -> Bool, _ message: String = "Smoke contract", file: StaticString = #file, line: UInt = #line) {
+            if !condition() { fputs("UI smoke failed at \(file):\(line): \(message), page=\(page), document=\(pageDocument.bounds), viewport=\(pageScroll.contentView.bounds)\n", stderr); fflush(stderr); exit(1) }
+        }
         do {
             let output = URL(fileURLWithPath: CommandLine.arguments.last!); try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
             for key in ["Credits", "Quota remaining", "Plan and dates", "Monthly daily average", "Display choices"] {
