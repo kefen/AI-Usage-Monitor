@@ -2,6 +2,9 @@
 
 ## Approved V3: 2026-11-17
 
+Published and verified: [release workflow](https://github.com/kefen/codex-quota-sidebar/actions/runs/44020418555).
+See the [machine-readable publication and digest record](releases/published-v3-20261117.json).
+
 | Platform | Version | Changes |
 |---|---|---|
 | Windows 10/11 x64 | 0.13.0 | Approved V3 client and installer, all eleven shared choices, localized numbered notes |

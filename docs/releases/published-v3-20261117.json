@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "date": "2026-11-17",
+  "author": "KEFEN",
+  "sourceCommit": "8c55c088ba9491071fa3c5a57542da94915acb5b",
+  "workflow": {
+    "id": 44020418555,
+    "url": "https://github.com/kefen/codex-quota-sidebar/actions/runs/44020418555",
+    "conclusion": "success"
+  },
+  "versions": {
+    "windows": "0.13.0",
+    "macos": "0.5.0-alpha.1",
+    "chrome": "0.4.0"
+  },
+  "releaseUrls": [
+    "https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.13.0",
+    "https://github.com/kefen/codex-quota-sidebar/releases/tag/macos/v0.5.0-alpha.1",
+    "https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.4.0"
+  ],
+  "artifacts": [
+    {
+      "name": "Codex-Quota-Sidebar-source-windows-0.13.0-macos-0.5.0-alpha.1.zip",
+      "size": 1071194,
+      "digest": "sha256:9c93f34d6a0412ea99123aeca9eded105efc841add51a9005d7e549d5cbee196"
+    },
+    {
+      "name": "Codex-Quota-Sidebar-Windows-0.13.0-x64-Setup.exe",
+      "size": 34860544,
+      "digest": "sha256:d849dd512393589490891588040aa744760a458ec3cca802a430ad400426d18e"
+    },
+    {
+      "name": "Codex-Quota-Sidebar-macOS-0.5.0-alpha.1-arm64-unsigned-test.dmg",
+      "size": 44119295,
+      "digest": "sha256:56378976e9f6bdcbd435e3d882256ce4fc14d94c97a419adc9277790c1c2a419"
+    },
+    {
+      "name": "Codex-Quota-Sidebar-macOS-0.5.0-alpha.1-source.zip",
+      "size": 1071194,
+      "digest": "sha256:9c93f34d6a0412ea99123aeca9eded105efc841add51a9005d7e549d5cbee196"
+    },
+    {
+      "name": "Codex-Quota-Sidebar-macOS-0.5.0-alpha.1-x86_64-unsigned-test.dmg",
+      "size": 45692955,
+      "digest": "sha256:521de0991e23f2aab7aa4b695c0fb759461faa9b2668c2e0e785f44e0148b881"
+    },
+    {
+      "name": "Codex-Quota-Sidebar-Chrome-0.4.0.zip",
+      "size": 32070,
+      "digest": "sha256:2e033786ed66027e423454cca0935369c4977c8d584ee2532169632ce843b6fc"
+    }
+  ],
+  "verification": {
+    "sharedTests": 105,
+    "windowsNative": "Native UI and installer, three locales, compact 420-530px plan views, extraction/install/rollback/restart guards; Windows Server 2022 gate passed.",
+    "macos": "arm64 and x86_64 native builds, visual bounds and real app replacement/new-version acknowledgement/settings preservation passed on clean macOS runners.",
+    "browser": "45 rendered cases at 320/390/480px in three locales with full/partial/empty/stale/offline data; mocked native messaging bridge.",
+    "updateFeed": "Pinned Ed25519 signature, exact release asset sizes and SHA-256 digests, three numbered notes per locale."
+  },
+  "limitations": {
+    "macNotarized": false,
+    "intelLiveAccountAcceptancePending": true,
+    "browserRealProfileAcceptancePending": true,
+    "planDetection": "Supported verified-desktop metadata only. Current observed desktop returned unknown safely. Manual corrections, specific tiers and dates are protected.",
+    "legacyMacUpdater": "A one-time manual replacement may be required from 0.4.8-alpha.1 or earlier."
+  },
+  "history": "Prior Releases, commits and tags retained."
+}
