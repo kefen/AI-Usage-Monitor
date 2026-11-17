@@ -463,7 +463,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
                             precondition(pageScroll.contentView.documentVisibleRect.intersects(target), "Last page action must be reachable without hiding the footer")
                             pageScroll.contentView.scroll(to: .zero)
                         }
-                        if size.width == 1440 && size.height == 1000 {
+                        if size.width == 1440 && window.contentView!.bounds.height >= 999 {
                             precondition(pageDocument.bounds.height <= pageScroll.contentView.bounds.height + 1, "Tall windows must not need vertical scrolling")
                         }
                         let resized = view.bitmapImageRepForCachingDisplay(in: view.bounds)!

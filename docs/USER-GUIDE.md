@@ -227,7 +227,7 @@ replacing the app; do not delete its Application Support folder to upgrade.
 
 ### Security Approval And Connection
 
-Older 0.4.1 builds could open while bundled `node` was blocked. The current build
+Older 0.4.0 builds could open while bundled `node` was blocked. The current build
 preserves Node's upstream signature and checks runtime startup separately; a
 runtime failure does not prove the official Codex client's signature is wrong.
 
