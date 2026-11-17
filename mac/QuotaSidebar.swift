@@ -586,7 +586,9 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         func checkBounds(_ view: NSView) {
             guard !view.isHiddenOrHasHiddenAncestor else { return }
             if view is NSControl || view is OptionalDatePicker {
-                let rect = view.convert(view.bounds, to: pageDocument)
+                // AppKit text fields extend their frame 2px past the alignment
+                // rect; validate the visible layout rect, not that drawing inset.
+                let rect = view.superview!.convert(view.alignmentRect(forFrame: view.frame), to: pageDocument)
                 require(rect.minX >= -1 && rect.maxX <= pageDocument.bounds.width + 1, "Control outside page: \((view as? NSTextField)?.stringValue ?? view.description), rect=\(rect), document=\(pageDocument.bounds), body=\(body.frame)")
                 require(rect.maxY <= pageDocument.bounds.height + 1, "Control clipped below document")
                 if view is NSControl { return }
