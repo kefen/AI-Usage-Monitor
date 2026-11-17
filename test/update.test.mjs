@@ -20,3 +20,12 @@ test('version comparisons and assets fail closed',()=>{
  assert.throws(()=>validateAsset({...asset,size:900000000}));
  assert.equal(wholeCredits('162.8117935000'),'162');assert.equal(wholeCredits('0.99'),'0');assert.equal(wholeCredits(null),'--');
 });
+test('cached checks are invalidated by a new installed version or UI language',async()=>{
+ const {reusableCheck}=await import('../src/update.mjs');
+ const state={current:'0.13.0',language:'en',checkedAt:1000};
+ assert.equal(reusableCheck(state,'0.13.0','en',2000),true);
+ assert.equal(reusableCheck(state,'0.13.1','en',2000),false);
+ assert.equal(reusableCheck(state,'0.13.0','zh-CN',2000),false);
+ assert.equal(reusableCheck(state,'0.13.0','en',86401001),false);
+ assert.equal(reusableCheck({...state,checkedAt:3000},'0.13.0','en',2000),false);
+});

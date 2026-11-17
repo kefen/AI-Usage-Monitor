@@ -1,6 +1,47 @@
 import AppKit
 import Darwin
 
+private func drawSymbol(_ image: NSImage, in rect: NSRect, color: NSColor) {
+    let tinted = NSImage(size: rect.size, flipped: false) { bounds in
+        image.draw(in: bounds)
+        color.setFill(); bounds.fill(using: .sourceAtop)
+        return true
+    }
+    tinted.draw(in: rect)
+}
+
+final class FlatPopUpButton: NSPopUpButton {
+    var leadingSymbol: String? { didSet { invalidateIntrinsicContentSize(); needsDisplay = true } }
+    override var intrinsicContentSize: NSSize {
+        let text = selectedItem?.title ?? ""
+        let width = (text as NSString).size(withAttributes: [.font: font ?? NSFont.systemFont(ofSize: 13)]).width
+        return NSSize(width: max(80, ceil(width) + (leadingSymbol == nil ? 44 : 66)), height: 36)
+    }
+    override func draw(_ dirtyRect: NSRect) {
+        let frame = bounds.insetBy(dx: 0.5, dy: 0.5)
+        let border = NSBezierPath(roundedRect: frame, xRadius: 4, yRadius: 4)
+        NSColor.white.setFill(); border.fill()
+        NSColor(calibratedRed: 0.80, green: 0.82, blue: 0.85, alpha: 1).setStroke(); border.stroke()
+        let color = isEnabled ? NSColor.labelColor : NSColor.disabledControlTextColor
+        var left: CGFloat = 12
+        if let symbol = leadingSymbol, let image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil) {
+            drawSymbol(image, in: NSRect(x: 10, y: (bounds.height - 16) / 2, width: 16, height: 16), color: .secondaryLabelColor)
+            left = 34
+        }
+        let paragraph = NSMutableParagraphStyle(); paragraph.lineBreakMode = .byTruncatingTail
+        let attributes: [NSAttributedString.Key: Any] = [.font: font ?? NSFont.systemFont(ofSize: 13), .foregroundColor: color, .paragraphStyle: paragraph]
+        let text = selectedItem?.title ?? ""
+        let height = (text as NSString).size(withAttributes: attributes).height
+        (text as NSString).draw(in: NSRect(x: left, y: (bounds.height - height) / 2, width: max(0, bounds.width - left - 30), height: height), withAttributes: attributes)
+        if let arrow = NSImage(systemSymbolName: "chevron.down", accessibilityDescription: nil) {
+            drawSymbol(arrow, in: NSRect(x: bounds.width - 22, y: (bounds.height - 12) / 2, width: 12, height: 12), color: color)
+        }
+        if window?.firstResponder === self {
+            NSColor.keyboardFocusIndicatorColor.setStroke(); border.lineWidth = 2; border.stroke()
+        }
+    }
+}
+
 final class FlatButton: NSButton {
     override var intrinsicContentSize: NSSize {
         let size = (title as NSString).size(withAttributes: [.font: font ?? NSFont.systemFont(ofSize: 13)])
@@ -13,7 +54,7 @@ final class FlatButton: NSButton {
         let attributes: [NSAttributedString.Key: Any] = [.font: font ?? NSFont.systemFont(ofSize: 13), .foregroundColor: isEnabled ? (contentTintColor ?? .labelColor) : NSColor.disabledControlTextColor, .paragraphStyle: paragraph]
         let height = (title as NSString).size(withAttributes: attributes).height
         let inset: CGFloat = image == nil ? 12 : 34
-        if let image = image { image.draw(in: NSRect(x: 12, y: (bounds.height - 16) / 2, width: 16, height: 16)) }
+        if let image = image { drawSymbol(image, in: NSRect(x: 12, y: (bounds.height - 16) / 2, width: 16, height: 16), color: isEnabled ? (contentTintColor ?? .labelColor) : .disabledControlTextColor) }
         (title as NSString).draw(in: NSRect(x: inset, y: (bounds.height - height) / 2, width: bounds.width - inset - 12, height: height), withAttributes: attributes)
     }
 }
@@ -93,9 +134,9 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     var planSource = "manual"
     var familyEdited = false
     let planSourceField = NSTextField(labelWithString: "")
-    let tier = NSPopUpButton()
+    let tier = FlatPopUpButton()
     let selectionCount = NSTextField(labelWithString: "")
-    let languagePicker = NSPopUpButton()
+    let languagePicker = FlatPopUpButton()
     var retry: NSButton!
     var updateButton: NSButton!
     var updateProcess: Process?
@@ -119,9 +160,9 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     var startedAt = Date.distantFuture
     var errorText = ""
     let enabled = NSButton(checkboxWithTitle: CqsLocale.t("Show Codex renewal date"), target: nil, action: nil)
-    let plan = NSPopUpButton()
+    let plan = FlatPopUpButton()
     let purchase = NSTextField()
-    let mode = NSPopUpButton()
+    let mode = FlatPopUpButton()
     let next = NSTextField()
     let green = NSColor(calibratedRed: 0.157, green: 0.392, blue: 0.843, alpha: 1)
     func read(_ name: String) -> [String: Any] {
@@ -181,6 +222,9 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         header.setVisibilityPriority(.mustHold, for: icon); header.setVisibilityPriority(.mustHold, for: words)
         updateButton = button("Check for updates", #selector(checkUpdates)); setIcon(updateButton, "arrow.down.circle"); header.addArrangedSubview(updateButton)
         languagePicker.identifier = NSUserInterfaceItemIdentifier("language")
+        languagePicker.font = .systemFont(ofSize: 13, weight: .regular); languagePicker.isBordered = false; languagePicker.leadingSymbol = "character.bubble"
+        languagePicker.heightAnchor.constraint(equalToConstant: 36).isActive = true
+        languagePicker.widthAnchor.constraint(equalToConstant: 148).isActive = true
         languagePicker.addItems(withTitles: ["English", "简体中文", "繁體中文"])
         languagePicker.selectItem(at: CqsLocale.language == "en" ? 0 : CqsLocale.language == "zh-CN" ? 1 : 2)
         languagePicker.target = self; languagePicker.action = #selector(changeLanguage); header.addArrangedSubview(languagePicker)
@@ -226,6 +270,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         let quit = button("Exit software", #selector(stop)); quit.layer?.borderWidth = 0; setIcon(quit, "power")
         setIcon(retry, "arrow.clockwise")
         let open = button("Open Codex", #selector(openCodex), primary: true); setIcon(open, "arrow.up.right")
+        open.identifier = NSUserInterfaceItemIdentifier("open-codex")
         footer.addArrangedSubview(quit); footer.addArrangedSubview(retry); footer.addArrangedSubview(open)
         let footerLine = NSBox(); footerLine.boxType = .separator; footerLine.heightAnchor.constraint(equalToConstant: 1).isActive = true; container.addArrangedSubview(footerLine); footerLine.widthAnchor.constraint(equalTo: container.widthAnchor).isActive = true
         container.addArrangedSubview(footer); footer.widthAnchor.constraint(equalTo: container.widthAnchor).isActive = true
@@ -309,6 +354,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
                     CqsLocale.apply(window.contentView!); lifecycle("smoke page \(page) layout begin")
                     window.contentView!.layoutSubtreeIfNeeded(); lifecycle("smoke page \(page) display begin")
                     window.displayIfNeeded()
+                    assertV3Geometry()
                     fputs("UI smoke: laid out \(page)\n", stderr)
                     precondition(abs(body.frame.maxY - body.superview!.bounds.maxY) < 2, "Page content is not top aligned")
                     if page == "subscription" { plan.selectItem(at: 2); enabled.state = .on; updateFields(); save(); precondition(!dirty && page == "subscription" && saveButton?.isEnabled == false) }
@@ -341,6 +387,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
                 try write("membership.json", ["enabled": true, "plan": "pro", "tier": "100", "purchaseDate": "2026-11-13", "date": "2026-12-13", "kind": "renewal"])
                 try write("browser-state.json", ["schema": 1, "generatedAt": now, "quotaAt": now, "usageAt": now, "windows": [["minutes": 300, "remaining": 62, "resetsAt": now + 3600000],["minutes": 10080, "remaining": 37]], "daily": ["date": dateString(Calendar.current.date(byAdding: .day, value: -1, to: Date())!), "value": 202650000], "monthAverage":125350000, "week":96900000, "lifetime": 3008200000, "creditBalance": "162", "resetCredits": 3])
                 stage = "mounted"; errorText = ""; page = ""; showStatus(); tick(); window.contentView!.layoutSubtreeIfNeeded()
+                assertV3Geometry()
                 rows[1].stringValue = CqsLocale.t("Synced"); rows[2].stringValue = CqsLocale.t("Synced"); rows[3].stringValue = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .short)
                 precondition(overviewValues.count == 11 && overviewTracks.count == 4)
                 precondition(abs(overviewValues["weekly"]!.convert(overviewValues["weekly"]!.bounds, to: window.contentView).minY - overviewValues["lifetime"]!.convert(overviewValues["lifetime"]!.bounds, to: window.contentView).minY) < 1)
@@ -359,6 +406,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
                 for (name, choices) in [("all-eleven", [:]), ("none", Dictionary(uniqueKeysWithValues: MetricPresentation.keys.map { ($0, false) })), ("tokens-only", Dictionary(uniqueKeysWithValues: MetricPresentation.keys.map { ($0, ["daily", "average", "weekly", "lifetime"].contains($0)) }))] as [(String, [String: Bool])] {
                     try write("display.json", choices); page = ""; showStatus(); updateMetrics(true)
                     window.contentView!.layoutSubtreeIfNeeded()
+                    assertV3Geometry()
                     precondition(overviewValues.count == (name == "none" ? 0 : name == "tokens-only" ? 4 : 11))
                     let bitmap = connectedView.bitmapImageRepForCachingDisplay(in: connectedView.bounds)!; connectedView.cacheDisplay(in: connectedView.bounds, to: bitmap)
                     try bitmap.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("choices-" + name + "-" + language + ".png"))
@@ -366,6 +414,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
                 try write("display.json", [:])
                 for (name, member) in [("blank", [:]), ("manual", ["enabled": true, "plan": "pro", "purchaseDate": "2026-01-31", "date": "2026-02-28", "kind": "renewal"]), ("estimated", ["enabled": true, "plan": "plus", "purchaseDate": "2026-01-31", "monthlyEstimate": true])] as [(String, [String: Any])] {
                     try write("membership.json", member); page = ""; showSettings(); window.contentView!.layoutSubtreeIfNeeded()
+                    assertV3Geometry()
                     if name == "blank" { precondition(purchase.stringValue.isEmpty && next.stringValue.isEmpty) }
                     let bitmap = connectedView.bitmapImageRepForCachingDisplay(in: connectedView.bounds)!; connectedView.cacheDisplay(in: connectedView.bounds, to: bitmap)
                     try bitmap.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("dates-" + name + "-" + language + ".png"))
@@ -377,6 +426,51 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             print("PASS: native Mac pages, three languages, save persistence and settings boundary; synthetic fixture only")
             NSApp.terminate(nil)
         } catch { fputs("UI smoke failed: \(error)\n", stderr); exit(1) }
+    }
+    func assertV3Geometry() {
+        func find(_ id: String, in view: NSView) -> NSView? {
+            if view.identifier?.rawValue == id { return view }
+            for child in view.subviews { if let found = find(id, in: child) { return found } }
+            return nil
+        }
+        let content = window.contentView!
+        precondition(abs(languagePicker.bounds.height - 36) < 1 && languagePicker.bounds.width >= 148, "Language control must use the approved 36px height and icon width")
+        if page == "overview", let charts = find("overview-charts", in: content) {
+            precondition(abs(charts.bounds.width - body.bounds.width) < 1, "Charts must span the full content width")
+            if let quotas = find("quota-column", in: charts), let tokens = find("token-column", in: charts) {
+                let q = quotas.convert(quotas.bounds, to: charts), t = tokens.convert(tokens.bounds, to: charts)
+                precondition(abs(q.width + t.width + 38 - charts.bounds.width) < 2, "Chart columns must fill the available width, not hug intrinsic content")
+                precondition(abs(t.minX - q.maxX - 38) < 2 && abs(t.maxX - charts.bounds.width) < 2, "Chart gutter and right edge must match the reference")
+                precondition(q.width >= 415 && t.width >= 480, "Normal client requires approximately 420px quota and 484px token columns")
+                lifecycle("geometry quota=\(q.width), tokens=\(t.width), gutter=\(t.minX - q.maxX)")
+            }
+            func checkLabels(_ view: NSView) {
+                if view.identifier?.rawValue == "plot-label", let field = view as? NSTextField {
+                    let width = (field.stringValue as NSString).size(withAttributes: [.font: field.font!]).width
+                    precondition(field.bounds.width >= ceil(width) + 2, "Localized plot label is clipped: \(field.stringValue)")
+                }
+                view.subviews.forEach { checkLabels($0) }
+            }
+            checkLabels(charts)
+        }
+        if page == "subscription" {
+            precondition(plan.bounds.width >= 640 && plan.bounds.width <= 680, "Plan popup must fill the 760px row beside Detect")
+            for control in [plan, tier, mode] { precondition(abs(control.bounds.height - 36) < 1, "Plan/date popups must be 36px high") }
+            for control in [purchase, next] { precondition(abs(control.bounds.height - 36) < 1 && control.bounds.width >= 367, "Date fields must fill their two-column tracks") }
+            lifecycle("geometry plan=\(plan.bounds.width)x\(plan.bounds.height), date=\(purchase.bounds.width)x\(purchase.bounds.height)")
+        }
+        if let button = find("open-codex", in: content) {
+            guard let bitmap = button.bitmapImageRepForCachingDisplay(in: button.bounds) else { preconditionFailure("Cannot inspect Open Codex icon pixels") }
+            button.cacheDisplay(in: button.bounds, to: bitmap)
+            let sx = CGFloat(bitmap.pixelsWide) / button.bounds.width, sy = CGFloat(bitmap.pixelsHigh) / button.bounds.height
+            let x0 = Int(12 * sx), x1 = min(bitmap.pixelsWide, Int(28 * sx))
+            let y0 = max(0, Int((button.bounds.height / 2 - 8) * sy)), y1 = min(bitmap.pixelsHigh, Int((button.bounds.height / 2 + 8) * sy))
+            var whitePixels = 0
+            for y in y0..<y1 { for x in x0..<x1 {
+                if let color = bitmap.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB), color.alphaComponent > 0.8 && color.redComponent > 0.85 && color.greenComponent > 0.85 && color.blueComponent > 0.85 { whitePixels += 1 }
+            } }
+            precondition(whitePixels > 4, "Open Codex symbol must render white on the blue button")
+        }
     }
     func clear() { restartButton = nil; for view in body.arrangedSubviews { body.removeArrangedSubview(view); view.removeFromSuperview() } }
     func present() {
@@ -443,8 +537,9 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         let display = read("display.json")
         overviewSignature = MetricPresentation.keys.map { display[$0] as? Bool == false ? "0" : "1" }.joined() + (stage.hasPrefix("mounted") ? "mounted" : "waiting")
         func has(_ key: String) -> Bool { display[key] as? Bool != false }
-        let charts = NSStackView(); charts.orientation = .horizontal; charts.alignment = .top; charts.spacing = 38
+        let charts = NSStackView(); charts.orientation = .horizontal; charts.alignment = .top; charts.spacing = 38; charts.distribution = .fill; charts.identifier = NSUserInterfaceItemIdentifier("overview-charts")
         let quotas = column(spacing: 22), tokens = column(spacing: 22)
+        quotas.identifier = NSUserInterfaceItemIdentifier("quota-column"); tokens.identifier = NSUserInterfaceItemIdentifier("token-column")
         func metric(_ key: String, _ name: String, size: CGFloat = 23) -> NSStackView {
             let cell = column(spacing: 7)
             cell.addArrangedSubview(label(name, size: 12, muted: true))
@@ -472,16 +567,25 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         if has("daily") || has("average") {
             let heading = column(spacing: 8); heading.addArrangedSubview(label("Daily vs monthly daily average", size: 14)); heading.addArrangedSubview(label("Shared scale - M tokens", size: 11, muted: true)); tokens.addArrangedSubview(heading)
             for (key, name) in [("daily", "Daily tokens"), ("average", "Monthly daily average")] where has(key) {
-                let row = NSStackView(); row.spacing = 12; row.alignment = .centerY
-                let nameField = label(name, size: 12); nameField.widthAnchor.constraint(equalToConstant: 100).isActive = true; row.addArrangedSubview(nameField)
+                let row = NSStackView(); row.spacing = 12; row.alignment = .centerY; row.distribution = .fill
+                let nameField = label(name, size: 12); nameField.identifier = NSUserInterfaceItemIdentifier("plot-label")
+                let labelWidth = max(100, ceil((CqsLocale.t("Monthly daily average") as NSString).size(withAttributes: [.font: nameField.font!]).width) + 4)
+                nameField.widthAnchor.constraint(equalToConstant: labelWidth).isActive = true
+                nameField.setContentCompressionResistancePriority(.required, for: .horizontal); row.addArrangedSubview(nameField)
                 if key == "daily" { dailyLabel = nameField }
                 let track = QuotaTrack(); track.plot = true; track.heightAnchor.constraint(equalToConstant: 14).isActive = true
+                track.setContentHuggingPriority(NSLayoutConstraint.Priority(1), for: .horizontal); track.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+                track.widthAnchor.constraint(greaterThanOrEqualToConstant: 80).isActive = true
                 if key == "average" { track.tone = NSColor(calibratedRed: 0.14, green: 0.52, blue: 0.43, alpha: 1) }
                 row.addArrangedSubview(track); overviewTracks[key] = track; overviewCaptions[key] = label("Not returned", size: 11, muted: true)
                 let value = label("--", size: 15); value.alignment = .right; value.widthAnchor.constraint(equalToConstant: 76).isActive = true; row.addArrangedSubview(value); overviewValues[key] = value
                 tokens.addArrangedSubview(row); row.widthAnchor.constraint(equalTo: tokens.widthAnchor).isActive = true
             }
-            let axis = axisRow(["0", "--", "--"]); axis.identifier = NSUserInterfaceItemIdentifier("token-axis"); tokens.addArrangedSubview(axis); axis.widthAnchor.constraint(equalTo: tokens.widthAnchor, constant: -200).isActive = true
+            let axis = axisRow(["0", "--", "--"]); axis.identifier = NSUserInterfaceItemIdentifier("token-axis")
+            let labelWidth = max(100, ceil((CqsLocale.t("Monthly daily average") as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 12)]).width) + 4)
+            let axisFrame = NSView(); tokens.addArrangedSubview(axisFrame); axisFrame.widthAnchor.constraint(equalTo: tokens.widthAnchor).isActive = true; axisFrame.heightAnchor.constraint(equalToConstant: 14).isActive = true
+            axis.translatesAutoresizingMaskIntoConstraints = false; axisFrame.addSubview(axis)
+            NSLayoutConstraint.activate([axis.leadingAnchor.constraint(equalTo: axisFrame.leadingAnchor, constant: labelWidth + 12), axis.trailingAnchor.constraint(equalTo: axisFrame.trailingAnchor, constant: -88), axis.topAnchor.constraint(equalTo: axisFrame.topAnchor), axis.bottomAnchor.constraint(equalTo: axisFrame.bottomAnchor)])
             let note = label("", size: 11, muted: true); tokens.addArrangedSubview(note); dailyNote = note
         }
         let tail = NSStackView(); tail.distribution = .fillEqually; tail.spacing = 20
@@ -491,7 +595,10 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         if !charts.arrangedSubviews.isEmpty {
             body.addArrangedSubview(charts); charts.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true
             charts.heightAnchor.constraint(equalToConstant: 326).isActive = true
-            if charts.arrangedSubviews.count == 2 { quotas.widthAnchor.constraint(equalTo: tokens.widthAnchor, multiplier: 0.87).isActive = true }
+            if charts.arrangedSubviews.count == 2 {
+                quotas.widthAnchor.constraint(equalTo: charts.widthAnchor, multiplier: 0.87 / 1.87, constant: -38 * 0.87 / 1.87).isActive = true
+                tokens.widthAnchor.constraint(equalTo: charts.widthAnchor, multiplier: 1 / 1.87, constant: -38 / 1.87).isActive = true
+            } else if let only = charts.arrangedSubviews.first { only.widthAnchor.constraint(equalTo: charts.widthAnchor).isActive = true }
         }
         lifecycle("overview chart hierarchy built")
         let auxiliary = NSStackView(); auxiliary.distribution = .fillEqually; auxiliary.spacing = 24
@@ -522,7 +629,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     func label(_ text: String, size: CGFloat, muted: Bool = false) -> NSTextField {
         let field = NSTextField(labelWithString: CqsLocale.t(text)); field.font = .systemFont(ofSize: size, weight: .regular); field.textColor = muted ? .secondaryLabelColor : .labelColor; return field
     }
-    func column(spacing: CGFloat) -> NSStackView { let stack = NSStackView(); stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = spacing; return stack }
+    func column(spacing: CGFloat) -> NSStackView { let stack = NSStackView(); stack.orientation = .vertical; stack.alignment = .leading; stack.distribution = .fill; stack.spacing = spacing; return stack }
     func separator() -> NSView { let view = NSBox(); view.boxType = .separator; view.heightAnchor.constraint(equalToConstant: 1).isActive = true; return view }
     func axisRow(_ values: [String]) -> NSStackView {
         let row = NSStackView(); row.distribution = .fillEqually
@@ -543,9 +650,12 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         mode.removeAllItems(); mode.addItems(withTitles: [CqsLocale.t("Monthly estimate"), CqsLocale.t("Set renewal date"), CqsLocale.t("Set expiry date")]); mode.selectItem(at: member["monthlyEstimate"] as? Bool == true ? 0 : member["kind"] as? String == "expiry" ? 2 : 1); mode.target = self; mode.action = #selector(updateFields)
         mode.addItem(withTitle: CqsLocale.t("Business annual estimate")); if member["annualEstimate"] as? Bool == true { mode.selectItem(at: 3) }
         let form = column(spacing: 18); form.widthAnchor.constraint(equalToConstant: 760).isActive = true
-        let planRow = NSStackView(); planRow.spacing = 12; planRow.alignment = .bottom
-        let planField = formField("Plan badge", plan); planRow.addArrangedSubview(planField); planRow.addArrangedSubview(button("Detect plan", #selector(detectPlan)))
+        let planRow = NSStackView(); planRow.spacing = 12; planRow.alignment = .bottom; planRow.distribution = .fill
+        let planField = formField("Plan badge", plan); planRow.addArrangedSubview(planField)
+        let detect = button("Detect plan", #selector(detectPlan)); detect.setContentHuggingPriority(.required, for: .horizontal); detect.setContentCompressionResistancePriority(.required, for: .horizontal)
+        let detectWidth = max(80, detect.intrinsicContentSize.width); detect.widthAnchor.constraint(equalToConstant: detectWidth).isActive = true; planRow.addArrangedSubview(detect)
         form.addArrangedSubview(planRow); planRow.widthAnchor.constraint(equalTo: form.widthAnchor).isActive = true
+        planField.widthAnchor.constraint(equalTo: form.widthAnchor, constant: -detectWidth - 12).isActive = true
         planSourceField.font = .systemFont(ofSize: 12); planSourceField.textColor = .secondaryLabelColor; form.addArrangedSubview(planSourceField)
         for fields in [[formField("Specific tier (manual, optional)", tier), formField("Date type", mode)], [formField("Purchase date", purchase), formField("Renewal / expiry", next)]] {
             let row = NSStackView(); row.distribution = .fillEqually; row.spacing = 24; fields.forEach { row.addArrangedSubview($0) }; form.addArrangedSubview(row); row.widthAnchor.constraint(equalTo: form.widthAnchor).isActive = true
@@ -561,7 +671,13 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         next.isEnabled = mode.indexOfSelectedItem != 0 && mode.indexOfSelectedItem != 3
         planSourceField.stringValue = CqsLocale.t(planSource == "desktop" ? "Desktop detection" : "Manual record (locked)")
     }
-    func formField(_ title: String, _ control: NSView) -> NSStackView { let field = column(spacing: 8); field.addArrangedSubview(label(title, size: 13)); field.addArrangedSubview(control); control.widthAnchor.constraint(equalTo: field.widthAnchor).isActive = true; if control is NSPopUpButton { control.heightAnchor.constraint(equalToConstant: 36).isActive = true }; return field }
+    func formField(_ title: String, _ control: NSView) -> NSStackView {
+        let field = column(spacing: 8); field.addArrangedSubview(label(title, size: 13)); field.addArrangedSubview(control)
+        control.widthAnchor.constraint(equalTo: field.widthAnchor).isActive = true
+        control.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        if let popup = control as? NSPopUpButton { popup.font = .systemFont(ofSize: 13, weight: .regular); popup.isBordered = false; popup.heightAnchor.constraint(equalToConstant: 36).isActive = true }
+        return field
+    }
     @objc func planChanged() { familyEdited = true; planSource = "manual"; updateFields() }
     @objc func tierChanged() { markDirty() }
     func controlTextDidChange(_ obj: Notification) { markDirty() }

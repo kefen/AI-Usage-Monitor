@@ -15,15 +15,16 @@ internal static class DisplayOptions {
     internal static Dictionary<string,bool> Capture(CheckedListBox list){var data=new Dictionary<string,bool>();for(int i=0;i<Keys.Length;i++)data[Keys[i]]=list.GetItemChecked(i);return data;}
     internal static Control Grouped(CheckedListBox list){
         var group=new Panel{Name="displayGroups",Dock=DockStyle.Top,Height=312};
-        var toolbar=new FlowLayoutPanel{Dock=DockStyle.Top,Height=52,FlowDirection=FlowDirection.RightToLeft,WrapContents=false};
-        var none=MeterTheme.Button("selectNone","Select none",false);none.Width=110;var all=MeterTheme.Button("selectAll","Select all",false);all.Width=100;toolbar.Controls.Add(none);toolbar.Controls.Add(all);group.Controls.Add(toolbar);
-        var count=MeterTheme.Label("",9,MeterTheme.Muted);count.Dock=DockStyle.Left;count.Width=210;toolbar.Controls.Add(count);
-        Action refresh=()=>{int n=0;for(int i=0;i<Keys.Length;i++)if(list.GetItemChecked(i))n++;count.Text=Locale.T("Selected")+" "+n+" / 11";};
+        var toolbar=new TableLayoutPanel{Dock=DockStyle.Top,Height=52,ColumnCount=3,RowCount=1,Margin=new Padding(0)};
+        toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,112));toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,112));
+        var none=MeterTheme.Button("selectNone","Select none",false);none.Dock=DockStyle.Top;none.Margin=new Padding(12,0,0,0);var all=MeterTheme.Button("selectAll","Select all",false);all.Dock=DockStyle.Top;all.Margin=new Padding(0,0,0,0);toolbar.Controls.Add(all,1,0);toolbar.Controls.Add(none,2,0);group.Controls.Add(toolbar);
+        var count=MeterTheme.Label("",9,MeterTheme.Muted);count.Name="selectionCount";count.Dock=DockStyle.Fill;count.Margin=new Padding(0);toolbar.Controls.Add(count,0,0);
+        Action refresh=()=>{int n=0;for(int i=0;i<Keys.Length;i++)if(list.GetItemChecked(i))n++;count.Tag=n;count.Text=Locale.T("Selected")+" "+n+" / 11";};
         var grid=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=3,RowCount=6,Margin=new Padding(0)};group.Controls.Add(grid);grid.BringToFront();
         for(int i=0;i<3;i++)grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,33.333f));
         for(int i=0;i<6;i++)grid.RowStyles.Add(new RowStyle(SizeType.Absolute,i==0?52:38));
         string[] headings={"Plan and dates","Quota and resets","Token usage"};for(int i=0;i<3;i++){var heading=MeterTheme.Label(headings[i],10,MeterTheme.Ink);heading.Margin=new Padding(0,12,24,8);grid.Controls.Add(heading,i,0);}
-        var names=new[]{"Plan badge","5-hour remaining","Weekly remaining","Quota reset","Codex renewal date","Daily tokens","Daily average","Weekly tokens","Lifetime tokens","Credits","Available quota resets"};
+        var names=new[]{"Plan badge","5-hour remaining","Weekly remaining","Quota reset","Codex renewal date","Daily tokens","Monthly daily average","Weekly tokens","Lifetime tokens","Credits","Available quota resets"};
         int[] columns={0,1,1,1,0,2,2,2,2,1,1},rows={1,1,2,3,2,1,2,3,4,5,4};
         var checks=new CheckBox[Keys.Length];
         for(int i=0;i<Keys.Length;i++){int index=i;var check=checks[i]=new CheckBox{Name="display-"+Keys[i],Text=names[i],Checked=list.GetItemChecked(i),Dock=DockStyle.Fill,AutoSize=false,Margin=new Padding(0,0,20,0),Font=MeterTheme.Font(9.75f)};check.CheckedChanged+=(s,e)=>{list.SetItemChecked(index,check.Checked);refresh();};grid.Controls.Add(check,columns[i],rows[i]);}

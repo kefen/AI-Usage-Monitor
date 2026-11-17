@@ -7,6 +7,7 @@ import {fileURLToPath} from 'node:url';
 import {backupSettings,verifySettings,restoreSettings,localizedNotes,canonicalEntry,transactionState,waitForRecord} from './update-transaction.mjs';
 const feedURL='https://raw.githubusercontent.com/kefen/codex-quota-sidebar/main/docs/updates/latest.json';
 export const wholeCredits=value=>typeof value==='string'&&/^\d+(\.\d+)?$/.test(value)&&Number.isSafeInteger(Math.floor(Number(value)))?String(Math.floor(Number(value))):'--';
+export const reusableCheck=(state,current,language,now=Date.now())=>state.current===current&&state.language===language&&Number.isFinite(state.checkedAt)&&state.checkedAt<=now&&now-state.checkedAt<86400000;
 export function newer(a,b){
  const parse=v=>{const m=/^(\d+)\.(\d+)\.(\d+)(?:-(alpha|beta)\.(\d+))?$/.exec(v);if(!m)throw Error('Invalid version');return [+m[1],+m[2],+m[3],m[4]==='alpha'?0:m[4]==='beta'?1:2,+(m[5]||0)];};
  const x=parse(a),y=parse(b);for(let i=0;i<x.length;i++)if(x[i]!==y[i])return x[i]>y[i];return false;
@@ -101,14 +102,14 @@ async function main(){
  if(!['check','auto','download','prepare'].includes(command))throw Error('Unsupported update operation');
  const root=await realpath(resolve(rootArg)),cache=join(root,'.runtime','updates');await mkdir(cache,{recursive:true});await noLinks(cache);
  const statePath=join(cache,'state.json');let previous={};try{previous=JSON.parse(await readFile(statePath,'utf8'));}catch{}
- if(command==='auto'&&Date.now()-(previous.checkedAt||0)<86400000){console.log(JSON.stringify(previous));return;}
- const key=await readFile(new URL('./update-public-key.pem',import.meta.url),'utf8');
- const envelope=JSON.parse((await bytes(feedURL,100000)).toString());const feed=verifyFeed(envelope,key);
+ let language='en';try{const saved=JSON.parse(await readFile(join(root,'.runtime','language.json'),'utf8'));if(['en','zh-CN','zh-TW'].includes(saved))language=saved;}catch{}
  const versions=JSON.parse(await readFile(join(root,'versions.json'),'utf8'));
  const target=process.platform==='win32'?'windows-x64':'macos-'+arch();const current=versions[process.platform==='win32'?'windows':'macos'];
+ if(command==='auto'&&reusableCheck(previous,current,language)){console.log(JSON.stringify({...previous,prepared:false}));return;}
+ const key=await readFile(new URL('./update-public-key.pem',import.meta.url),'utf8');
+ const envelope=JSON.parse((await bytes(feedURL,100000)).toString());const feed=verifyFeed(envelope,key);
  const asset=validateAsset(feed.releases[target]);const available=newer(asset.version,current);
- let language='en';try{const saved=JSON.parse(await readFile(join(root,'.runtime','language.json'),'utf8'));if(['en','zh-CN','zh-TW'].includes(saved))language=saved;}catch{}
- const state={checkedAt:Date.now(),available,version:asset.version,notes:localizedNotes(asset.notesByLocale||asset.notes,language),ready:false};
+ const state={checkedAt:Date.now(),current,language,available,version:asset.version,notes:localizedNotes(asset.notesByLocale||asset.notes,language),ready:false};
  const file=join(cache,process.platform==='win32'?'update.exe':'update.dmg');
  if(available&&['download','prepare'].includes(command)){
   let content;try{content=await readFile(file);}catch{}

@@ -1,5 +1,5 @@
 (() => {
-  if (window.__localCodexMeter?.version === '0.12.6') return;
+  if (window.__localCodexMeter?.version === '0.13.0') return;
   if (window.__localCodexMeter?.controllerId === 'local-codex-sidebar-meter-v1') window.__localCodexMeter.dispose();
   else if (window.__localCodexMeter) return;
   const id = 'local-codex-sidebar-meter';
@@ -64,6 +64,8 @@
     '北京时间':['Asia/Shanghai','北京時間'],'剩余':['Remaining','剩餘'],'已用':['Used','已用'],'后重置':['until reset','後重設'],'重置时间未返回':['Reset time unavailable','未回傳重設時間'],
     '等待服务端刷新':['Waiting for server','等待伺服器更新'],'服务端未返回重置时间':['No reset time returned','伺服器未回傳重設時間'],
     '用户手动记录，未核验真实账号':['Manual record; account not verified','使用者手動記錄，未驗證真實帳戶'],
+    '从已核验桌面识别套餐大类；具体档位和日期未核验':['Plan family detected from verified desktop; tier and dates not verified','從已驗證桌面辨識方案大類；具體級別和日期未驗證'],
+    '套餐未识别，可在套餐与日期中手动选择':['Plan unknown; select manually in Plan and dates','方案未辨識，可在方案與日期中手動選擇'],
     '用户手动填写':['Manually recorded','使用者手動填寫'],'预计':['Estimated','預估'],'会员':['Subscription','訂閱'],
     '来源':['Source','來源'],'本机 CLI 账户，请与桌面账户核对':['Local CLI account; verify desktop account','本機 CLI 帳戶，請與桌面帳戶核對'],
     '最后同步':['Last sync','最後同步'],'暂无可用数据':['Data unavailable','暫無可用資料']
@@ -98,7 +100,7 @@
     const freshness = status(Date.now());
     section.replaceChildren();
     const visible=key=>state.visible?.[key]!==false;
-    if(visible('plan')){const badge=text('div',['Free','Go','Plus','Pro','Biz','Ent','Edu','Other'].includes(state.planBadge)?state.planBadge:'?','plan-badge');badge.style.cssText='text-align:center;font-size:10px;font-weight:400;border:1px solid #c7d8f5;background:#eaf1ff;color:#285cae;border-radius:4px;padding:3px 0';badge.title=({Biz:'Business',Ent:'Enterprise'})[badge.textContent]||badge.textContent;badge.title+=': \u7528\u6237\u624b\u52a8\u8bb0\u5f55\uff0c\u672a\u6838\u9a8c\u771f\u5b9e\u8d26\u53f7';section.append(badge);}
+    if(visible('plan')){const badge=text('div',['Free','Go','Plus','Pro','Biz','Ent','Edu','Other'].includes(state.planBadge)?state.planBadge:'?','plan-badge');badge.style.cssText='text-align:center;font-size:10px;font-weight:400;border:1px solid #c7d8f5;background:#eaf1ff;color:#285cae;border-radius:4px;padding:3px 0';badge.title=({Biz:'Business',Ent:'Enterprise'})[badge.textContent]||badge.textContent;badge.title+=': '+(badge.textContent==='?'?'套餐未识别，可在套餐与日期中手动选择':state.planSource==='desktop'?'从已核验桌面识别套餐大类；具体档位和日期未核验':'用户手动记录，未核验真实账号');section.append(badge);}
     const statusLabel = {
       fresh:'\u5df2\u540c\u6b65', stale:'\u53ef\u80fd\u8fc7\u671f', expired:'\u6570\u636e\u5df2\u8fc7\u671f', unavailable:'\u8bfb\u53d6\u5931\u8d25'
     }[freshness];
@@ -306,7 +308,7 @@
     delete window.__localCodexMeter;
   }
   window.__localCodexMeter = {
-    version:'0.12.6',
+    version:'0.13.0',
     controllerId:'local-codex-sidebar-meter-v1',
     receive(value) { state = value; heartbeat = Date.now(); render(); mount(); },
     dispose,
