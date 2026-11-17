@@ -9,13 +9,14 @@ internal static class NativeVisualTest {
     static void Assert(bool value,string message){if(!value)throw new Exception(message);}
     static void Capture(Form form,string name){
         Application.DoEvents();
+        Console.WriteLine("Native capture: "+name);
         foreach(Control c in form.Controls)foreach(Control other in form.Controls)if(c!=other&&c.Visible&&other.Visible)Assert(!c.Bounds.IntersectsWith(other.Bounds),"Overlapping window regions: "+name);
-        Check(form);
         using(var bitmap=new Bitmap(form.Width,form.Height)){
             form.DrawToBitmap(bitmap,new Rectangle(0,0,form.Width,form.Height));
             PaintEmbedded(form,bitmap,form);
             bitmap.Save(Path.Combine(root,name+".png"));
         }
+        try{Check(form);}catch(Exception error){throw new Exception(name+": "+error.Message,error);}
     }
     static void PaintEmbedded(Control parent,Bitmap target,Form owner){foreach(Control c in parent.Controls){if(c is Form&&c.Visible){var f=(Form)c;using(var b=new Bitmap(f.Width,f.Height)){f.DrawToBitmap(b,new Rectangle(0,0,f.Width,f.Height));using(var g=Graphics.FromImage(target)){var at=owner.PointToClient(f.PointToScreen(Point.Empty));var origin=owner.PointToScreen(Point.Empty);g.DrawImageUnscaled(b,at.X+origin.X-owner.Left,at.Y+origin.Y-owner.Top);}}}else PaintEmbedded(c,target,owner);}}
     static void Check(Control parent){foreach(Control c in parent.Controls){if(c is Button&&c.Visible){var screen=c.RectangleToScreen(c.ClientRectangle);Assert(parent.FindForm().RectangleToScreen(parent.FindForm().ClientRectangle).Contains(screen),"Button outside window: "+c.Name);Assert(c.Parent.ClientRectangle.Contains(c.Bounds),"Button clipped by parent: "+c.Name+" "+c.Bounds+" parent "+c.Parent.ClientRectangle);}Check(c);}}
