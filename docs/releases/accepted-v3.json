@@ -1,0 +1,15 @@
+{
+  "windows": "0.13.0",
+  "macos": "0.5.0-alpha.1",
+  "chrome": "0.4.0",
+  "uiApproved": true,
+  "publicReleaseAuthorized": true,
+  "acceptedDate": "2026-11-17",
+  "design": "final-v3-20261117",
+  "verificationRequired": true,
+  "deletePriorReleasesAfterVerification": false,
+  "priorAppleSiliconConnectionConfirmed": true,
+  "intelLiveAccountAcceptancePending": true,
+  "macNotarized": false,
+  "notes": "Publish only after native Windows and both Mac build/update integration gates pass. Visual approval is not a claim of native runtime acceptance."
+}

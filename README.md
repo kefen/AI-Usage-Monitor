@@ -11,20 +11,22 @@ desktop navigation rail. Not affiliated with or endorsed by OpenAI.
 
 ### Updates
 
-Click **Check for updates**, immediately above the version number. Desktop builds
+Click **Check for updates** in the header, immediately left of the language selector. Desktop builds
 check at startup (at most once per day). A new version offers background download,
 then explicit confirmation to restart the companion and install. Codex itself stays
 open. Settings are preserved. Updates use signed, expiring metadata with a pinned
 Ed25519 public key plus package SHA-256 verification. Failed verification blocks
 installation. Windows uses the existing transactional installer; Mac keeps a backup
-app and restores it if replacement or launching fails. Runtime crash recovery after
-a successful launch is not yet automatic.
+app and verifies the new version's native launch acknowledgement. A safe rollback
+is attempted if replacement or launch fails; if the new app is still running,
+the backup is retained and Diagnostics explains the required action. Runtime crash
+recovery after a successful launch is not automatic.
 
 Unpacked Chrome extensions can check and link to a newer release but must be
 downloaded, unpacked and reloaded in chrome://extensions; they cannot self-install.
 Existing older installations must be upgraded once to gain update support.
 
-检查更新按钮位于版本号上方。桌面端可后台下载，确认后重启本工具安装，保留设置、不关闭 Codex。手动加载的浏览器插件需要下载解压后重新加载。旧版需手动升级一次才能获得本功能。
+检查更新按钮位于右上角、语言选择左侧。桌面端可后台下载，确认后重启本工具安装，保留设置、不关闭 Codex。手动加载的浏览器插件需要下载解压后重新加载。旧版 Mac 更新器失败时，请按安装指南手动替换一次应用。
 
 **Windows:** this unsigned installer may show “Windows protected your PC” and
 “Unknown publisher”. Verify the repository download and release SHA-256 first.
@@ -51,16 +53,23 @@ none is currently shipped. Windows 7/8 and 32-bit x86 are not supported.
 
 ## Screenshots
 
-**Current versions:** Windows **0.12.6**, macOS **0.4.8-alpha.1**
-(Apple Silicon and Intel), Chrome **0.3.4**.
+**Current versions:** Windows **0.13.0**, macOS **0.5.0-alpha.1**
+(Apple Silicon and Intel), Chrome **0.4.0**.
 
-Usage is arranged in a stable two-column grid: daily tokens and monthly daily
-average, then weekly tokens and lifetime tokens. Zero is a real value; missing
+The V3 desktop overview uses quota rulers and a shared-scale comparison of daily
+tokens with the monthly daily average, followed by weekly and lifetime totals.
+All eleven sidebar display choices are shared with the overview; unchecked items
+are hidden and empty groups collapse. Selected items with missing data retain
+their position. The browser uses quota bars and a roomier Token table.
+Zero is a real value; missing
 data says **Not returned**, expired data says **Data expired**, and disconnected
 desktop views say **Not connected**. Weekly calculations are unchanged.
-Subscription badges remain manually recorded: this utility cannot guarantee that
-CLI plan metadata matches the active desktop account or identifies its purchased
-billing tier. No billing credentials are scraped.
+Plan-family detection is best effort and reads only supported metadata from the
+verified desktop renderer, never the CLI account. The current client may expose
+no supported field; **Unknown** then stays unknown and manual selection remains
+available. Manual corrections are locked until you explicitly choose **Detect
+plan** again. Detection never guesses or replaces your specific billing tier,
+purchase date or renewal date. No billing credentials are scraped.
 
 Current Windows and Chrome interfaces, rendered with **synthetic sample data**,
 not a real account. The sidebar screenshot uses a test shell rather than the
@@ -97,9 +106,9 @@ not evidence of live-account connection acceptance.
 
 | Platform | Version | Availability |
 | --- | --- | --- |
-| Windows 10/11 x64 | 0.12.6 | Stable follow-up to accepted 0.12.3; unsigned installer |
-| macOS Apple Silicon / Intel | 0.4.8-alpha.1 | Experimental DMGs; not notarized; Apple Silicon connection user-confirmed, Intel account testing pending |
-| Chrome MV3 | 0.3.4 | Companion extension; requires the local desktop monitor and native host |
+| Windows 10/11 x64 | 0.13.0 | V3 interface; unsigned installer |
+| macOS Apple Silicon / Intel | 0.5.0-alpha.1 | V3 experimental DMGs; not notarized; prior Apple Silicon connection user-confirmed, Intel account testing pending |
+| Chrome MV3 | 0.4.0 | V3 companion extension; requires the local desktop monitor and native host |
 
 The Windows 0.12.3 interface was accepted by the user on 2026-11-16; 0.12.6 adds
 the requested statistics and read-only balance/reset indicators. A prior
@@ -112,9 +121,9 @@ does not make an ARM-only official client compatible with Intel.
 
 ## Downloads And Instructions
 
-- [Windows installer and checksums](https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.12.6)
-- [Chrome extension ZIP](https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.3.4)
-- [macOS experimental installers, both architectures](https://github.com/kefen/codex-quota-sidebar/releases/tag/macos/v0.4.8-alpha.1)
+- [Windows installer and checksums](https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.13.0)
+- [Chrome extension ZIP](https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.4.0)
+- [macOS experimental installers, both architectures](https://github.com/kefen/codex-quota-sidebar/releases/tag/macos/v0.5.0-alpha.1)
 - **[Step-by-step illustrated user guide](docs/USER-GUIDE.md)**
 - [Release and acceptance record](docs/RELEASES.md)
 

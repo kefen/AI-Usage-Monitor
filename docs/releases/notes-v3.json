@@ -1,0 +1,17 @@
+{
+  "en": [
+    "Approved V3 interface with linear charts and eleven shared display choices.",
+    "Update worker checks, Mac launch verification and saved-setting backups.",
+    "Best-effort desktop plan detection; manual corrections stay protected."
+  ],
+  "zh-CN": [
+    "按定稿实现 V3 标尺界面，11 项展示选择同步。",
+    "增加更新器就绪检查、Mac 启动验证及设置备份。",
+    "尝试识别受支持的桌面套餐，保护用户手动修正。"
+  ],
+  "zh-TW": [
+    "依定稿實作 V3 標尺介面，同步 11 項顯示選擇。",
+    "加入更新器就緒檢查、Mac 啟動驗證與設定備份。",
+    "嘗試辨識受支援的桌面方案，保護使用者手動修正。"
+  ]
+}

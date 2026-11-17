@@ -11,8 +11,13 @@ internal static class NativeVisualTest {
         Application.DoEvents();
         foreach(Control c in form.Controls)foreach(Control other in form.Controls)if(c!=other&&c.Visible&&other.Visible)Assert(!c.Bounds.IntersectsWith(other.Bounds),"Overlapping window regions: "+name);
         Check(form);
-        using(var bitmap=new Bitmap(form.Width,form.Height)){form.DrawToBitmap(bitmap,new Rectangle(0,0,form.Width,form.Height));bitmap.Save(Path.Combine(root,name+".png"));}
+        using(var bitmap=new Bitmap(form.Width,form.Height)){
+            form.DrawToBitmap(bitmap,new Rectangle(0,0,form.Width,form.Height));
+            PaintEmbedded(form,bitmap,form);
+            bitmap.Save(Path.Combine(root,name+".png"));
+        }
     }
+    static void PaintEmbedded(Control parent,Bitmap target,Form owner){foreach(Control c in parent.Controls){if(c is Form&&c.Visible){var f=(Form)c;using(var b=new Bitmap(f.Width,f.Height)){f.DrawToBitmap(b,new Rectangle(0,0,f.Width,f.Height));using(var g=Graphics.FromImage(target)){var at=owner.PointToClient(f.PointToScreen(Point.Empty));var origin=owner.PointToScreen(Point.Empty);g.DrawImageUnscaled(b,at.X+origin.X-owner.Left,at.Y+origin.Y-owner.Top);}}}else PaintEmbedded(c,target,owner);}}
     static void Check(Control parent){foreach(Control c in parent.Controls){if(c is Button&&c.Visible){var screen=c.RectangleToScreen(c.ClientRectangle);Assert(parent.FindForm().RectangleToScreen(parent.FindForm().ClientRectangle).Contains(screen),"Button outside window: "+c.Name);Assert(c.Parent.ClientRectangle.IntersectsWith(c.Bounds),"Button outside parent: "+c.Name);}Check(c);}}
     [STAThread] static int Main(string[] args){
         Application.EnableVisualStyles();Locale.Set("en");root=args[0];Directory.CreateDirectory(root);
@@ -21,12 +26,17 @@ internal static class NativeVisualTest {
             timer.Start();Assert(MeterTheme.Consent()==accept,"Consent decision mismatch");
         }
         int retries=0,opens=0;
+        Assert(!LaunchWindow.Prepared(new Dictionary<string,object>()),"Missing update acknowledgement must not quit");
+        Assert(!LaunchWindow.Prepared(new Dictionary<string,object>{{"prepared",false}}),"Failed update preparation must not quit");
+        Assert(!LaunchWindow.Prepared(new Dictionary<string,object>{{"prepared","true"}}),"Non-boolean update acknowledgement must not quit");
+        Assert(LaunchWindow.Prepared(new Dictionary<string,object>{{"prepared",true}}),"Ready worker acknowledgement rejected");
         foreach(bool accept in new[]{false,true})using(var timer=new Timer{Interval=250}){
             timer.Tick+=(s,e)=>{if(Application.OpenForms.Count==0)return;timer.Stop();var form=Application.OpenForms[0];Assert(((Button)form.AcceptButton).Name=="cancel","Restart must default to cancel");Capture(form,"restart-"+accept);((Button)form.Controls.Find(accept?"restartConfirm":"cancel",true)[0]).PerformClick();};
             timer.Start();Assert(MeterRestartDialog.Confirm("Save your work before restarting. This fixture does not close Codex.")==accept,"Restart decision mismatch");
         }
         using(var window=new LaunchWindow(()=>opens++,()=>retries++,()=>{},()=>{})){
             Assert(window.Controls.Find("brandCaption",true)[0].Text=="by KEFEN","Main header must not repeat page name or slash");
+            Assert(window.ClientSize==new Size(1184,792),"V3 target must be 1184 x 792 client pixels at 100% DPI");
             window.Present();window.UpdateState("starting",new Dictionary<string,object>());Assert(window.Controls.Find("statusHeadline",true)[0].Parent.Parent.Parent.Controls.Count==1,"Initial overview is covered by a transient page");Capture(window,"startup");
             window.UpdateState("failed",new Dictionary<string,object>{{"code","Codex preparation failed. Run Diagnose.cmd."}});Capture(window,"retry");((Button)window.Controls.Find("reconnect",true)[0]).PerformClick();Assert(retries==1,"Retry callback missing");
             window.UpdateState("mounted",new Dictionary<string,object>{{"quotaAvailable",true},{"usageAvailable",false},{"updatedAt","2026-01-01T12:00:00Z"}});Capture(window,"connected");Assert(window.Controls.Find("reconnect",true)[0].Enabled,"Reconnect must work with an existing monitor");
@@ -35,7 +45,7 @@ internal static class NativeVisualTest {
                 double now=(DateTime.UtcNow-new DateTime(1970,1,1)).TotalMilliseconds;
                 window.UpdateState("mounted",new Dictionary<string,object>{{"quotaAvailable",true},{"usageAvailable",true},{"updatedAt",DateTime.UtcNow.ToString("o")}});
                 var metrics=(UsageOverview)window.Controls.Find("metric0",true)[0].Parent.Parent;
-                metrics.UpdateSnapshot(new Dictionary<string,object>{{"generatedAt",now},{"quotaAt",now},{"usageAt",now},{"monthAverage",125400000},{"week",96900000},{"lifetime",2800000000d},{"daily",new Dictionary<string,object>{{"date",DateTime.Now.Date.AddDays(-1).ToString("yyyy-MM-dd")},{"value",202650000}}},{"windows",new[]{new Dictionary<string,object>{{"minutes",300},{"remaining",75}},new Dictionary<string,object>{{"minutes",10080},{"remaining",37}}}}},true,now);
+                metrics.UpdateSnapshot(new Dictionary<string,object>{{"generatedAt",now},{"quotaAt",now},{"usageAt",now},{"creditBalance","162"},{"resetCredits",3},{"planBadge","Pro 100"},{"renewalDate","2026-12-13"},{"monthAverage",125350000},{"week",96900000},{"lifetime",3010000000d},{"daily",new Dictionary<string,object>{{"date",DateTime.Now.Date.AddDays(-1).ToString("yyyy-MM-dd")},{"value",202650000}}},{"windows",new[]{new Dictionary<string,object>{{"minutes",300},{"remaining",62},{"resetsAt",now+86400000}},new Dictionary<string,object>{{"minutes",10080},{"remaining",37}}}}},true,now);
                 Capture(window,"overview-"+language);
                 metrics.UpdateSnapshot(new Dictionary<string,object>{{"generatedAt",now},{"quotaAt",now},{"usageAt",now},{"monthAverage",0},{"lifetime",3010000000d},{"daily",new Dictionary<string,object>{{"date",DateTime.Now.Date.AddDays(-1).ToString("yyyy-MM-dd")},{"value",0}}},{"windows",new[]{new Dictionary<string,object>{{"minutes",10080},{"remaining",37}}}}},true,now);
                 Capture(window,"overview-partial-"+language);
@@ -48,7 +58,9 @@ internal static class NativeVisualTest {
                 int topLevel=0;foreach(Form f in Application.OpenForms)if(f.TopLevel&&f.Visible)topLevel++;
                 Assert(topLevel==1,"Navigation opened a separate top-level window");
                 if(section=="Codex subscription record"||section=="Sidebar content"){
+                    if(section=="Codex subscription record"){var p=window.Controls.Find("planContent",true)[0];Assert(p.Height>=500&&p.Width>=700,"Plan form collapsed: "+p.Size);var control=window.Controls.Find("save",true)[0];Assert(control.RectangleToScreen(control.ClientRectangle).IntersectsWith(window.RectangleToScreen(window.ClientRectangle)),"Plan controls not in visible viewport");}
                     if(section=="Codex subscription record"){
+                        var embedded=window.Controls.Find("plan",true)[0].FindForm();var guard=embedded.Tag;embedded.Tag=new Func<bool>(()=>false);Assert(!window.ResolveEdits(),"Update/quit must respect unsaved page guard");embedded.Tag=guard;
                         ((ComboBox)window.Controls.Find("plan",true)[0]).SelectedIndex=2;
                         ((Button)buttons[0]).PerformClick();Application.DoEvents();
                         Assert(((ComboBox)window.Controls.Find("plan",true)[0]).SelectedIndex==2,"Clicking current page discarded edits");

@@ -21,20 +21,21 @@ internal sealed class SetupWindow : Form {
     internal System.Collections.Generic.Dictionary<string,bool> SelectedVisibility;
     internal SetupWindow(string destination,Action operation,Action launch,Func<string> detect=null,Action configure=null){
         original=Destination=destination;this.operation=operation;this.launch=launch;this.configure=configure;this.detect=detect??SetupSupport.FindCodex;
-        Text="Codex Quota Sidebar by KEFEN";MeterTheme.Style(this,1000,710);
-        body=MeterTheme.Body();Controls.Add(body);var header=MeterTheme.Header("Setup","Windows 0.12.6");Controls.Add(header);
-        rail=new Panel{Dock=DockStyle.Left,Width=190,Padding=new Padding(18,28,14,20),BackColor=Color.FromArgb(246,247,249)};Controls.Add(rail);
+        Text="Codex Quota Sidebar";MeterTheme.Style(this,1184,792);
+        body=MeterTheme.Body();Controls.Add(body);var header=MeterTheme.Header("Setup","Windows "+MeterTheme.Version);Controls.Add(header);
+        MeterTheme.ReleaseCheck(header);
+        rail=new Panel{Dock=DockStyle.Left,Width=184,Padding=new Padding(12,22,12,16),BackColor=Color.FromArgb(246,247,249)};Controls.Add(rail);
         var list=new TableLayoutPanel{Dock=DockStyle.Top,ColumnCount=1,RowCount=4,Height=184};
         string[] names={"Environment","Install location","Display options","Install and connect"};
-        for(int i=0;i<4;i++){list.RowStyles.Add(new RowStyle(SizeType.Absolute,46));steps[i]=MeterTheme.Label(names[i],10,MeterTheme.Muted);steps[i].Padding=new Padding(10,0,0,0);list.Controls.Add(steps[i]);}rail.Controls.Add(list);
-        var version=MeterTheme.Label("v0.12.6",8,MeterTheme.Muted);version.Dock=DockStyle.Bottom;version.Height=26;rail.Controls.Add(version);
+        for(int i=0;i<4;i++){list.RowStyles.Add(new RowStyle(SizeType.Absolute,46));steps[i]=new SetupStep(i+1){Text=names[i],Font=MeterTheme.Font(9.75f),Dock=DockStyle.Fill,TextAlign=ContentAlignment.MiddleLeft,Padding=new Padding(34,0,0,0),Margin=new Padding(0,0,0,5)};list.Controls.Add(steps[i]);}rail.Controls.Add(list);
         var github=new LinkLabel{Text="About project",Dock=DockStyle.Bottom,Height=36,LinkColor=MeterTheme.Blue,LinkBehavior=LinkBehavior.HoverUnderline};github.LinkClicked+=(s,e)=>System.Diagnostics.Process.Start(Locale.Repository);rail.Controls.Add(github);github.BringToFront();
-        var top=new Panel{Dock=DockStyle.Top,Height=88};title=MeterTheme.Label("",18,MeterTheme.Ink);title.Dock=DockStyle.Top;title.Height=40;
+        var top=new Panel{Dock=DockStyle.Top,Height=88};title=MeterTheme.Label("",16.5f,MeterTheme.Ink);title.Dock=DockStyle.Top;title.Height=40;
         detail=MeterTheme.Label("",10,MeterTheme.Muted);detail.Dock=DockStyle.Top;detail.Height=40;top.Controls.Add(detail);top.Controls.Add(title);body.Controls.Add(top);
-        content=new Panel{Dock=DockStyle.Fill,AutoScroll=true};body.Controls.Add(content);content.BringToFront();
+        content=new Panel{Dock=DockStyle.Fill,AutoScroll=false};body.Controls.Add(content);content.BringToFront();
         var footer=MeterTheme.Footer();Controls.Add(footer);body.BringToFront();Controls.SetChildIndex(header,Controls.Count-1);
         install=MeterTheme.Button("install","Continue",true);install.Width=180;back=MeterTheme.Button("back","Back",false);close=MeterTheme.Button("cancel","Cancel",false);
         footer.Controls.Add(install);footer.Controls.Add(back);footer.Controls.Add(close);
+        var build=MeterTheme.Label("Windows "+MeterTheme.Version+" / "+Locale.T("Setup"),8,MeterTheme.Muted);build.Dock=DockStyle.None;build.Height=38;footer.Controls.Add(build);Action fit=()=>build.Width=Math.Max(180,footer.ClientSize.Width-install.Width-(back.Visible?back.Width+10:0)-close.Width-88);footer.Layout+=(s,e)=>{int target=Math.Max(180,footer.ClientSize.Width-install.Width-(back.Visible?back.Width+10:0)-close.Width-88);if(build.Width!=target)build.Width=target;};fit();
         progress=new ProgressBar{Dock=DockStyle.Bottom,Height=4,Style=ProgressBarStyle.Marquee,Visible=false};body.Controls.Add(progress);content.BringToFront();
         install.Click+=(s,e)=>Next();back.Click+=(s,e)=>{error="";if(step==2)SelectedVisibility=DisplayOptions.Capture(choices);step=Math.Max(0,step-1);Render();};
         close.Click+=(s,e)=>Close();FormClosing+=(s,e)=>{if(busy)e.Cancel=true;};CancelButton=close;AcceptButton=install;Shown+=(s,e)=>CheckEnvironment();Render();
@@ -45,11 +46,12 @@ internal sealed class SetupWindow : Form {
         for(int i=0;i<4;i++){steps[i].BackColor=i==step?Color.FromArgb(232,239,252):rail.BackColor;steps[i].ForeColor=i==step?MeterTheme.Green:MeterTheme.Muted;}
         back.Visible=step>0&&step<3;close.Text=complete?"Close":"Cancel";install.Enabled=back.Enabled=close.Enabled=!busy;title.ForeColor=failed?MeterTheme.Amber:MeterTheme.Ink;progress.Visible=busy;
         if(step==0){
-            title.Text=environmentReady?"Environment ready":"Checking environment";detail.Text="Official Microsoft Store Codex is required.";
+            title.Text=environmentReady?"Ready to set up":"Checking environment";detail.Text="Official Microsoft Store Codex is required.";
             install.Text=environmentReady?"Continue":"Check again";
-            Note(environmentReady?"01 / Codex was found. The meter installs separately.":"Checking the current user's Codex installation.",52);
-            Note("02 / Run as a normal user. Administrator privileges are not required.",52);
-            Note("03 / No sign-up or purchase for this tool. Records are optional.",52);
+            Note(environmentReady?"Official Codex client found":"Checking the current user's Codex installation.",56);
+            Note("Administrator privileges are not required",56);
+            Note("Existing settings will be preserved",56);
+            Note("No account or purchase is required for this tool",56);
         }else if(step==1){
             title.Text="Select install location";detail.Text="Upgrade in the original folder to preserve your settings.";install.Text="Check and continue";
             var actions=new FlowLayoutPanel{Dock=DockStyle.Top,Height=82,Padding=new Padding(0,18,0,18),WrapContents=false};
@@ -69,6 +71,7 @@ internal sealed class SetupWindow : Form {
             title.Text="Choose sidebar content";detail.Text="You can change these options later in Settings.";install.Text="Install";
             choices=DisplayOptions.List(Path.Combine(Destination,".runtime"));if(SelectedVisibility!=null)for(int i=0;i<DisplayOptions.Keys.Length;i++)choices.SetItemChecked(i,SelectedVisibility[DisplayOptions.Keys[i]]);
             content.Controls.Add(DisplayOptions.Grouped(choices));
+            var hints=new Panel{Dock=DockStyle.Top,Height=84};var shared=MeterTheme.Label("One selection applies to the Codex sidebar, overview and browser panel.",9,MeterTheme.Muted);shared.Dock=DockStyle.Top;shared.Height=36;var priority=MeterTheme.Label("Official controls have priority. Scroll first; collapse only when space is very limited.",9,MeterTheme.Muted);priority.Dock=DockStyle.Bottom;priority.Height=36;hints.Controls.Add(shared);hints.Controls.Add(priority);content.Controls.Add(hints);hints.BringToFront();
         }else{
             title.Text=complete?"Installed. Connect next.":failed?"Installation incomplete":"Installing";
             detail.Text=complete?"Installed files are ready. Codex is not connected yet.":"Verifying files and creating your shortcut.";
@@ -99,4 +102,10 @@ internal sealed class SetupWindow : Form {
         busy=true;install.Enabled=back.Enabled=close.Enabled=false;content.Enabled=false;progress.Visible=true;
         var worker=new BackgroundWorker();worker.DoWork+=(s,e)=>work();worker.RunWorkerCompleted+=(s,e)=>{Action finish=()=>{busy=false;content.Enabled=true;progress.Visible=false;if(e.Error!=null){failed=step==3;error=SetupSupport.FriendlyError(e.Error.Message);Render();}else done();worker.Dispose();};if(IsDisposed){worker.Dispose();return;}if(InvokeRequired)BeginInvoke(finish);else finish();};worker.RunWorkerAsync();
     }
+}
+
+internal sealed class SetupStep : Label {
+    readonly int number;
+    internal SetupStep(int number){this.number=number;}
+    protected override void OnPaint(PaintEventArgs e){base.OnPaint(e);float scale=Font.Size/9.75f;int d=(int)(21*scale),x=(int)(10*scale),y=(Height-d)/2;using(var pen=new Pen(Color.FromArgb(183,195,213)))e.Graphics.DrawEllipse(pen,x,y,d,d);TextRenderer.DrawText(e.Graphics,number.ToString(),MeterTheme.Font(8*scale),new Rectangle(x,y,d,d),ForeColor,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter);}
 }

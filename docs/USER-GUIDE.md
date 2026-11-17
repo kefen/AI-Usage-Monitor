@@ -2,36 +2,57 @@
 
 ## Reading the Overview
 
-Windows, Mac and Chrome use the same Token order: daily / monthly average,
-then this week / lifetime. Missing fields remain visible. **0** means a returned
+Desktop V3 uses quota rulers and a shared-scale daily/monthly-average Token
+comparison, then weekly and lifetime totals. Chrome uses the same values in a
+compact table. The eleven display selections are shared with the sidebar;
+unchecked fields disappear and empty groups collapse. Selected missing fields
+remain visible. **0** means a returned
 zero, **Not returned** means the source supplied no usable value, **Data expired**
 means it is too old, and **Not connected** describes a disconnected desktop view.
 An absent five-hour quota is not treated as unlimited. Yesterday has no numeric
 date below it; older daily records keep their source date.
 
-The plan badge remains a manual subscription record. Official protocol fields
-can identify some account categories, but do not reliably prove the desktop
-account identity and purchased billing tier together. This update does not
-replace your chosen plan with a guess.
+On a fresh installation, the companion attempts plan-family detection after
+connecting to a verified Codex desktop renderer. Only supported structured
+metadata is used; some client versions expose none, so **Unknown** is a normal
+outcome, not a paid-tier guess. Choose the plan manually if detection is unavailable.
+Changing the plan manually locks it against automatic replacement. **Detect plan**
+is an explicit retry and replaces the family only: manual tier and all dates stay
+unchanged. Legacy manual subscription records are protected too.
 
-简体中文：Token 区固定为“每日／本月日均、本周／累计”。未返回、过期、未连接会明确标注，真实零值保留。套餐仍由你手动记录，不自动推测。
-繁體中文：Token 區固定為「每日／本月日均、本週／累計」。未回傳、過期、未連線均明確標示，真實零值保留。方案仍由你手動記錄，不自動推測。
+简体中文：展示内容与侧栏同步，共 11 项。未返回、过期、未连接会明确标注，真实零值保留。套餐只从可核验的桌面字段尝试识别，失败可手动选择；手动修改后锁定，除非主动再次识别。识别不会修改档位或日期。
+繁體中文：顯示內容與側欄同步，共 11 項。未回傳、過期、未連線均明確標示，真實零值保留。方案僅從可驗證的桌面欄位嘗試辨識，失敗可手動選擇；手動修改後鎖定，除非主動再次辨識。辨識不會修改級別或日期。
 
 ## Updating
 
-Use **Check for updates** immediately above the version number. Desktop updates
-show the version and notes, then ask to download in the background. When ready,
+Use **Check for updates** in the upper-right header, left of the language selector.
+Desktop updates show the version and short numbered notes in your selected
+language, then ask to download in the background. When ready,
 confirm restarting this companion to install; Codex stays open. Cancel postpones
 updating. Settings and subscription records stay in place. Check failures do not
 stop monitoring. Signature, expiry or checksum failures block installation.
 
-Mac updates require installation in /Applications or ~/Applications. If blocked,
+Before restarting, save or discard pending edits. Update preparation validates and
+backs up existing settings; an invalid configuration or unready update worker
+keeps the companion open rather than pretending installation has started.
+Mac updates require installation in /Applications or ~/Applications. The updater
+verifies the installed bundle's full version, waits for the native window to
+acknowledge that exact version and location, and checks preserved settings.
+Failures remain visible in Diagnostics. If blocked,
 follow Privacy & Security guidance below. Do not disable system protection.
 Chrome unpacked installations cannot self-replace: download the ZIP, unpack into
 the extension folder and reload in chrome://extensions.
 
-简体中文：版本号上方点击“检查更新”。桌面端下载后确认重启本工具安装，取消可稍后处理。浏览器手动加载版需下载解压并重新加载。
-繁體中文：版本號上方按「檢查更新」。桌面版下載後確認重新啟動本工具安裝，取消可稍後處理。瀏覽器手動載入版需下載解壓並重新載入。
+简体中文：右上角、语言切换左侧点击“检查更新”。桌面端下载后确认重启本工具安装，取消可稍后处理。浏览器手动加载版需下载解压并重新加载。
+繁體中文：右上角、語言切換左側按「檢查更新」。桌面版下載後確認重新啟動本工具安裝，取消可稍後處理。瀏覽器手動載入版需下載解壓並重新載入。
+
+**Upgrading from macOS 0.4.8-alpha.1 or earlier:** the old updater itself cannot
+receive a launch fix before it runs. If it quits without reopening, download the
+new DMG, quit only the companion, drag its app into Applications and choose
+Replace, eject the DMG and launch from Applications. Check the lower-left version.
+Keep `~/Library/Application Support/CodexSidebarMeter` intact: it contains your
+saved dates, language and display choices. A stale Dock shortcut can be removed
+and added again from the installed app. Do not reopen an old DMG copy.
 
 ## First Launch Security Notice
 
@@ -58,8 +79,8 @@ Windows UI using test fixtures, not real account data.
 
 Open [Releases](https://github.com/kefen/codex-quota-sidebar/releases).
 For Windows 10/11 x64, download the asset ending in
-`Windows-0.12.6-x64-Setup.exe`, plus its SHA256 file if verifying integrity.
-Chrome uses the separate `Chrome-0.3.4.zip`. Mac has experimental architecture-specific DMGs (see below).
+`Windows-0.13.0-x64-Setup.exe`, plus its SHA256 file if verifying integrity.
+Chrome uses the separate `Chrome-0.4.0.zip`. Mac has experimental architecture-specific DMGs (see below).
 The unsigned Windows executable may trigger an unknown-publisher warning.
 Verify its origin; never disable security software to get around a detection.
 
@@ -133,7 +154,7 @@ this project's actual component.
 | Open Codex | Requests activation of the Codex window |
 | Reconnect | Retries attachment; restart still requires confirmation |
 | Sidebar content | Changes visible metrics; save to apply |
-| Codex subscription record | Optional manual plan and renewal/expiry dates |
+| Codex subscription record | Best-effort desktop family detection, protected manual correction and optional dates |
 | Diagnostics and help | Explains troubleshooting, then exports sanitized diagnostics for manual submission |
 | About project | Shows project details and a link to GitHub |
 | Data and settings | Backs up/restores settings or clears local observation history |
@@ -154,7 +175,7 @@ only when space is severely constrained.
 
 ## macOS Experimental Installation
 
-**Current version: 0.4.8-alpha.1.** Download `arm64` for Apple Silicon (M-series)
+**Current version: 0.5.0-alpha.1.** Download `arm64` for Apple Silicon (M-series)
 or `x86_64` for Intel. The companion requires macOS 13.5+ and a compatible official
 client. It is not Developer ID signed or notarized. The user confirmed live
 connection on Apple Silicon; Intel account testing remains pending.

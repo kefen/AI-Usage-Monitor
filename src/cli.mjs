@@ -52,6 +52,7 @@ if (args[0] === 'usage') {
         if(shouldStop())return 0;
         const membership=await readMembership(membershipPath);
         const display=await readDisplay(new URL('../.runtime/',import.meta.url));
+        try {const path=fileURLToPath(new URL('../.runtime/browser-state.json',import.meta.url));await writeFile(path+'.tmp',JSON.stringify(browserSnapshot(state,usage,Date.now(),display)),{mode:0o600});await rename(path+'.tmp',path);}catch{}
         const expression=rendererExpression(widget,{...state,...display,usage:{...usage,observations:observation.records||[]},membership});
         const known=cachedTargets.find(t=>t.id===mainTargetId);
         for(const target of known?[known]:cachedTargets){
@@ -128,7 +129,6 @@ if (args[0] === 'usage') {
             try{await writeFile(observationPath+'.tmp',JSON.stringify(observation),{mode:0o600});await rename(observationPath+'.tmp',observationPath);}catch{console.log('Availability history could not be saved.');}
           }
           // Only normalized numeric quota metadata crosses into the renderer.
-          try {const path=fileURLToPath(new URL('../.runtime/browser-state.json',import.meta.url));await writeFile(path+'.tmp',JSON.stringify(browserSnapshot(state,usage)),{mode:0o600});await rename(path+'.tmp',path);} catch { /* Browser companion is optional. */ }
           const mounted=await paint();
           await report(mounted ? (state.error ? 'mounted-quota-unavailable' : 'mounted') : 'sidebar-missing', {
             sidebarMode,sidebarReason,targetCount:targets.length,mountedCount:mounted,quotaAvailable:!state.error && state.buckets.length>0,

@@ -14,17 +14,22 @@ internal static class DisplayOptions {
     }
     internal static Dictionary<string,bool> Capture(CheckedListBox list){var data=new Dictionary<string,bool>();for(int i=0;i<Keys.Length;i++)data[Keys[i]]=list.GetItemChecked(i);return data;}
     internal static Control Grouped(CheckedListBox list){
-        var grid=new TableLayoutPanel{Dock=DockStyle.Top,Height=292,ColumnCount=2,RowCount=8};
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));
-        for(int i=0;i<8;i++)grid.RowStyles.Add(new RowStyle(SizeType.Absolute,36));
-        grid.Controls.Add(MeterTheme.Label("Remaining quota",10,MeterTheme.Muted),0,0);
-        grid.Controls.Add(MeterTheme.Label("Token usage",10,MeterTheme.Muted),1,0);
-        grid.Controls.Add(MeterTheme.Label("Existing subscription",10,MeterTheme.Muted),0,4);
+        var group=new Panel{Name="displayGroups",Dock=DockStyle.Top,Height=312};
+        var toolbar=new FlowLayoutPanel{Dock=DockStyle.Top,Height=52,FlowDirection=FlowDirection.RightToLeft,WrapContents=false};
+        var none=MeterTheme.Button("selectNone","Select none",false);none.Width=110;var all=MeterTheme.Button("selectAll","Select all",false);all.Width=100;toolbar.Controls.Add(none);toolbar.Controls.Add(all);group.Controls.Add(toolbar);
+        var count=MeterTheme.Label("",9,MeterTheme.Muted);count.Dock=DockStyle.Left;count.Width=210;toolbar.Controls.Add(count);
+        Action refresh=()=>{int n=0;for(int i=0;i<Keys.Length;i++)if(list.GetItemChecked(i))n++;count.Text=Locale.T("Selected")+" "+n+" / 11";};
+        var grid=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=3,RowCount=6,Margin=new Padding(0)};group.Controls.Add(grid);grid.BringToFront();
+        for(int i=0;i<3;i++)grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,33.333f));
+        for(int i=0;i<6;i++)grid.RowStyles.Add(new RowStyle(SizeType.Absolute,i==0?52:38));
+        string[] headings={"Plan and dates","Quota and resets","Token usage"};for(int i=0;i<3;i++){var heading=MeterTheme.Label(headings[i],10,MeterTheme.Ink);heading.Margin=new Padding(0,12,24,8);grid.Controls.Add(heading,i,0);}
         var names=new[]{"Plan badge","5-hour remaining","Weekly remaining","Quota reset","Codex renewal date","Daily tokens","Daily average","Weekly tokens","Lifetime tokens","Credits","Available quota resets"};
-        int[] columns={0,0,0,0,0,1,1,1,1,1,1},rows={5,1,2,3,6,1,2,3,4,5,6};
-        for(int i=0;i<Keys.Length;i++){int index=i;var check=new CheckBox{Text=names[i],Checked=list.GetItemChecked(i),Dock=DockStyle.Fill,AutoSize=false,Margin=new Padding(0,4,16,4)};check.CheckedChanged+=(s,e)=>list.SetItemChecked(index,check.Checked);grid.Controls.Add(check,columns[i],rows[i]);}
-        list.Visible=false;grid.Controls.Add(list,1,7);Locale.Apply(grid);return grid;
+        int[] columns={0,1,1,1,0,2,2,2,2,1,1},rows={1,1,2,3,2,1,2,3,4,5,4};
+        var checks=new CheckBox[Keys.Length];
+        for(int i=0;i<Keys.Length;i++){int index=i;var check=checks[i]=new CheckBox{Name="display-"+Keys[i],Text=names[i],Checked=list.GetItemChecked(i),Dock=DockStyle.Fill,AutoSize=false,Margin=new Padding(0,0,20,0),Font=MeterTheme.Font(9.75f)};check.CheckedChanged+=(s,e)=>{list.SetItemChecked(index,check.Checked);refresh();};grid.Controls.Add(check,columns[i],rows[i]);}
+        all.Click+=(s,e)=>{foreach(var check in checks)check.Checked=true;};none.Click+=(s,e)=>{foreach(var check in checks)check.Checked=false;};
+        list.Visible=false;group.Controls.Add(list);refresh();Locale.Apply(group);return group;
     }
     internal static void Save(string root,Dictionary<string,bool> data){Directory.CreateDirectory(root);var path=Path.Combine(root,"display.json");var temp=path+"."+Guid.NewGuid().ToString("N")+".tmp";try{File.WriteAllText(temp,new JavaScriptSerializer().Serialize(data),new UTF8Encoding(false));if(File.Exists(path))File.Replace(temp,path,null);else File.Move(temp,path);}finally{if(File.Exists(temp))File.Delete(temp);}}
-    internal static void Edit(string root){using(var form=new Form()){MeterTheme.Style(form,900,590);form.Text="Codex Quota Sidebar";var body=MeterTheme.Body();form.Controls.Add(body);form.Controls.Add(MeterTheme.Header(Locale.T("Sidebar display content"),"Windows 0.12.6"));var list=List(root);body.Controls.Add(Grouped(list));var footer=MeterTheme.Footer();var save=MeterTheme.Button("saveDisplay",Locale.T("Save"),true);save.Click+=(s,e)=>{try{Save(root,Capture(list));save.Text=Locale.T("Saved");save.Enabled=false;}catch(Exception ex){MeterTheme.Error(ex.Message);}};list.ItemCheck+=(s,e)=>{save.Text=Locale.T("Save");save.Enabled=true;};var cancel=MeterTheme.Button("cancelDisplay",Locale.T("Close"),false);cancel.Click+=(s,e)=>form.Close();footer.Controls.Add(save);footer.Controls.Add(cancel);form.Controls.Add(footer);body.BringToFront();form.ShowDialog();}}
+    internal static void Edit(string root){using(var form=new Form()){MeterTheme.Style(form,960,640);form.Text="Codex Quota Sidebar";var body=MeterTheme.Body();form.Controls.Add(body);form.Controls.Add(MeterTheme.Header(Locale.T("Sidebar display content"),"Windows "+MeterTheme.Version));var list=List(root);body.Controls.Add(Grouped(list));var footer=MeterTheme.Footer();var save=MeterTheme.Button("saveDisplay",Locale.T("Save"),true);save.Click+=(s,e)=>{try{Save(root,Capture(list));save.Text=Locale.T("Saved");save.Enabled=false;}catch(Exception ex){MeterTheme.Error(ex.Message);}};list.ItemCheck+=(s,e)=>{save.Text=Locale.T("Save");save.Enabled=true;};var cancel=MeterTheme.Button("cancelDisplay",Locale.T("Close"),false);cancel.Click+=(s,e)=>form.Close();footer.Controls.Add(save);footer.Controls.Add(cancel);form.Controls.Add(footer);body.BringToFront();form.ShowDialog();}}
 }

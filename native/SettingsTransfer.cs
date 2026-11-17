@@ -16,7 +16,9 @@ internal static class SettingsTransfer {
             string key=pair.Key;object value=pair.Value;
             if(display){if(Array.IndexOf(DisplayOptions.Keys,key)<0||!(value is bool))throw new IOException(Locale.T("Unsupported sidebar settings."));continue;}
             bool valid=false;
-            if(OneOf(key,"enabled,monthlyEstimate,annualEstimate,estimated"))valid=value is bool;
+            if(OneOf(key,"enabled,monthlyEstimate,annualEstimate,estimated,manualOverride"))valid=value is bool;
+            else if(key=="planSource")valid=value is string&&OneOf((string)value,"manual,desktop");
+            else if(key=="detectedAt"){DateTime stamp;valid=value is string&&DateTime.TryParse((string)value,CultureInfo.InvariantCulture,DateTimeStyles.RoundtripKind,out stamp);}
             else if(key=="plan")valid=value is string&&OneOf((string)value,"plus,pro,business,enterprise,edu,free,go,other");
             else if(key=="tier")valid=value is string&&OneOf((string)value,",unknown,100,200,500,standard,premium");
             else if(key=="kind")valid=value is string&&OneOf((string)value,"renewal,expiry");

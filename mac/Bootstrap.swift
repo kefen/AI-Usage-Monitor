@@ -2,6 +2,37 @@ import Foundation
 import Darwin
 
 enum Bootstrap {
+    static var releaseVersion: String? {
+        if let version = Bundle.main.object(forInfoDictionaryKey: "CQSReleaseVersion") as? String, !version.isEmpty { return version }
+        guard let url = Bundle.main.resourceURL?.appendingPathComponent("payload/versions.json"),
+              let data = try? Data(contentsOf: url), let versions = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        return versions["macos"] as? String
+    }
+    // Called only after installation and native window initialization, before plan detection.
+    @discardableResult static func acknowledgeUpdate(at root: URL, arguments: [String], version: String?, bundleURL: URL) throws -> Bool {
+        func argument(_ flag: String) -> String? {
+            guard arguments.filter({ $0 == flag }).count == 1, let i = arguments.firstIndex(of: flag), i + 1 < arguments.count else { return nil }
+            return arguments[i + 1]
+        }
+        let fm = FileManager.default
+        let updates = root.appendingPathComponent(".runtime/updates")
+        let transaction = updates.appendingPathComponent("transaction.json")
+        guard let supplied = argument("--update-transaction"), supplied == transaction.path,
+              let version = version, argument("--update-version") == version else { return false }
+        for url in [root, root.appendingPathComponent(".runtime"), updates, transaction, updates.appendingPathComponent("ack.json")] {
+            if (try? url.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink) == true { return false }
+        }
+        guard fm.fileExists(atPath: transaction.path),
+              let value = try JSONSerialization.jsonObject(with: Data(contentsOf: transaction)) as? [String: Any],
+              value["schema"] as? Int == 1, value["stage"] as? String == "launching",
+              let id = value["id"] as? String, UUID(uuidString: id) != nil,
+              value["version"] as? String == version,
+              let destination = value["destination"] as? String, destination.hasPrefix("/"),
+              URL(fileURLWithPath: destination).resolvingSymlinksInPath().standardizedFileURL.path == bundleURL.resolvingSymlinksInPath().standardizedFileURL.path else { return false }
+        let ack: [String: Any] = ["id": id, "stage": "app-ready", "version": version, "bundlePath": bundleURL.path]
+        try JSONSerialization.data(withJSONObject: ack, options: [.sortedKeys]).write(to: updates.appendingPathComponent("ack.json"), options: .atomic)
+        return true
+    }
     static func install(at root: URL) throws {
         let fm = FileManager.default
         guard let payload = Bundle.main.resourceURL?.appendingPathComponent("payload"), fm.fileExists(atPath: payload.path) else { return }

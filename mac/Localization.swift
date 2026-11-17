@@ -8,7 +8,7 @@ enum CqsLocale {
     }()
     static let catalog: [String:[String]] = {
         let url = Bundle.main.url(forResource: "strings", withExtension: "json") ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/CodexSidebarMeter/ui/strings.json")
-        guard let data = try? Data(contentsOf: url), let object = try? JSONSerialization.jsonObject(with: data) as? [String:[String]] else { return [:] }
+        let object = (try? Data(contentsOf: url)).flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: [String]] } ?? [:]
         return object
     }()
     static func t(_ text: String) -> String {

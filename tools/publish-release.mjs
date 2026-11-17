@@ -3,15 +3,15 @@ import {createHash} from 'node:crypto';
 const repo='kefen/codex-quota-sidebar';
 const token=process.env.GITHUB_TOKEN,commit=process.env.GITHUB_SHA;
 if(!token||process.env.GITHUB_REPOSITORY!==repo||process.env.GITHUB_REF!=='refs/heads/main'||!/^[a-f0-9]{40}$/.test(commit||''))throw Error('Expected authorized main-branch workflow');
-const accepted=JSON.parse(await readFile('docs/releases/accepted-0.12.json','utf8'));
+const accepted=JSON.parse(await readFile('docs/releases/accepted-v3.json','utf8'));
 const versions=JSON.parse(await readFile('versions.json','utf8'));
 const chrome=JSON.parse(await readFile('browser/manifest.json','utf8')).version;
-if(accepted.windows!=='0.12.6'||accepted.macos!=='0.4.8-alpha.1'||accepted.chrome!=='0.3.4'||accepted.windowsAccepted!==true||accepted.publicReleaseAuthorized!==true||accepted.macAccountAccepted!==true||accepted.browserProfileAccepted!==false)throw Error('Not the authorized release set');
+if(accepted.windows!=='0.13.0'||accepted.macos!=='0.5.0-alpha.1'||accepted.chrome!=='0.4.0'||accepted.uiApproved!==true||accepted.publicReleaseAuthorized!==true||accepted.verificationRequired!==true)throw Error('Not the authorized release set');
 if(versions.windows!==accepted.windows||versions.macos!==accepted.macos||chrome!==accepted.chrome)throw Error('Version mismatch');
 const source='Codex-Quota-Sidebar-source-windows-'+versions.windows+'-macos-'+versions.macos+'.zip';
 const macSource='Codex-Quota-Sidebar-macOS-'+versions.macos+'-source.zip';
 await writeFile('dist/'+macSource,await readFile('dist/'+source));
-const common='Usage overview redesigned across Windows, Mac and Chrome: two-column quota and Token grids; daily / monthly average followed by weekly / lifetime. Windows monthly average is now visible. Missing, expired and disconnected fields are explicitly labelled, while real zero remains zero. Subscription badges remain manual because CLI identity and purchased billing tier cannot be reliably verified against every desktop account. Three languages retained. Signed update support retained. Unpacked Chrome extensions require explicit reload. Windows is unsigned: verify origin/checksum before More info / Run anyway if offered. Mac is unnotarized: Done, not Move to Trash; System Settings / Privacy and Security / Open Anyway for the app or runtime if blocked. Never disable system protection.';
+const common='Approved V3 client design: native linear quota and Token comparisons, all eleven shared display choices, low-emphasis plan/date metadata, localized numbered update notes and header language controls. Existing dates, language and choices are backed up and preserved during upgrades. Best-effort plan-family detection reads only supported desktop metadata; unavailable data stays unknown, and manual corrections are protected until explicit detection. The current live client may not expose supported plan metadata. No price tier or purchase date is guessed. Three languages retained. Windows remains unsigned. Mac remains ad-hoc signed and unnotarized. Read the security and upgrade guide before installing; never disable system protections.';
 const sets=[
  {tag:'windows/v'+versions.windows,title:'Windows '+versions.windows+' / KEFEN',prerelease:false,files:['Codex-Quota-Sidebar-Windows-'+versions.windows+'-x64-Setup.exe',source],note:common+' Windows 10/11 x64. Unsigned installer; upgrade in the same folder to preserve settings. This is a follow-up to the user-accepted Windows baseline.'},
  {tag:'chrome/v'+chrome,title:'Chrome '+chrome+' / KEFEN',prerelease:true,files:['Codex-Quota-Sidebar-Chrome-'+chrome+'.zip'],note:common+' Experimental MV3 companion, not a Web Store listing. Requires the desktop monitor and exact extension-ID native-host registration. Real-profile acceptance pending.'},
@@ -23,6 +23,8 @@ async function request(path,method='GET',data){
  if(!response.ok)throw Error('GitHub API '+response.status+' '+method+' '+path);
  return response.status===204?null:response.json();
 }
+const notes=JSON.parse(await readFile('docs/releases/notes-v3.json','utf8'));
+const localizedNotes=Object.entries({'English':'en','简体中文':'zh-CN','繁體中文':'zh-TW'}).map(([heading,locale])=>'## '+heading+'\n'+notes[locale].map((line,i)=>(i+1)+'. '+line).join('\n')).join('\n\n');
 const published=[];
 for(const set of sets){
  const files=await Promise.all(set.files.map(async name=>{const bytes=await readFile('dist/'+name);return {name,bytes,digest:'sha256:'+createHash('sha256').update(bytes).digest('hex')};}));
@@ -30,7 +32,7 @@ for(const set of sets){
  const sumName='SHA256SUMS-'+set.tag.replaceAll('/','-')+'.txt';
  await writeFile('dist/'+sumName,sums);
  files.push({name:sumName,bytes:Buffer.from(sums),digest:'sha256:'+createHash('sha256').update(sums).digest('hex')});
- const body=set.note+'\n\nSource commit: '+commit+'\n\n[Illustrated guide](https://github.com/'+repo+'/blob/'+commit+'/docs/USER-GUIDE.md) | [Security](https://github.com/'+repo+'/blob/'+commit+'/SECURITY.md)\n\nArtifacts are built from this commit by GitHub Actions. Checksums are attached. Unofficial; not affiliated with OpenAI. Author: KEFEN.';
+ const body=set.note+'\n\n'+localizedNotes+'\n\nSource commit: '+commit+'\n\n[Illustrated guide](https://github.com/'+repo+'/blob/'+commit+'/docs/USER-GUIDE.md) | [Security](https://github.com/'+repo+'/blob/'+commit+'/SECURITY.md)\n\nArtifacts are built from this commit by GitHub Actions. Checksums are attached. Unofficial; not affiliated with OpenAI. Author: KEFEN.';
  let release=await request('/releases/tags/'+encodeURIComponent(set.tag));
  if(!release)release=await request('/releases','POST',{tag_name:set.tag,target_commitish:commit,name:set.title,body,prerelease:set.prerelease,draft:true});
  if(release.name!==set.title||release.prerelease!==set.prerelease)throw Error('Existing release differs; will not overwrite '+set.tag);
@@ -45,11 +47,7 @@ for(const set of sets){
  published.push({tag:set.tag,id:release.id,files:files.map(f=>({name:f.name,digest:f.digest}))});
  console.log('Verified published '+release.html_url);
 }
-// Destructive cleanup is explicitly scoped to the user-approved old release list.
+// Historical Releases, assets, commits and tags are deliberately retained.
 for(const item of published){const release=await request('/releases/tags/'+encodeURIComponent(item.tag));if(release?.draft||!item.files.every(f=>release.assets.some(a=>a.name===f.name&&a.digest===f.digest)))throw Error('Published asset verification failed');}
-if(accepted.deletePriorReleasesAfterVerification===true&&published.length===3){
- const oldTags=["windows/v0.12.4","macos/v0.4.6-alpha.1","chrome/v0.3.2"];
- for(const tag of oldTags){if(sets.some(s=>s.tag===tag))throw Error('Refuse to delete current release');const old=await request('/releases/tags/'+encodeURIComponent(tag));if(old)await request('/releases/'+old.id,'DELETE');}
- console.log('Removed approved previous Releases/assets; Git tags and commits retained.');
-}
+
 

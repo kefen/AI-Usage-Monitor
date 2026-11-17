@@ -8,6 +8,49 @@ struct MetricDatum {
 }
 
 enum MetricPresentation {
+    static let keys = ["plan", "renewal", "short", "week", "reset", "resetCredits", "credits", "daily", "average", "weekly", "lifetime"]
+    static func recordDate(_ text: String?) -> Date? {
+        let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "yyyy-MM-dd"; f.isLenient = false
+        guard let text = text, let date = f.date(from: text), f.string(from: date) == text else { return nil }
+        return date
+    }
+    static func renewal(_ member: [String: Any]) -> String? {
+        guard member["enabled"] as? Bool == true else { return nil }
+        if let text = member["date"] as? String, recordDate(text) != nil { return text }
+        guard let start = recordDate(member["purchaseDate"] as? String), member["monthlyEstimate"] as? Bool == true || member["annualEstimate"] as? Bool == true else { return nil }
+        let calendar = Calendar(identifier: .gregorian)
+        guard let end = calendar.date(byAdding: member["annualEstimate"] as? Bool == true ? .year : .month, value: 1, to: start) else { return nil }
+        let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "yyyy-MM-dd"; return f.string(from: end)
+    }
+    static func plotMaximum(_ values: [Double]) -> Double {
+        let largest = values.filter { $0.isFinite && $0 >= 0 }.max() ?? 0
+        guard largest > 0 else { return 1_000_000 }
+        let unit = pow(10, floor(log10(largest)))
+        return ceil(largest / unit / 0.5) * unit * 0.5
+    }
+    static func overview(_ snapshot: [String: Any], display: [String: Any], member: [String: Any], connected: Bool, now: Double) -> [String: MetricDatum] {
+        let base = values(snapshot, connected: connected, now: now)
+        var result = Dictionary(uniqueKeysWithValues: zip(["short", "week", "daily", "weekly", "lifetime", "average"], base))
+        let missing = base[0].caption.isEmpty ? "Not returned" : base[0].caption
+        for key in ["reset", "resetCredits", "credits"] { result[key] = MetricDatum(caption: missing) }
+        let freshQuota = connected && number(snapshot["generatedAt"]).map { now >= $0 && now - $0 < 90000 } == true && number(snapshot["quotaAt"]).map { now >= $0 && now - $0 < 180000 } == true
+        if freshQuota {
+            let windows = snapshot["windows"] as? [[String: Any]] ?? []
+            if let stamp = windows.compactMap({ number($0["resetsAt"]) }).filter({ $0 > now }).min() {
+                let f = DateFormatter(); f.dateStyle = .short; f.timeStyle = .short
+                result["reset"] = MetricDatum(value: f.string(from: Date(timeIntervalSince1970: stamp / 1000)), caption: "")
+            }
+            if let n = number(snapshot["resetCredits"]), count(n) != "--" { result["resetCredits"] = MetricDatum(value: count(n), caption: "") }
+            if let text = snapshot["creditBalance"] as? String, text.range(of: #"^\d+(\.\d+)?$"#, options: .regularExpression) != nil, let n = Double(text), n.isFinite, n <= 9007199254740991 {
+                result["credits"] = MetricDatum(value: count(floor(n)), caption: "")
+            }
+        }
+        let plan = member["plan"] as? String ?? ""
+        let names = ["free": "Free", "go": "Go", "plus": "Plus", "pro": "Pro", "business": "Business", "enterprise": "Enterprise", "edu": "Edu", "other": "Other / unknown"]
+        result["plan"] = MetricDatum(value: names[plan] ?? "--", caption: names[plan] == nil ? "Not set" : member["planSource"] as? String == "desktop" ? "Desktop detection" : "Manual record (locked)")
+        result["renewal"] = MetricDatum(value: renewal(member) ?? "--", caption: renewal(member) == nil ? "Not set" : member["estimated"] as? Bool == true ? "Estimated date" : "Manual date")
+        return result.filter { display[$0.key] as? Bool != false }
+    }
     static func count(_ value: Double) -> String {
         guard value.isFinite, value >= 0, value.rounded() == value, value <= 9007199254740991 else { return "--" }
         for (scale, suffix) in [(1_000_000_000.0, "B"), (1_000_000.0, "M"), (1_000.0, "K")] where value >= scale {

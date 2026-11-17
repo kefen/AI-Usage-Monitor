@@ -3,7 +3,7 @@ using System.IO;
 internal static class SettingsTransferTest {
     static int Main(string[] args){
         Directory.CreateDirectory(args[0]);
-        string member="{\"enabled\":true,\"plan\":\"plus\",\"purchaseDate\":\"2026-01-31\",\"monthlyEstimate\":true}";
+        string member="{\"enabled\":true,\"plan\":\"plus\",\"purchaseDate\":\"2026-01-31\",\"monthlyEstimate\":true,\"manualOverride\":true,\"planSource\":\"manual\",\"detectedAt\":\"2026-11-17T00:00:00Z\"}";
         File.WriteAllText(Path.Combine(args[0],"membership.json"),member);
         string backup=SettingsTransfer.Backup(args[0]);
         if(!backup.Contains("2026-01-31")||backup.Contains("cdpConsent"))throw new Exception("Backup scope invalid");

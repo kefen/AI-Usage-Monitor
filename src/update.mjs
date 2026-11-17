@@ -1,9 +1,10 @@
-import {readFile,writeFile,mkdir,mkdtemp,copyFile,rename,lstat,chmod} from 'node:fs/promises';
-import {createHash,verify} from 'node:crypto';
+import {readFile,writeFile,mkdir,mkdtemp,copyFile,rename,lstat,chmod,realpath,unlink} from 'node:fs/promises';
+import {createHash,verify,randomUUID} from 'node:crypto';
 import {join,resolve,dirname,basename} from 'node:path';
 import {tmpdir,homedir,arch} from 'node:os';
 import {spawn,spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
+import {backupSettings,verifySettings,restoreSettings,localizedNotes,canonicalEntry,transactionState,waitForRecord} from './update-transaction.mjs';
 const feedURL='https://raw.githubusercontent.com/kefen/codex-quota-sidebar/main/docs/updates/latest.json';
 export const wholeCredits=value=>typeof value==='string'&&/^\d+(\.\d+)?$/.test(value)&&Number.isSafeInteger(Math.floor(Number(value)))?String(Math.floor(Number(value))):'--';
 export function newer(a,b){
@@ -35,31 +36,70 @@ async function noLinks(path){for(let p=resolve(path);;p=dirname(p)){if((await ls
 async function apply(planPath){
  const plan=JSON.parse(await readFile(planPath,'utf8'));const key=await readFile(new URL('./update-public-key.pem',import.meta.url),'utf8');
  const data=verifyFeed(plan.envelope,key);const asset=validateAsset(data.releases[plan.target]);
- const content=await readFile(plan.file);if(content.length!==asset.size||createHash('sha256').update(content).digest('hex')!==asset.sha256)throw Error('Downloaded update changed');
+ if(!['windows-x64','macos-arm64','macos-x64'].includes(plan.target)||plan.version!==asset.version||!/^[a-f0-9-]{36}$/.test(plan.id))throw Error('Invalid update plan');
+ const root=await realpath(plan.root),cache=join(root,'.runtime','updates');
+ if(plan.transactionPath!==join(cache,'transaction.json')||plan.backupFolder!==join(cache,'settings-'+plan.id)||!Array.isArray(plan.pids)||plan.pids.length>4||plan.pids.some(p=>!Number.isSafeInteger(p)||p<2))throw Error('Invalid transaction paths');
  await noLinks(plan.destination);
- for(let n=0;n<120;n++){let alive=false;for(const pid of plan.pids){try{process.kill(pid,0);alive=true;}catch{}}if(!alive)break;if(n===119)throw Error('Software still running; update cancelled');await sleep(1000);}
- if(plan.target==='windows-x64'){
-  const extracted=join(dirname(planPath),'payload');run(plan.file,['--extract',extracted]);
-  run(join(process.env.SystemRoot,'System32','WindowsPowerShell','v1.0','powershell.exe'),['-NoProfile','-ExecutionPolicy','Bypass','-File',join(extracted,'Install.ps1'),'-Destination',plan.destination]);
-  spawn(join(plan.destination,'CodexMeter.exe'),[],{detached:true,stdio:'ignore',windowsHide:true}).unref();
- }else{
-  const allowed=[join('/Applications','Codex Quota Sidebar.app'),join(homedir(),'Applications','Codex Quota Sidebar.app')];if(!allowed.includes(plan.destination))throw Error('Install in Applications before updating');
-  const mount=join(dirname(planPath),'mount');await mkdir(mount);
-  const next=plan.destination+'.update-'+Date.now(),backup=plan.destination+'.backup-'+Date.now();let moved=false;
+ const state=(stage,fields={})=>transactionState(plan.transactionPath,stage,{id:plan.id,version:asset.version,destination:plan.destination,...fields});
+ try{
+  const content=await readFile(plan.file);if(content.length!==asset.size||createHash('sha256').update(content).digest('hex')!==asset.sha256)throw Error('E_UPDATE_CHECKSUM');
+  await backupSettings(root,plan.backupFolder);
+  await state('worker-ready');await writeFile(join(dirname(planPath),'worker-ready.json'),JSON.stringify({id:plan.id}),{mode:0o600});
+  for(let i=0;i<120;i++){const alive=plan.pids.some(pid=>{try{process.kill(pid,0);return true;}catch{return false;}});if(!alive)break;if(i===119)throw Error('E_UPDATE_APP_STILL_RUNNING');await sleep(1000);}
+  await backupSettings(root,plan.backupFolder);await state('installing');
+  if(plan.target==='windows-x64'){
+   const extracted=join(dirname(planPath),'payload');run(plan.file,['--extract',extracted]);
+   run(join(process.env.SystemRoot,'System32','WindowsPowerShell','v1.0','powershell.exe'),['-NoProfile','-ExecutionPolicy','Bypass','-File',join(extracted,'Install.ps1'),'-Destination',plan.destination]);
+   await verifySettings(root,plan.backupFolder);
+   await state('launching');
+   const child=spawn(join(plan.destination,'CodexMeter.exe'),[],{detached:true,stdio:'ignore',windowsHide:true});
+   await new Promise((resolve,reject)=>{child.once('spawn',resolve);child.once('error',reject);});child.unref();
+   await state('installed',{settingsPreserved:true});return;
+  }
+  const allowed=[join('/Applications','Codex Quota Sidebar.app'),join(homedir(),'Applications','Codex Quota Sidebar.app')];
+  if(!allowed.includes(plan.destination))throw Error('E_UPDATE_INSTALL_LOCATION');
+  const mount=join(dirname(planPath),'mount');await mkdir(mount,{recursive:true});
+  const next=plan.destination+'.update-'+plan.id,backup=plan.destination+'.backup-'+plan.id;
+  let moved=false,replaced=false;
   try{
    run('/usr/bin/hdiutil',['attach','-readonly','-nobrowse','-mountpoint',mount,plan.file]);
-   const app=join(mount,'Codex Quota Sidebar.app');run('/usr/bin/codesign',['--verify','--deep','--strict',app]);
-   run('/usr/bin/ditto',[app,next]);await rename(plan.destination,backup);moved=true;await rename(next,plan.destination);
-   run('/usr/bin/open',['-n',plan.destination]);
-  }catch(e){if(moved){try{await rename(plan.destination,next+'.failed');}catch{}await rename(backup,plan.destination);}throw e;}
-  finally{try{run('/usr/bin/hdiutil',['detach',mount]);}catch{}}
+   const app=join(mount,'Codex Quota Sidebar.app');
+   run('/usr/bin/codesign',['--verify','--deep','--strict',app]);
+   const candidateVersion=run('/usr/libexec/PlistBuddy',['-c','Print :CQSReleaseVersion',join(app,'Contents','Info.plist')]).trim();
+   if(candidateVersion!==asset.version)throw Error('E_UPDATE_BUNDLE_VERSION');
+   run('/usr/bin/ditto',[app,next]);await rename(plan.destination,backup);moved=true;
+   await rename(next,plan.destination);replaced=true;
+   await unlink(join(cache,'ack.json')).catch(()=>{});
+   await state('launching');
+   run('/usr/bin/open',['-n',plan.destination,'--args','--update-transaction',plan.transactionPath,'--update-version',asset.version]);
+   const ack=await waitForRecord(join(cache,'ack.json'),a=>a.id===plan.id&&a.stage==='app-ready'&&a.version===asset.version&&a.bundlePath===plan.destination,45000);
+   if(!ack)throw Error('E_UPDATE_LAUNCH_UNVERIFIED');
+   await verifySettings(root,plan.backupFolder);
+   await state('complete',{settingsPreserved:true});
+  }catch(e){
+   // Only roll back when no new app can be found at the exact installed executable.
+   const executable=join(plan.destination,'Contents','MacOS','QuotaSidebar');
+   const processes=run('/bin/ps',['-axo','comm=']).split('\n').map(v=>v.trim());
+   const running=processes.includes(executable);
+   if(moved&&!running){
+    if(replaced)await rename(plan.destination,next+'.failed');
+    await rename(backup,plan.destination);await restoreSettings(root,plan.backupFolder);
+    await state('rolled-back',{code:String(e.message).slice(0,160),settingsPreserved:true});
+    run('/usr/bin/open',['-n',plan.destination]);
+   }else await state('needs-attention',{code:String(e.message).slice(0,160),backupAvailable:moved});
+   throw e;
+  }finally{try{run('/usr/bin/hdiutil',['detach',mount]);}catch{}}
+ }catch(e){
+  let last={};try{last=JSON.parse(await readFile(plan.transactionPath,'utf8'));}catch{}
+  if(!['rolled-back','needs-attention'].includes(last.stage))await state('failed',{code:String(e.message).slice(0,160)});
+  throw e;
  }
 }
 async function main(){
  const [command,rootArg,destination,pidArg]=process.argv.slice(2);
  if(command==='apply'){try{await apply(rootArg);}catch(e){await writeFile(join(dirname(rootArg),'update-error.txt'),e.message);throw e;}return;}
  if(!['check','auto','download','prepare'].includes(command))throw Error('Unsupported update operation');
- const root=resolve(rootArg),cache=join(root,'.runtime','updates');await mkdir(cache,{recursive:true});await noLinks(cache);
+ const root=await realpath(resolve(rootArg)),cache=join(root,'.runtime','updates');await mkdir(cache,{recursive:true});await noLinks(cache);
  const statePath=join(cache,'state.json');let previous={};try{previous=JSON.parse(await readFile(statePath,'utf8'));}catch{}
  if(command==='auto'&&Date.now()-(previous.checkedAt||0)<86400000){console.log(JSON.stringify(previous));return;}
  const key=await readFile(new URL('./update-public-key.pem',import.meta.url),'utf8');
@@ -67,21 +107,32 @@ async function main(){
  const versions=JSON.parse(await readFile(join(root,'versions.json'),'utf8'));
  const target=process.platform==='win32'?'windows-x64':'macos-'+arch();const current=versions[process.platform==='win32'?'windows':'macos'];
  const asset=validateAsset(feed.releases[target]);const available=newer(asset.version,current);
- const state={checkedAt:Date.now(),available,version:asset.version,notes:typeof asset.notes==='string'?asset.notes.slice(0,3000):'',ready:false};
+ let language='en';try{const saved=JSON.parse(await readFile(join(root,'.runtime','language.json'),'utf8'));if(['en','zh-CN','zh-TW'].includes(saved))language=saved;}catch{}
+ const state={checkedAt:Date.now(),available,version:asset.version,notes:localizedNotes(asset.notesByLocale||asset.notes,language),ready:false};
  const file=join(cache,process.platform==='win32'?'update.exe':'update.dmg');
  if(available&&['download','prepare'].includes(command)){
   let content;try{content=await readFile(file);}catch{}
   if(!content||content.length!==asset.size||createHash('sha256').update(content).digest('hex')!==asset.sha256){content=await bytes(asset.url,asset.size,true);if(content.length!==asset.size||createHash('sha256').update(content).digest('hex')!==asset.sha256)throw Error('Update checksum rejected');await writeFile(file+'.part',content);await rename(file+'.part',file);}
   state.ready=true;
   if(command==='prepare'){
+   const id=randomUUID(),transactionPath=join(cache,'transaction.json'),backupFolder=join(cache,'settings-'+id);
+   // Validate saved settings before asking the running application to terminate.
+   await backupSettings(root,backupFolder);
    const folder=await mkdtemp(join(tmpdir(),'cqs-update-'));const node=join(folder,process.platform==='win32'?'node.exe':'node');await copyFile(process.execPath,node);await chmod(node,0o700);
-   await copyFile(file,join(folder,basename(file)));await copyFile(fileURLToPath(import.meta.url),join(folder,'update.mjs'));await copyFile(new URL('./update-public-key.pem',import.meta.url),join(folder,'update-public-key.pem'));
+   await copyFile(file,join(folder,basename(file)));
+   for(const name of ['update.mjs','update-public-key.pem','update-transaction.mjs'])await copyFile(new URL('./'+name,import.meta.url),join(folder,name));
    const pids=[Number(pidArg)];if(!Number.isSafeInteger(pids[0])||pids[0]<2)throw Error('Invalid application PID');
-   for(const name of ['background-status.json','mac.pid']){try{const text=await readFile(join(root,'.runtime',name),'utf8');const value=name==='mac.pid'?Number(text.trim()):JSON.parse(text).monitorPid;if(Number.isSafeInteger(value)&&value>1)pids.push(value);}catch{}}
-   const plan=join(folder,'plan.json');await writeFile(plan,JSON.stringify({envelope,target,file:join(folder,basename(file)),destination:resolve(destination),pids}));
-   const worker=spawn(node,[join(folder,'update.mjs'),'apply',plan],{detached:true,stdio:'ignore',windowsHide:true});worker.unref();
+   for(const name of ['background-status.json','mac.pid']){try{const raw=await readFile(join(root,'.runtime',name),'utf8');const value=name==='mac.pid'?Number(raw.trim()):JSON.parse(raw).monitorPid;if(Number.isSafeInteger(value)&&value>1)pids.push(value);}catch{}}
+   const plan=join(folder,'plan.json');
+   await writeFile(plan,JSON.stringify({id,envelope,target,version:asset.version,root,transactionPath,backupFolder,file:join(folder,basename(file)),destination:await realpath(resolve(destination)),pids:[...new Set(pids)]}),{mode:0o600});
+   await transactionState(transactionPath,'preparing',{id,version:asset.version,destination:await realpath(resolve(destination))});
+   const worker=spawn(node,[join(folder,'update.mjs'),'apply',plan],{detached:true,stdio:'ignore',windowsHide:true});
+   await new Promise((resolve,reject)=>{worker.once('spawn',resolve);worker.once('error',reject);});worker.unref();
+   try{await waitForRecord(join(folder,'worker-ready.json'),a=>a.id===id,12000);}
+   catch{await transactionState(transactionPath,'failed',{id,version:asset.version,code:'E_UPDATE_WORKER_NOT_READY'});throw Error('E_UPDATE_WORKER_NOT_READY');}
+   state.prepared=true;
   }
  }
  await writeFile(statePath,JSON.stringify(state));console.log(JSON.stringify(state));
 }
-if(process.argv[1]===fileURLToPath(import.meta.url))main().catch(e=>{console.log(JSON.stringify({error:e.message}));process.exitCode=1;});
+if(canonicalEntry(process.argv[1],import.meta.url))main().catch(e=>{console.log(JSON.stringify({error:e.message}));process.exitCode=1;});

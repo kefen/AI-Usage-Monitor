@@ -8,14 +8,14 @@ using System.Windows.Forms;
 
 internal static class LocalDiagnostics {
     internal static string Snapshot(string root){
-        var report=new Dictionary<string,object>{{"tool","Codex Quota Sidebar by KEFEN"},{"version","0.12.6"},{"exportedAt",DateTime.UtcNow.ToString("o")},{"osVersion",Environment.OSVersion.Version.ToString()}};
-        foreach(string file in new[]{"status.json","background.json"}){
+        var report=new Dictionary<string,object>{{"tool","Codex Quota Sidebar by KEFEN"},{"version",MeterTheme.Version},{"exportedAt",DateTime.UtcNow.ToString("o")},{"osVersion",Environment.OSVersion.Version.ToString()}};
+        foreach(string file in new[]{"status.json","background.json","updates/transaction.json"}){
             var safe=new Dictionary<string,object>();
             try{
                 string path=Path.Combine(root,file);
                 if(new FileInfo(path).Length>65536)continue;
                 var data=new JavaScriptSerializer().Deserialize<Dictionary<string,object>>(File.ReadAllText(path));
-                foreach(string key in new[]{"stage","code","phase","updatedAt","elevated","quotaAvailable","usageAvailable"}){
+                foreach(string key in new[]{"stage","code","phase","updatedAt","elevated","quotaAvailable","usageAvailable","settingsPreserved"}){
                     object value;if(!data.TryGetValue(key,out value))continue;
                     string text=Convert.ToString(value);
                     // Export known scalar shapes only; never raw exception text or paths.

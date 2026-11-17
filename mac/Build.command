@@ -14,6 +14,7 @@ cp mac/READ-ME-FIRST.html "$app/Contents/Resources/READ-ME-FIRST.html"
 cp ui/strings.json "$app/Contents/Resources/strings.json"
 cp mac/Info.plist "$app/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${version%%-*}" "$app/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Add :CQSReleaseVersion string $version" "$app/Contents/Info.plist"
 cp assets/cqs.icns "$app/Contents/Resources/cqs.icns"
 node mac/package-payload.mjs "$app/Contents/Resources/payload"
 archive="node-v$nodeversion-darwin-$nodearch.tar.gz"
@@ -33,6 +34,10 @@ cmp "$stage/node-v$nodeversion-darwin-$nodearch/bin/node" "$app/Contents/Resourc
 if [[ "$(uname -m)" == "$arch" ]]; then
   /usr/bin/xcrun swiftc mac/MetricPresentation.swift test/MacMetricPresentationTest.swift -o "$stage/MetricPresentationTest"
   "$stage/MetricPresentationTest"
+  /usr/bin/xcrun swiftc mac/MetricPresentation.swift test/MacV3PresentationTest.swift -o "$stage/V3PresentationTest"
+  "$stage/V3PresentationTest"
+  /usr/bin/xcrun swiftc mac/Bootstrap.swift test/MacUpdateAcknowledgementTest.swift -o "$stage/UpdateAcknowledgementTest"
+  "$stage/UpdateAcknowledgementTest"
   /usr/bin/xcrun swiftc mac/RuntimeProbe.swift test/MacRuntimeProbeTest.swift -o "$stage/RuntimeProbeTest"
   "$stage/RuntimeProbeTest"
   "$app/Contents/Resources/payload/runtime/node" --version

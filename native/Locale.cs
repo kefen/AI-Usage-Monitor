@@ -32,6 +32,7 @@ internal static class Locale {
     }
     internal static void Apply(Control control){
         depth++;try{
+        if(control is DateTimePicker)return;
         if(control.Name=="language"){((ComboBox)control).SelectedIndex=Language=="en"?0:Language=="zh-CN"?1:2;return;}
         var box=control as TextBox;
         if(!(control is ComboBox)&&(box==null||box.ReadOnly))control.Text=T(control.Text);
