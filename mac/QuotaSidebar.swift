@@ -588,7 +588,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             view.subviews.forEach { checkBounds($0) }
         }
         checkBounds(body)
-        if page == "overview", let charts = find("overview-charts", in: content) {
+        if page == "overview", let charts = find("overview-charts", in: content) as? NSStackView {
             precondition(abs(charts.bounds.width - body.bounds.width) < 1, "Charts must span the full content width")
             if let quotas = find("quota-column", in: charts), let tokens = find("token-column", in: charts) {
                 let q = quotas.convert(quotas.bounds, to: charts), t = tokens.convert(tokens.bounds, to: charts)

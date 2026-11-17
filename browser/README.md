@@ -4,7 +4,7 @@ Experimental Chrome MV3 side panel. Not a standalone account reader and not an
 official OpenAI extension. The desktop monitor must be running and connected.
 The CLI account can differ from both the browser and desktop accounts.
 
-Version 0.4.0 follows the approved V3 design. The panel displays the same eleven
+Version 0.4.1 follows the approved V3 design. The panel displays the same eleven
 choices saved in the desktop companion; it does not keep a competing set of
 checkboxes. Selected missing values keep their slots and explain their status.
 To change choices, open the desktop companion's Display choices page. Quota bars
@@ -20,7 +20,7 @@ The desktop tool and Chrome extension must use the same name.
 
 1. Before upgrading, run the **previous installed version's** registration script
    with `-Remove` and your existing extension ID to unregister its previous host.
-2. Upgrade Windows to 0.13.0 and the extension to 0.4.0. Keep the extension
+2. Upgrade Windows to 0.13.1 and the extension to 0.4.1. Keep the extension
    directory/ID when possible. Do not mix the old extension with the new host.
 3. Run the new `browser/Register-Windows.ps1` with the exact current extension ID.
 4. Reload the extension and reopen its side panel.

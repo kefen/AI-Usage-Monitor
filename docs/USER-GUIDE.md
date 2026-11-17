@@ -13,8 +13,10 @@ An absent five-hour quota is not treated as unlimited. Yesterday has no numeric
 date below it; older daily records keep their source date.
 
 On a fresh installation, the companion attempts plan-family detection after
-connecting to a verified Codex desktop renderer. Only supported structured
-metadata is used; some client versions expose none, so **Unknown** is a normal
+connecting to a verified Codex desktop renderer. Supported structured metadata
+is preferred. If needed, the tool briefly opens the official usage menu, reads
+only an exact quota-source label and restores the menu it opened. It never reads
+chat content or infers a plan from profile names. Some clients expose no supported label, so **Unknown** is a normal
 outcome, not a paid-tier guess. Choose the plan manually if detection is unavailable.
 Changing the plan manually locks it against automatic replacement. **Detect plan**
 is an explicit retry and replaces the family only: manual tier and all dates stay
@@ -25,7 +27,10 @@ unchanged. Legacy manual subscription records are protected too.
 
 ## Updating
 
-Use **Check for updates** in the upper-right header, left of the language selector.
+Use **Check for updates** in **About project**. A verified newer version alone
+shows an update icon beside the language selector. The companion checks at startup
+and every six hours while running; this is not real-time server push. Up-to-date,
+network failure and verification failure are distinct results.
 Desktop updates show the version and short numbered notes in your selected
 language, then ask to download in the background. When ready,
 confirm restarting this companion to install; Codex stays open. Cancel postpones
@@ -43,8 +48,19 @@ follow Privacy & Security guidance below. Do not disable system protection.
 Chrome unpacked installations cannot self-replace: download the ZIP, unpack into
 the extension folder and reload in chrome://extensions.
 
-简体中文：右上角、语言切换左侧点击“检查更新”。桌面端下载后确认重启本工具安装，取消可稍后处理。浏览器手动加载版需下载解压并重新加载。
-繁體中文：右上角、語言切換左側按「檢查更新」。桌面版下載後確認重新啟動本工具安裝，取消可稍後處理。瀏覽器手動載入版需下載解壓並重新載入。
+简体中文：在“关于项目”点击“检查更新”；有已验证新版时，语言选择旁显示更新图标。启动时及运行中每六小时检查。桌面端下载后确认重启本工具安装，保留设置；浏览器手动加载版需下载解压并重新加载。
+繁體中文：在「關於專案」按「檢查更新」；有已驗證新版時，語言選擇旁顯示更新圖示。啟動時及執行中每六小時檢查。桌面版下載後確認重新啟動本工具安裝，保留設定；瀏覽器手動載入版需下載解壓並重新載入。
+
+## Window and Date Controls
+
+Resize or maximize the desktop window. Navigation and primary actions retain
+their full labels in all three languages; compact windows may scroll rather than
+clip content. macOS uses a native calendar for optional dates. Monthly and yearly
+estimates update as soon as the purchase date changes, including month-end and
+leap-year handling. Clearing a date preserves an empty value. Manual plan changes,
+specific tier, dates, language and display choices survive an update.
+
+简体中文：窗口支持调整大小；空间不足时允许滚动，避免遮挡操作。Mac 日期可通过原生日历选择，月付/年付到期日随购买日期立即推算；留空仍保持留空。
 
 **Upgrading from macOS 0.4.8-alpha.1 or earlier:** the old updater itself cannot
 receive a launch fix before it runs. If it quits without reopening, download the
@@ -84,8 +100,8 @@ Windows UI using test fixtures, not real account data.
 
 Open [Releases](https://github.com/kefen/codex-quota-sidebar/releases).
 For Windows 10/11 x64, download the asset ending in
-`Windows-0.13.0-x64-Setup.exe`, plus its SHA256 file if verifying integrity.
-Chrome uses the separate `Chrome-0.4.0.zip`. Mac has experimental architecture-specific DMGs (see below).
+`Windows-0.13.1-x64-Setup.exe`, plus its SHA256 file if verifying integrity.
+Chrome uses the separate `Chrome-0.4.1.zip`. Mac has experimental architecture-specific DMGs (see below).
 The unsigned Windows executable may trigger an unknown-publisher warning.
 Verify its origin; never disable security software to get around a detection.
 
@@ -180,7 +196,7 @@ only when space is severely constrained.
 
 ## macOS Experimental Installation
 
-**Current version: 0.5.0-alpha.1.** Download `arm64` for Apple Silicon (M-series)
+**Current version: 0.5.1-alpha.1.** Download `arm64` for Apple Silicon (M-series)
 or `x86_64` for Intel. The companion requires macOS 13.5+ and a compatible official
 client. It is not Developer ID signed or notarized. The user confirmed live
 connection on Apple Silicon; Intel account testing remains pending.

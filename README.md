@@ -11,8 +11,10 @@ desktop navigation rail. Not affiliated with or endorsed by OpenAI.
 
 ### Updates
 
-Click **Check for updates** in the header, immediately left of the language selector. Desktop builds
-check at startup (at most once per day). A new version offers background download,
+Click **Check for updates** in **About project**. Desktop builds check at startup
+and every six hours while running; this is polling, not real-time push. Only a
+verified newer version shows an update icon beside the language selector.
+A new version offers background download,
 then explicit confirmation to restart the companion and install. Codex itself stays
 open. Settings are preserved. Updates use signed, expiring metadata with a pinned
 Ed25519 public key plus package SHA-256 verification. Failed verification blocks
@@ -26,7 +28,7 @@ Unpacked Chrome extensions can check and link to a newer release but must be
 downloaded, unpacked and reloaded in chrome://extensions; they cannot self-install.
 Existing older installations must be upgraded once to gain update support.
 
-检查更新按钮位于右上角、语言选择左侧。桌面端可后台下载，确认后重启本工具安装，保留设置、不关闭 Codex。手动加载的浏览器插件需要下载解压后重新加载。旧版 Mac 更新器失败时，请按安装指南手动替换一次应用。
+在“关于项目”点击“检查更新”；仅发现已验证的新版时，语言选择旁显示更新图标。启动时及运行中每六小时检查，并非实时推送。已是最新版与网络失败会分别提示。桌面端可后台下载，确认后重启本工具安装，保留设置、不关闭 Codex。浏览器手动加载版需下载解压后重新加载。旧版 Mac 更新器失败时，请按安装指南手动替换一次应用。
 
 **Windows:** this unsigned installer may show “Windows protected your PC” and
 “Unknown publisher”. Verify the repository download and release SHA-256 first.
@@ -53,8 +55,8 @@ none is currently shipped. Windows 7/8 and 32-bit x86 are not supported.
 
 ## Screenshots
 
-**Current versions:** Windows **0.13.0**, macOS **0.5.0-alpha.1**
-(Apple Silicon and Intel), Chrome **0.4.0**.
+**Current versions:** Windows **0.13.1**, macOS **0.5.1-alpha.1**
+(Apple Silicon and Intel), Chrome **0.4.1**.
 
 The V3 desktop overview uses quota rulers and a shared-scale comparison of daily
 tokens with the monthly daily average, followed by weekly and lifetime totals.
@@ -64,10 +66,11 @@ their position. The browser uses quota bars and a roomier Token table.
 Zero is a real value; missing
 data says **Not returned**, expired data says **Data expired**, and disconnected
 desktop views say **Not connected**. Weekly calculations are unchanged.
-Plan-family detection is best effort and reads only supported metadata from the
-verified desktop renderer, never the CLI account. The current client may expose
-no supported field; **Unknown** then stays unknown and manual selection remains
-available. Manual corrections are locked until you explicitly choose **Detect
+Plan-family detection reads supported metadata from the verified desktop renderer,
+never the CLI account. If needed, it briefly opens the official usage menu to read
+an exact quota-source label and restores the menu it opened. It never reads chat
+content or guesses from a profile name. Unsupported or ambiguous labels remain
+**Unknown**, with manual selection available. Manual corrections are locked until you explicitly choose **Detect
 plan** again. Detection never guesses or replaces your specific billing tier,
 purchase date or renewal date. No billing credentials are scraped.
 
@@ -110,9 +113,9 @@ not evidence of live-account connection acceptance.
 
 | Platform | Version | Availability |
 | --- | --- | --- |
-| Windows 10/11 x64 | 0.13.0 | V3 interface; unsigned installer |
-| macOS Apple Silicon / Intel | 0.5.0-alpha.1 | V3 experimental DMGs; not notarized; prior Apple Silicon connection user-confirmed, Intel account testing pending |
-| Chrome MV3 | 0.4.0 | V3 companion extension; requires the local desktop monitor and native host |
+| Windows 10/11 x64 | 0.13.1 | V3 interface; unsigned installer |
+| macOS Apple Silicon / Intel | 0.5.1-alpha.1 | V3 experimental DMGs; not notarized; prior Apple Silicon connection user-confirmed, Intel account testing pending |
+| Chrome MV3 | 0.4.1 | V3 companion extension; requires the local desktop monitor and native host |
 
 The Windows 0.12.3 interface was accepted by the user on 2026-11-16; 0.12.6 adds
 the requested statistics and read-only balance/reset indicators. A prior
@@ -125,9 +128,9 @@ does not make an ARM-only official client compatible with Intel.
 
 ## Downloads And Instructions
 
-- [Windows installer and checksums](https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.13.0)
-- [Chrome extension ZIP](https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.4.0)
-- [macOS experimental installers, both architectures](https://github.com/kefen/codex-quota-sidebar/releases/tag/macos/v0.5.0-alpha.1)
+- [Windows installer and checksums](https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.13.1)
+- [Chrome extension ZIP](https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.4.1)
+- [macOS experimental installers, both architectures](https://github.com/kefen/codex-quota-sidebar/releases/tag/macos/v0.5.1-alpha.1)
 - **[Step-by-step illustrated user guide](docs/USER-GUIDE.md)**
 - [Release and acceptance record](docs/RELEASES.md)
 
