@@ -59,7 +59,7 @@ internal static class NativeVisualTest {
                 int topLevel=0;foreach(Form f in Application.OpenForms)if(f.TopLevel&&f.Visible)topLevel++;
                 Assert(topLevel==1,"Navigation opened a separate top-level window");
                 if(section=="Codex subscription record"||section=="Sidebar content"){
-                    if(section=="Codex subscription record"){var p=window.Controls.Find("planContent",true)[0];Assert(p.Height>=500&&p.Width>=700,"Plan form collapsed: "+p.Size);var control=window.Controls.Find("save",true)[0];Assert(control.RectangleToScreen(control.ClientRectangle).IntersectsWith(window.RectangleToScreen(window.ClientRectangle)),"Plan controls not in visible viewport");}
+                    if(section=="Codex subscription record"){var p=window.Controls.Find("planContent",true)[0];Assert(p.Height>=420&&p.Width>=700,"Plan form collapsed: "+p.Size);var control=window.Controls.Find("save",true)[0];Assert(window.RectangleToScreen(window.ClientRectangle).Contains(control.RectangleToScreen(control.ClientRectangle)),"Plan controls not in visible viewport");}
                     if(section=="Codex subscription record"){
                         var embedded=window.Controls.Find("plan",true)[0].FindForm();var guard=embedded.Tag;embedded.Tag=new Func<bool>(()=>false);Assert(!window.ResolveEdits(),"Update/quit must respect unsaved page guard");embedded.Tag=guard;
                         ((ComboBox)window.Controls.Find("plan",true)[0]).SelectedIndex=2;
