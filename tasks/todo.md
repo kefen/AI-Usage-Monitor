@@ -10,7 +10,7 @@
 - [x] Reproduce approved macOS UI; verify native launch/update acknowledgement on both architectures.
 - [x] Update browser companion and localized numbered update notes (45 screenshots; real-profile registration pending).
 - [x] Complete native tests, packaging, English documentation/screenshots and release audit (105 shared tests; Windows native, 45 browser screenshots, both Mac update integrations).
-- [ ] Publish verified platform releases, sign and verify live update feed (all Releases/assets verified; signed feed prepared, live verification pending).
+- [x] Publish verified platform releases, sign and verify live update feed (all six package/source assets matched GitHub digests; live old/current checks, Chinese locale switch and verified Windows download passed).
 
 ## Historical Checklist
 

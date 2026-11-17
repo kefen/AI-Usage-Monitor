@@ -54,6 +54,11 @@ Keep `~/Library/Application Support/CodexSidebarMeter` intact: it contains your
 saved dates, language and display choices. A stale Dock shortcut can be removed
 and added again from the installed app. Do not reopen an old DMG copy.
 
+**First update from a pre-V3 desktop build:** its existing updater may show the
+short numbered English notes once. Language-specific notes require the new
+updater installed by this release; older code cannot be changed remotely before
+that installation. Subsequent V3 updates follow the selected UI language.
+
 ## First Launch Security Notice
 
 Windows: the installer is unsigned. Check its repository origin and release

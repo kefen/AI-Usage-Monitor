@@ -55,7 +55,8 @@
     "windowsNative": "Native UI and installer, three locales, compact 420-530px plan views, extraction/install/rollback/restart guards; Windows Server 2022 gate passed.",
     "macos": "arm64 and x86_64 native builds, visual bounds and real app replacement/new-version acknowledgement/settings preservation passed on clean macOS runners.",
     "browser": "45 rendered cases at 320/390/480px in three locales with full/partial/empty/stale/offline data; mocked native messaging bridge.",
-    "updateFeed": "Pinned Ed25519 signature, exact release asset sizes and SHA-256 digests, three numbered notes per locale."
+    "updateFeed": "Pinned Ed25519 signature, exact release asset sizes and SHA-256 digests, three numbered notes per locale. Live old/current version checks, Chinese locale switching and full Windows download/hash verification passed.",
+    "legacyUpdaterCheck": "The exact prior 0.12.6 updater Git blob detected 0.13.0 from the live signed feed; its initial notes remain English until the new updater is installed."
   },
   "limitations": {
     "macNotarized": false,
