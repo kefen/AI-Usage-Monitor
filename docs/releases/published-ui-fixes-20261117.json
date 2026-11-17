@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "date": "2026-11-17",
+  "author": "KEFEN",
+  "sourceCommit": "636761e1e44f0a004073a60417bf41a22eb17eb3",
+  "feedCommit": "c0719d5849a51de3ece0d04f7b522128dab2e3ab",
+  "workflow": {
+    "id": 44037377428,
+    "url": "https://github.com/kefen/codex-quota-sidebar/actions/runs/44037377428",
+    "conclusion": "success"
+  },
+  "versions": {
+    "windows": "0.13.1",
+    "macos": "0.5.1-alpha.1",
+    "chrome": "0.4.1"
+  },
+  "releaseUrls": [
+    "https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.13.1",
+    "https://github.com/kefen/codex-quota-sidebar/releases/tag/macos/v0.5.1-alpha.1",
+    "https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.4.1"
+  ],
+  "artifacts": [
+    {
+      "name": "Codex-Quota-Sidebar-source-windows-0.13.1-macos-0.5.1-alpha.1.zip",
+      "size": 1120173,
+      "digest": "sha256:129552aa4bc1d2956c0d6ffa67634108087d68f05221ac8064c975d02733859b"
+    },
+    {
+      "name": "Codex-Quota-Sidebar-Windows-0.13.1-x64-Setup.exe",
+      "size": 34876416,
+      "digest": "sha256:f947652e01edf31e2cdf1e70c0017483252f29f31f3199557d37197937ba4af9"
+    },
+    {
+      "name": "Codex-Quota-Sidebar-macOS-0.5.1-alpha.1-arm64-unsigned-test.dmg",
+      "size": 44172551,
+      "digest": "sha256:af4977236e0db6cfb120ddf8c3e282ab4a2be8ae931c96c6a7be847c12d6956d"
+    },
+    {
+      "name": "Codex-Quota-Sidebar-macOS-0.5.1-alpha.1-source.zip",
+      "size": 1120173,
+      "digest": "sha256:129552aa4bc1d2956c0d6ffa67634108087d68f05221ac8064c975d02733859b"
+    },
+    {
+      "name": "Codex-Quota-Sidebar-macOS-0.5.1-alpha.1-x86_64-unsigned-test.dmg",
+      "size": 45757012,
+      "digest": "sha256:22afc0f451a571c44218f46a512a8747525f98f4f519d77755a5df3be3b41fb0"
+    },
+    {
+      "name": "Codex-Quota-Sidebar-Chrome-0.4.1.zip",
+      "size": 33077,
+      "digest": "sha256:1e593190722da7322a7584143652ff54ff8df323c757286475bb10b87d7c2104"
+    }
+  ],
+  "verification": {
+    "sharedTests": 113,
+    "windowsNative": "Eight native executable test groups; actual 125% system DPI and 100% CI DPI, six pages in three locales, effective window bounds, native updater subprocess result, installer extraction/install/rollback/restart guards.",
+    "macos": "Apple Silicon and Intel builds, native calendars/optional dates/month-end estimates, three-locale page bounds and resize checks. Actual DMG replacement, new-version native acknowledgement and unchanged saved settings passed on both isolated runners.",
+    "browser": "45 screenshots: 320/390/480 pixels, three locales, full/partial/empty/stale/offline, mocked bridge; rail protection tests at zoom 1/1.25/1.5/2 and 360/1280 widths passed.",
+    "planDetection": "Current verified desktop official usage menu returned Pro in a live read-only probe; menu restored and saved membership untouched. Exact source labels only; ambiguity and manual locks covered.",
+    "updateFeed": "Pinned Ed25519 signature; three target release sizes and hashes verified. Live current 0.13.1 returned available=false; prior 0.13.0 returned available=true and ready=true after verified full Windows download. Chinese notes rendered as three separate numbered lines.",
+    "packages": "Six actual CI package/source bytes matched published GitHub asset size and SHA256."
+  },
+  "limitations": {
+    "windowsUnsigned": true,
+    "macNotarized": false,
+    "intelLiveAccountAcceptancePending": true,
+    "browserRealProfileAcceptancePending": true,
+    "stageManagerLiveAcceptancePending": true,
+    "actual150And200PercentMonitorAcceptancePending": true,
+    "planDetection": "Official supported quota-source labels only. Unknown remains unknown; purchased price tier and dates are never inferred."
+  },
+  "history": "Prior Releases, commits and tags retained."
+}
