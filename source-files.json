@@ -186,5 +186,7 @@
   "test/MacUpdateAcknowledgementTest.swift",
   "docs/releases/accepted-v3.json",
   "docs/releases/notes-v3.json",
-  ".github/workflows/publish-v3.yml"
+  ".github/workflows/publish-v3.yml",
+  "docs/screenshots/display-choices.png",
+  "docs/screenshots/plan-and-dates.png"
 ]

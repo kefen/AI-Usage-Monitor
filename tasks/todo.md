@@ -7,9 +7,9 @@
 - [x] Desktop plan-family detection with explicit manual override protection (current live client safely returns unknown).
 - [x] One shared eleven-metric selection across all user-facing surfaces.
 - [x] Reproduce approved Windows UI and installer; verify rendered screenshots.
-- [ ] Reproduce approved macOS UI; verify native launch/update acknowledgement.
+- [x] Reproduce approved macOS UI; verify native launch/update acknowledgement on both architectures.
 - [x] Update browser companion and localized numbered update notes (45 screenshots; real-profile registration pending).
-- [ ] Complete native tests, packaging, English documentation/screenshots and release audit.
+- [x] Complete native tests, packaging, English documentation/screenshots and release audit (105 shared tests; Windows native, 45 browser screenshots, both Mac update integrations).
 - [ ] Publish verified platform releases, sign and verify live update feed.
 
 ## Historical Checklist

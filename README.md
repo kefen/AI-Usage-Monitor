@@ -85,6 +85,10 @@ full Codex application. Native window chrome depends on Windows settings.
 ![Windows overview with missing fields and real zero](docs/screenshots/windows-partial.png)
 ![Windows connected overview before data arrives](docs/screenshots/windows-empty.png)
 
+### Shared display choices and protected subscription records
+![Eleven shared display choices](docs/screenshots/display-choices.png)
+![Plan family detection, manual correction and optional dates](docs/screenshots/plan-and-dates.png)
+
 ### Inline sidebar
 ![Sidebar in a generated Codex-style workspace](docs/screenshots/codex-sidebar-overview.png)
 
@@ -192,7 +196,9 @@ externally modified files are retained.
   Stale values are not presented as fresh.
 - Observation history retains up to 45 date/timestamp entries, not Token detail.
   Observation time is not publication time. Clear history after account changes.
-- Plans and renewal dates are manual records. Monthly/annual estimates are not
+- Plan families may be read from supported verified-desktop metadata; manual
+  corrections are protected. Specific billing tiers and dates remain manual.
+  Monthly/annual estimates are not
   verified bills and do not advance automatically after expiration.
 - Subscription renewal and quota reset are separate concepts.
 
