@@ -317,11 +317,10 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         pageScroll.drawsBackground = false; pageScroll.hasVerticalScroller = true; pageScroll.autohidesScrollers = true
         pageScroll.hasHorizontalScroller = false; pageScroll.horizontalScrollElasticity = .none; pageScroll.verticalScrollElasticity = .none
         pageScroll.scrollerStyle = .overlay
-        pageDocument.translatesAutoresizingMaskIntoConstraints = false
+        pageDocument.translatesAutoresizingMaskIntoConstraints = true
+        pageScroll.contentView.autoresizesSubviews = false
         pageScroll.documentView = pageDocument; pageDocument.addSubview(body)
         split.addSubview(navigation); split.addSubview(pageScroll); container.addArrangedSubview(split)
-        let naturalHeight = pageDocument.heightAnchor.constraint(equalTo: body.heightAnchor)
-        naturalHeight.priority = .defaultHigh
         NSLayoutConstraint.activate([
             split.widthAnchor.constraint(equalTo: container.widthAnchor),
             navigation.leadingAnchor.constraint(equalTo: split.leadingAnchor),
@@ -331,8 +330,6 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             pageScroll.trailingAnchor.constraint(equalTo: split.trailingAnchor, constant: -24),
             pageScroll.topAnchor.constraint(equalTo: split.topAnchor),
             pageScroll.bottomAnchor.constraint(equalTo: split.bottomAnchor),
-            pageDocument.widthAnchor.constraint(equalTo: pageScroll.contentView.widthAnchor),
-            pageDocument.heightAnchor.constraint(greaterThanOrEqualTo: pageScroll.contentView.heightAnchor), naturalHeight,
             body.leadingAnchor.constraint(equalTo: pageDocument.leadingAnchor),
             body.trailingAnchor.constraint(equalTo: pageDocument.trailingAnchor),
             body.topAnchor.constraint(equalTo: pageDocument.topAnchor),
@@ -660,9 +657,18 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     }
     func windowDidResize(_ notification: Notification) { adaptLayout() }
     func adaptLayout() {
-        let width = max(0, window.contentView!.bounds.width - 256)
-        responsiveLayouts.forEach { $0(width) }
         window.contentView?.layoutSubtreeIfNeeded()
+        // NSScrollView owns its clip frame. Size the document after tiling, then
+        // measure wrapped content at that exact width rather than a stale frame.
+        for _ in 0..<2 {
+            pageScroll.tile()
+            let viewport = pageScroll.contentView.bounds.size
+            pageDocument.setFrameSize(NSSize(width: viewport.width, height: max(viewport.height, pageDocument.frame.height)))
+            responsiveLayouts.forEach { $0(viewport.width) }
+            pageDocument.layoutSubtreeIfNeeded()
+            pageDocument.setFrameSize(NSSize(width: viewport.width, height: max(viewport.height, body.fittingSize.height)))
+            pageDocument.layoutSubtreeIfNeeded()
+        }
     }
     func stopConnectionAnimation() { connectionTimer?.invalidate(); connectionTimer = nil; connectionAnimationStart = nil; connectionFrame = 0 }
     func updateConnectionAnimation(reducedMotion: Bool? = nil) {
@@ -1148,6 +1154,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         actions.addArrangedSubview(button("Open Privacy & Security", #selector(openSecuritySettings)))
         actions.addArrangedSubview(button("Installation and approval guide", #selector(openInstallGuide)))
         body.addArrangedSubview(actions)
+        responsive(actions, threshold: 700)
     }
     @objc func openSecuritySettings() {
         if !NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security")!) {
