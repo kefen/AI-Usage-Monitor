@@ -53,6 +53,10 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     var dirty = false
     var editingReady = false
     var saveButton: NSButton?
+    func lifecycle(_ event: String) {
+        guard CommandLine.arguments.contains("--ui-smoke") || CommandLine.arguments.contains("--update-transaction") else { return }
+        fputs("Native lifecycle: \(event)\n", stderr); fflush(stderr)
+    }
     func beginPage(_ next: String) -> Bool {
         if page == next { present(); return false }
         if dirty {
@@ -234,14 +238,22 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         }
         statusItem.menu = menu
         if CommandLine.arguments.contains("--ui-smoke") { fputs("UI smoke: initial overview\n", stderr) }
+        lifecycle("initial overview begin")
         showStatus()
-        window.contentView!.layoutSubtreeIfNeeded(); window.displayIfNeeded()
+        lifecycle("initial overview returned; layout begin")
+        window.contentView!.layoutSubtreeIfNeeded()
+        lifecycle("initial layout returned; display begin")
+        window.displayIfNeeded()
+        lifecycle("initial display returned; acknowledgement begin")
         do { try Bootstrap.acknowledgeUpdate(at: root, arguments: CommandLine.arguments, version: Bootstrap.releaseVersion, bundleURL: Bundle.main.bundleURL) }
         catch { notify(CqsLocale.t("Update verification failed. Open Diagnostics.")) }
+        lifecycle("acknowledgement returned")
         if !CommandLine.arguments.contains("--ui-smoke") { DispatchQueue.main.asyncAfter(deadline: .now() + 5) { self.runUpdate("auto") } }
         if !CommandLine.arguments.contains("--ui-smoke") { Timer.scheduledTimer(withTimeInterval: 86400, repeats: true) { [weak self] _ in self?.runUpdate("auto") } }
         if CommandLine.arguments.contains("--ui-smoke") {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.smokeTest() }; return
+            lifecycle("scheduling smoke callback")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.lifecycle("smoke callback entered"); self.smokeTest() }
+            lifecycle("launch delegate returning to run loop"); return
         }
         if read("preferences.json")["cdpConsent"] as? Bool != true {
             let prompt = NSAlert(); prompt.messageText = CqsLocale.t("Allow local debugging"); prompt.informativeText = CqsLocale.t("Debugging grants more than quota access. Other local programs may access the port. Stopping the meter does not close it: fully quit Codex and reopen from its official entry. This is unofficial software. Verify that the CLI and desktop accounts match.")
@@ -286,13 +298,17 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     }
     @objc func revealApplication() { NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL]) }
     func smokeTest() {
+        lifecycle("smokeTest entered")
         do {
             let output = URL(fileURLWithPath: CommandLine.arguments.last!); try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
             for language in ["en", "zh-CN", "zh-TW"] {
                 CqsLocale.language = language; languagePicker.selectItem(at: language == "en" ? 0 : language == "zh-CN" ? 1 : 2)
                 for action in [showAuthorizationHelp, showStatus, showDisplay, showSettings, showData, showHelp, showAbout] {
                     fputs("UI smoke: switching page, language \(language)\n", stderr)
-                    action(); CqsLocale.apply(window.contentView!); window.contentView!.layoutSubtreeIfNeeded(); window.displayIfNeeded()
+                    action(); lifecycle("smoke page \(page) built; localization begin")
+                    CqsLocale.apply(window.contentView!); lifecycle("smoke page \(page) layout begin")
+                    window.contentView!.layoutSubtreeIfNeeded(); lifecycle("smoke page \(page) display begin")
+                    window.displayIfNeeded()
                     fputs("UI smoke: laid out \(page)\n", stderr)
                     precondition(abs(body.frame.maxY - body.superview!.bounds.maxY) < 2, "Page content is not top aligned")
                     if page == "subscription" { plan.selectItem(at: 2); enabled.state = .on; updateFields(); save(); precondition(!dirty && page == "subscription" && saveButton?.isEnabled == false) }
@@ -363,7 +379,15 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         } catch { fputs("UI smoke failed: \(error)\n", stderr); exit(1) }
     }
     func clear() { restartButton = nil; for view in body.arrangedSubviews { body.removeArrangedSubview(view); view.removeFromSuperview() } }
-    func present() { CqsLocale.apply(window.contentView!); NSApp.activate(ignoringOtherApps: true); window.makeKeyAndOrderFront(nil) }
+    func present() {
+        lifecycle("present localization begin")
+        CqsLocale.apply(window.contentView!)
+        lifecycle("present localization returned; activation begin")
+        NSApp.activate(ignoringOtherApps: true)
+        lifecycle("present activation returned; window ordering begin")
+        window.makeKeyAndOrderFront(nil)
+        lifecycle("present window ordering returned")
+    }
     @objc func openGitHub() { NSWorkspace.shared.open(CqsLocale.repository) }
     @objc func changeLanguage() {
         guard resolvePendingEdits() else { languagePicker.selectItem(at: CqsLocale.language == "en" ? 0 : CqsLocale.language == "zh-CN" ? 1 : 2); return }
@@ -391,15 +415,17 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         if value is NSPopUpButton { value.widthAnchor.constraint(equalToConstant: 340).isActive = true }
     }
     @objc func showStatus() {
+        lifecycle("overview enter (page=\(page), stage=\(stage))")
         if page == "overview" { tick(); present(); return }
         guard beginPage("overview") else { return }; showingSettings = false; rows = []
+        lifecycle("overview hierarchy cleared; header begin")
         let top = NSStackView(); top.alignment = .centerY
         let title = label("Usage overview", size: 22); top.addArrangedSubview(title)
         let gap = NSView(); top.addArrangedSubview(gap); gap.setContentHuggingPriority(.defaultLow, for: .horizontal)
         headline.font = .systemFont(ofSize: 12, weight: .regular); top.addArrangedSubview(headline)
         body.addArrangedSubview(top); top.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true
         detail.font = .systemFont(ofSize: 12, weight: .regular); detail.textColor = .secondaryLabelColor
-        detail.maximumNumberOfLines = 3; detail.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true
+        detail.maximumNumberOfLines = 3
         if runtimeIssue { authorizationButtons() }
         if errorText.trimmingCharacters(in: .whitespacesAndNewlines) == "E_RESTART_REQUIRED" {
             restartButton = button("Save work, restart and connect", #selector(confirmRestart), primary: true)
@@ -442,6 +468,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             }
             charts.addArrangedSubview(quotas)
         }
+        lifecycle("overview quota hierarchy built")
         if has("daily") || has("average") {
             let heading = column(spacing: 8); heading.addArrangedSubview(label("Daily vs monthly daily average", size: 14)); heading.addArrangedSubview(label("Shared scale - M tokens", size: 11, muted: true)); tokens.addArrangedSubview(heading)
             for (key, name) in [("daily", "Daily tokens"), ("average", "Monthly daily average")] where has(key) {
@@ -466,6 +493,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             charts.heightAnchor.constraint(equalToConstant: 326).isActive = true
             if charts.arrangedSubviews.count == 2 { quotas.widthAnchor.constraint(equalTo: tokens.widthAnchor, multiplier: 0.87).isActive = true }
         }
+        lifecycle("overview chart hierarchy built")
         let auxiliary = NSStackView(); auxiliary.distribution = .fillEqually; auxiliary.spacing = 24
         auxiliary.edgeInsets = NSEdgeInsets(top: 18, left: 20, bottom: 18, right: 20)
         auxiliary.wantsLayer = true; auxiliary.layer?.backgroundColor = NSColor(calibratedWhite: 0.973, alpha: 1).cgColor
@@ -479,11 +507,17 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         if overviewValues.isEmpty { paragraph("No metrics selected."); body.addArrangedSubview(button("Display choices", #selector(showDisplay))) }
         let source = label("Usage: local CLI. Plan: desktop detection or manual record.", size: 12, muted: true); source.identifier = NSUserInterfaceItemIdentifier("source-status"); source.lineBreakMode = .byTruncatingTail; body.addArrangedSubview(source); source.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true
         body.addArrangedSubview(detail)
+        // Cross-view constraints require a common ancestor before activation.
+        precondition(detail.isDescendant(of: body), "Overview detail must be attached before width activation")
+        detail.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true
+        lifecycle("overview detail attached; width constraint activated")
         metricFields = ["short", "week", "daily", "weekly", "lifetime", "average"].map { overviewValues[$0] ?? label("--", size: 15) }
         metricCaptions = ["short", "week", "daily", "weekly", "lifetime", "average"].map { overviewCaptions[$0] ?? label("Not returned", size: 11) }
         // The fixed status fields remain available as accessibility/tooltips, without another visual block.
         top.toolTip = rows.map { $0.stringValue }.joined(separator: " / ")
-        tick(); present()
+        lifecycle("overview hierarchy complete; tick begin")
+        tick(); lifecycle("overview tick returned; present begin")
+        present(); lifecycle("overview present returned")
     }
     func label(_ text: String, size: CGFloat, muted: Bool = false) -> NSTextField {
         let field = NSTextField(labelWithString: CqsLocale.t(text)); field.font = .systemFont(ofSize: size, weight: .regular); field.textColor = muted ? .secondaryLabelColor : .labelColor; return field

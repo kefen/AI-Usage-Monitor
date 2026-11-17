@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-17 Approved V3 Interface
+- Windows 0.13.0 / macOS 0.5.0-alpha.1 / Chrome 0.4.0.
+- Native quota rulers and shared-scale daily/monthly-average comparison; browser quota bars and readable Token rows. All eleven selected sidebar fields appear in the overview; missing values never become zero.
+- Matched installation, display choices and plan/date pages to the approved layout. Kept three languages, saved feedback and the agreed footer actions. Update check is immediately left of language selection.
+- Short numbered release notes follow the saved UI language. Settings are backed up before upgrade; corrupt records block installation instead of being reset.
+- Mac updater waits for its worker before quitting, verifies the installed full version and native-window acknowledgement, and retains rollback/error information.
+- Best-effort desktop plan-family detection supports explicit manual correction. Existing manual records, price tier and dates remain protected. Clients without supported metadata show unknown, not an inferred CLI plan.
+- Platform versions remain independent. Mac builds remain unnotarized; Intel live-account and browser-profile acceptance are not implied by automated checks. Historical Releases are retained.
+
 ## 2026-11-16 Usage Overview
 - Windows 0.12.6 / macOS 0.4.8-alpha.1 / Chrome 0.3.4.
 - Aligned two-column Token grids: daily and monthly average, then weekly and lifetime.

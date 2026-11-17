@@ -8,6 +8,7 @@ internal sealed class LaunchWindow : Form {
     readonly Button retry,open;
     bool exiting;
     bool autoPlanAttempted;
+    bool snapshotConnected;
     DateTime feedbackUntil=DateTime.MinValue;
     string feedback="";
     internal void Feedback(string message){feedback=message;feedbackUntil=DateTime.UtcNow.AddSeconds(10);subtitle.Text=message;footerMessage.Text=message;Present();}
@@ -51,7 +52,7 @@ internal sealed class LaunchWindow : Form {
                 }catch(Exception e){failure=e.Message;}
                 if(IsDisposed)return;BeginInvoke((Action)(()=>{
                     updating=false;updates.Enabled=true;body.Enabled=true;rail.Enabled=true;updates.Text=Locale.T("Check for updates");
-                    if(failure!=null){if(operation!="auto")MeterTheme.Error(Locale.T("Update check failed. Please try again later."));return;}
+                    if(failure!=null){if(operation=="prepare"){ReadUpdateOutcome();MeterTheme.Error(UpdateOutcome??Locale.T("Update preparation failed. The meter is still running."));}else if(operation!="auto")MeterTheme.Error(Locale.T("Update check failed. Please try again later."));return;}
                     try{
                         var result=new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<Dictionary<string,object>>(output);
                         if(operation=="prepare"){if(Prepared(result)){stop();return;}MeterTheme.Error(Locale.T("Update preparation failed. The meter is still running."));return;}
@@ -122,7 +123,7 @@ internal sealed class LaunchWindow : Form {
         currentPage=key;
         overviewPage.Visible=key=="Usage overview";
         foreach(var pair in navigation){pair.Key.BackColor=pair.Value==key?Color.FromArgb(231,238,252):Color.FromArgb(245,247,250);pair.Key.ForeColor=pair.Value==key?MeterTheme.Green:MeterTheme.Muted;}
-        if(key=="Usage overview"){overviewPage.BringToFront();return;}
+        if(key=="Usage overview"){overview.ReadSnapshot(snapshotConnected);overviewPage.BringToFront();return;}
         transient=new Panel{Dock=DockStyle.Fill,AutoScroll=false};body.Controls.Add(transient);transient.BringToFront();
         var title=MeterTheme.Label(key=="Codex subscription record"?"Plan and dates":key=="Sidebar content"?"Display content":key,16.5f,MeterTheme.Ink);title.Dock=DockStyle.Top;title.Height=50;transient.Controls.Add(title);
         var content=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false,AutoScroll=false};transient.Controls.Add(content);content.BringToFront();
@@ -168,6 +169,7 @@ internal sealed class LaunchWindow : Form {
     internal void Present(){Show();WindowState=FormWindowState.Normal;Activate();}
     internal void UpdateState(string stage,Dictionary<string,object> data){
         bool mounted=stage.StartsWith("mounted",StringComparison.Ordinal),failed=stage=="failed"||stage=="startup-failed"||stage=="attach-failed"||stage=="restart-cancelled";
+        snapshotConnected=mounted;
         headline.Text=Locale.T("Usage overview");
         headline.ForeColor=MeterTheme.Ink;
         subtitle.Text=mounted?Locale.T("Connected"):failed?Locale.T("Check Codex, then reconnect."):stage=="sidebar-missing"?Locale.T("Waiting for a supported sidebar."):Locale.T("Connecting");
@@ -188,7 +190,7 @@ internal sealed class LaunchWindow : Form {
         open.BackColor=MeterTheme.Green;open.ForeColor=Color.White;
         AcceptButton=failed?retry:open;
         overview.ReadSnapshot(mounted);
-        if(mounted&&!autoPlanAttempted){autoPlanAttempted=true;string appRoot=AppDomain.CurrentDomain.BaseDirectory;if(System.IO.File.Exists(System.IO.Path.Combine(appRoot,"src","plan.mjs")))MeterPreferences.DetectPlan(this,appRoot,"auto",result=>{overview.ReadSnapshot(true);});}
+        if(mounted&&!autoPlanAttempted){autoPlanAttempted=true;string appRoot=AppDomain.CurrentDomain.BaseDirectory;var member=MeterPreferences.Read(System.IO.Path.Combine(root,"membership.json"));bool manual=member.Count>0&&(!member.ContainsKey("planSource")||Convert.ToString(member["planSource"])!="desktop"||member.ContainsKey("manualOverride")&&Convert.ToString(member["manualOverride"])=="True");if(!manual&&System.IO.File.Exists(System.IO.Path.Combine(appRoot,"src","plan.mjs")))MeterPreferences.DetectPlan(this,appRoot,"auto",result=>{overview.ReadSnapshot(snapshotConnected);});}
         if(DateTime.UtcNow<feedbackUntil)subtitle.Text=feedback;
         Locale.Apply(this);
     }

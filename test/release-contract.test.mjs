@@ -13,8 +13,11 @@ test('separate platform versions and explicit source/runtime manifests stay alig
   }
   assert.ok(source.includes('LICENSE')&&source.includes('SECURITY.md')&&source.includes('native/Preferences.cs'));
   assert.ok(runtime.includes('versions.json')&&runtime.includes('src/version.mjs'));
-  assert.ok((await read('native/TrayHost.cs')).includes(versions.windows));
-  assert.ok((await read('native/Installer.cs')).includes(versions.windows));
+  assert.match(await read('native/TrayHost.cs'),/MeterTheme\.Version/);
+  assert.match(await read('native/Theme.cs'),/Assembly\.GetName\(\)\.Version/);
+  const build=await read('Build-Windows.ps1');
+  assert.match(build,/AssemblyVersion/);
+  assert.equal((build.match(/'build\\Version\.cs'/g)||[]).length,2,'Both native release executables embed the generated platform version');
   assert.ok((await read('mac/Install.command')).includes(versions.macos));
   const trust=JSON.parse(await read('mac/trust.json'));
   assert.equal(trust.teamIdentifier,'2DC432GLL2');

@@ -1,5 +1,24 @@
 # Release Record
 
+## Approved V3: 2026-11-17
+
+| Platform | Version | Changes |
+|---|---|---|
+| Windows 10/11 x64 | 0.13.0 | Approved V3 client and installer, all eleven shared choices, localized numbered notes |
+| macOS Apple Silicon | 0.5.0-alpha.1 | arm64 V3 native client, version-acknowledged upgrade and preserved settings |
+| macOS Intel | 0.5.0-alpha.1 | x86_64 native package; live-account acceptance remains pending |
+| Chrome MV3 | 0.4.0 | Shared selections, readable quota/Token overview, localized release notes |
+
+UI direction and publication were authorized by the user. Build/test evidence and
+asset digests are recorded separately from that authorization. No new live-account
+acceptance is implied. Plan detection uses supported verified-desktop metadata
+only; unknown is an expected fallback. Manual plan corrections lock automatic
+replacement, and detecting again preserves manually entered tier and dates.
+
+This is an additive release. Existing Releases, source commits and tags remain.
+Mac remains ad-hoc signed and unnotarized. Older Mac updater failures may require
+one manual application replacement as described in the user guide.
+
 ## Usage Overview: 2026-11-16
 
 | Platform | Version | Changes |

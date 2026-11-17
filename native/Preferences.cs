@@ -52,6 +52,7 @@ internal static class MeterPreferences {
         var input=new DateTimePicker{Name=name,ShowCheckBox=true,Format=DateTimePickerFormat.Custom,CustomFormat=known?"yyyy-MM-dd":" ",Dock=DockStyle.Fill,Checked=known};
         if(known)input.Value=date;input.Checked=known;input.ValueChanged+=(s,e)=>input.CustomFormat=input.Checked?"yyyy-MM-dd":" ";return input;
     }
+    static void LoadDate(DateTimePicker input,string saved){DateTime date;bool known=DateTime.TryParseExact(saved,"yyyy-MM-dd",CultureInfo.InvariantCulture,DateTimeStyles.None,out date);if(known)input.Value=date;input.Checked=known;input.CustomFormat=known?"yyyy-MM-dd":" ";}
     static Panel Field(string label,Control control){var panel=new Panel{Dock=DockStyle.Fill,Margin=new Padding(0,0,24,0)};var caption=MeterTheme.Label(label,10,MeterTheme.Ink);caption.Dock=DockStyle.Top;caption.Height=28;var box=new Panel{Dock=DockStyle.Top,Height=40,Padding=new Padding(0,3,0,0)};box.Controls.Add(control);panel.Controls.Add(box);panel.Controls.Add(caption);box.BringToFront();return panel;}
     internal static Form Create(string root,bool embedded){
         Directory.CreateDirectory(root);string memberPath=Path.Combine(root,"membership.json");var data=Read(memberPath);
@@ -80,7 +81,7 @@ internal static class MeterPreferences {
         var buttons=new FlowLayoutPanel{Dock=DockStyle.Top,Height=70,Padding=new Padding(0,20,0,0),WrapContents=false};content.Controls.Add(buttons);buttons.BringToFront();
         var save=MeterTheme.Button("save","Save",true);save.Width=80;save.Margin=new Padding(0,0,14,0);var skip=MeterTheme.Button("skip","Skip / hide",false);var cancel=MeterTheme.Button("cancel","Cancel",false);cancel.DialogResult=DialogResult.Cancel;buttons.Controls.Add(save);if(!embedded){buttons.Controls.Add(skip);buttons.Controls.Add(cancel);form.CancelButton=cancel;}
         var hint=MeterTheme.Label("Changes apply after saving. No reconnect needed.",9,MeterTheme.Muted);hint.Dock=DockStyle.None;hint.Width=400;hint.Height=38;buttons.Controls.Add(hint);form.AcceptButton=save;
-        Action arrange=()=>{int width=Math.Min((int)(760*form.Font.Size/10),content.ClientSize.Width),y=0;foreach(Control row in new Control[]{optional,planRow,source,fields,note,enabled,buttons}){row.Dock=DockStyle.None;row.SetBounds(0,y,width,row.Height);y+=row.Height;}};
+        Action arrange=()=>{float dpi;using(var g=content.CreateGraphics())dpi=g.DpiX/96f;int width=Math.Min((int)(760*form.Font.Size/10*dpi),content.ClientSize.Width),y=0;foreach(Control row in new Control[]{optional,planRow,source,fields,note,enabled,buttons}){row.Dock=DockStyle.None;row.SetBounds(0,y,width,row.Height);y+=row.Height;}};
         content.Resize+=(s,e)=>arrange();form.Shown+=(s,e)=>arrange();arrange();
         foreach(var p in new[]{planRow,fields})p.Paint+=(s,e)=>{using(var pen=new Pen(MeterTheme.Line))e.Graphics.DrawLine(pen,0,0,p.Width,0);};
         fields.Paint+=(s,e)=>{using(var pen=new Pen(MeterTheme.Line))e.Graphics.DrawLine(pen,0,fields.Height-1,fields.Width,fields.Height-1);};
@@ -95,18 +96,20 @@ internal static class MeterPreferences {
             try{
                 if(show&&next.Checked&&purchase.Checked&&next.Value.Date<purchase.Value.Date){MeterTheme.Error(Locale.T("Renewal/expiry date cannot precede purchase date."));return false;}
                 lease=new FileStream(memberPath+".lock",FileMode.CreateNew,FileAccess.Write,FileShare.None);
-                var member=new Dictionary<string,object>(Read(memberPath));member["enabled"]=show;
+                if(File.Exists(memberPath)&&new FileInfo(memberPath).Length>65536)throw new InvalidDataException(Locale.T("Subscription record is invalid. Restore a backup or check diagnostics."));
+                var member=File.Exists(memberPath)?Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(memberPath,Encoding.UTF8)):new Dictionary<string,object>();if(member==null)throw new InvalidDataException(Locale.T("Subscription record is invalid. Restore a backup or check diagnostics."));member["enabled"]=show;
                 if(planEdited||!member.ContainsKey("plan"))member["plan"]=ids[plan.SelectedIndex];
                 if(tierEdited||!member.ContainsKey("tier"))member["tier"]=tierIds[Math.Max(0,tier.SelectedIndex)];
-                if(planEdited||Value(member,"planSource","")!="desktop"){member["planSource"]="manual";member["manualOverride"]=true;}
+                member["planSource"]="manual";member["manualOverride"]=true;
                 if(purchase.Checked)member["purchaseDate"]=purchase.Value.ToString("yyyy-MM-dd");else member.Remove("purchaseDate");
                 member["kind"]=mode.SelectedIndex==2?"expiry":"renewal";member["monthlyEstimate"]=mode.SelectedIndex==0;member["annualEstimate"]=mode.SelectedIndex==3;member["estimated"]=mode.SelectedIndex==0||mode.SelectedIndex==3;
                 if(next.Checked&&mode.SelectedIndex!=0&&mode.SelectedIndex!=3)member["date"]=next.Value.ToString("yyyy-MM-dd");else member.Remove("date");
-                Write(memberPath,member);var prefs=Read(Path.Combine(root,"preferences.json"));prefs["setupComplete"]=true;Save(Path.Combine(root,"preferences.json"),prefs);data=member;dirty=false;planEdited=false;return true;
+                Write(memberPath,member);var prefs=Read(Path.Combine(root,"preferences.json"));prefs["setupComplete"]=true;Save(Path.Combine(root,"preferences.json"),prefs);data=member;dirty=false;planEdited=false;source.Text=Locale.T("Manual record preserved");source.ForeColor=MeterTheme.Amber;return true;
             }catch(IOException){MeterTheme.Error(Locale.T("Subscription record is busy. Try again."));return false;}catch(Exception ex){MeterTheme.Error(ex.Message);return false;}
             finally{if(lease!=null){lease.Dispose();File.Delete(memberPath+".lock");}}
         };
-        Func<bool> resolve=()=>{if(!dirty)return true;var decision=MessageBox.Show(Locale.T("Save changes before leaving?"),form.Text,MessageBoxButtons.YesNoCancel,MessageBoxIcon.Question,MessageBoxDefaultButton.Button3);if(decision==DialogResult.Cancel)return false;if(decision==DialogResult.Yes)return persist(enabled.Checked);dirty=false;return true;};form.Tag=resolve;
+        Action reload=()=>{data=Read(memberPath);loading=true;plan.SelectedIndex=7;for(int i=0;i<ids.Length;i++)if(ids[i]==Value(data,"plan",""))plan.SelectedIndex=i;loadTier();mode.SelectedIndex=Value(data,"annualEstimate","")=="True"?3:Value(data,"monthlyEstimate","")=="True"||!data.ContainsKey("date")?0:Value(data,"kind","")=="expiry"?2:1;LoadDate(purchase,Value(data,"purchaseDate",""));LoadDate(next,Value(data,"date",""));enabled.Checked=data.Count>0&&Value(data,"enabled","True")!="False";update();loading=false;dirty=false;planEdited=tierEdited=false;source.Text=Locale.T(Value(data,"planSource","")=="desktop"?"Plan family detected from Codex desktop":"Manual record preserved");};
+        Func<bool> resolve=()=>{if(!dirty)return true;var decision=MessageBox.Show(Locale.T("Save changes before leaving?"),form.Text,MessageBoxButtons.YesNoCancel,MessageBoxIcon.Question,MessageBoxDefaultButton.Button3);if(decision==DialogResult.Cancel)return false;if(decision==DialogResult.Yes)return persist(enabled.Checked);reload();return true;};form.Tag=resolve;
         save.Click+=(s,e)=>{if(persist(enabled.Checked)){if(embedded)MeterTheme.Saved(save);else{form.DialogResult=DialogResult.OK;form.Close();}}};
         skip.Click+=(s,e)=>{if(persist(false)){form.DialogResult=DialogResult.OK;form.Close();}};
         form.FormClosing+=(s,e)=>{if(form.DialogResult!=DialogResult.OK&&!resolve())e.Cancel=true;};
@@ -114,7 +117,7 @@ internal static class MeterPreferences {
             if(!resolve())return;
             if(MessageBox.Show(Locale.T("Detect the plan family from Codex desktop? Manual tier and dates stay unchanged."),form.Text,MessageBoxButtons.OKCancel,MessageBoxIcon.Question,MessageBoxDefaultButton.Button2)!=DialogResult.OK)return;
             detect.Enabled=false;source.Text=Locale.T("Detecting plan...");
-            DetectPlan(form,Directory.GetParent(Path.GetFullPath(root)).FullName,"detect",result=>{detect.Enabled=true;bool ok=Value(result,"detected","")=="True";if(ok){data=Read(memberPath);loading=true;for(int i=0;i<ids.Length;i++)if(ids[i]==Value(data,"plan",""))plan.SelectedIndex=i;loadTier();loading=false;dirty=false;planEdited=false;source.Text=Locale.T("Plan family detected from Codex desktop");source.ForeColor=Color.FromArgb(25,112,90);}else{source.Text=DetectionMessage(result);source.ForeColor=MeterTheme.Amber;}});
+            DetectPlan(form,new DirectoryInfo(root).Parent.FullName,"detect",result=>{detect.Enabled=true;bool ok=Value(result,"detected","")=="True";if(ok){data=Read(memberPath);loading=true;for(int i=0;i<ids.Length;i++)if(ids[i]==Value(data,"plan",""))plan.SelectedIndex=i;loadTier();loading=false;dirty=false;planEdited=false;source.Text=Locale.T("Plan family detected from Codex desktop");source.ForeColor=Color.FromArgb(25,112,90);}else{source.Text=DetectionMessage(result);source.ForeColor=MeterTheme.Amber;}});
         };
         return form;
     }

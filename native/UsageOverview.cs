@@ -40,7 +40,8 @@ internal sealed class UsageOverview : UserControl {
     new void Bounds(Control c,float x,float y,float w,float h,float s){c.SetBounds((int)(x*s),(int)(y*s),Math.Max(0,(int)(w*s)),Math.Max(0,(int)(h*s)));}
     void Arrange(){
         if(groups[10]==null)return;
-        float s=Font.Size/10f,w=ClientSize.Width/s,left=(w-36)*.465f,right=left+36,rw=w-right;
+        float s;using(var g=CreateGraphics())s=Font.Size/10f*g.DpiX/96f;
+        float w=ClientSize.Width/s,left=(w-36)*.465f,right=left+36,rw=w-right;
         Bounds(quotaTitle,0,0,left,24,s);Bounds(tokenTitle,right,0,rw,24,s);Bounds(scope,right,28,rw,22,s);
         int q=0;for(int i=0;i<2;i++)if(selected[i]){Bounds(groups[i],0,40+q*142,left,128,s);Bounds(names[i],0,0,left,22,s);Bounds(values[i],0,25,left,36,s);Bounds(charts[i],0,64,left,32,s);Bounds(captions[i],0,100,left,22,s);q++;}
         int row=0;foreach(int i in new[]{2,5})if(selected[i]){Bounds(groups[i],right,68+row*55,rw,42,s);Bounds(names[i],0,0,108,34,s);Bounds(values[i],rw-84,0,84,34,s);values[i].TextAlign=ContentAlignment.MiddleRight;Bounds(charts[i==2?2:3],108,8,Math.Max(0,rw-194),20,s);Bounds(captions[i],0,30,rw,12,s);row++;}
@@ -109,7 +110,7 @@ internal sealed class LinearScale : Control {
     internal Color Tone=MeterTheme.Green;
     internal LinearScale(bool quota){this.quota=quota;SetStyle(ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.UserPaint,true);}
     protected override void OnPaint(PaintEventArgs e){
-        base.OnPaint(e);float s=Font.Size/10f;int y=quota?0:Height/2;var g=e.Graphics;
+        base.OnPaint(e);float s=Font.Size/10f*e.Graphics.DpiX/96f;int y=quota?0:Height/2;var g=e.Graphics;
         using(var track=new SolidBrush(MeterTheme.Line))g.FillRectangle(track,0,y,Width,quota?9*s:2*s);
         if(quota)using(var gap=new Pen(BackColor,4*s))for(int i=1;i<10;i++)g.DrawLine(gap,Width*i/10f,0,Width*i/10f,9*s);
         if(Amount.HasValue){float width=(float)Math.Max(0,Math.Min(1,Amount.Value))*Math.Max(0,quota?Width:Width-6*s);using(var fill=new SolidBrush(Tone)){g.FillRectangle(fill,0,y,width,quota?9*s:2*s);if(!quota){g.SmoothingMode=System.Drawing.Drawing2D.SmoothingMode.AntiAlias;g.FillEllipse(fill,Math.Max(0,width-5*s),y-5*s,11*s,11*s);}}}

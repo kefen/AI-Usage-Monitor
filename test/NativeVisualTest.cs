@@ -81,8 +81,9 @@ internal static class NativeVisualTest {
         int installs=0,launches=0;
         string destination=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"wizard");
         using(var setup=new SetupWindow(destination,()=>{if(++installs==1)throw new IOException("Test failure; retry is safe.");},()=>launches++,()=>@"C:\Program Files\WindowsApps\OpenAI.Codex",()=>{})){
-            setup.Show();Wait(setup);Capture(setup,"install-environment");Click(setup);
+            setup.Show();Wait(setup);Capture(setup,"install-environment");foreach(string language in new[]{"zh-CN","zh-TW","en"}){Locale.Set(language);Capture(setup,"install-environment-"+language);}Click(setup);
             var path=(TextBox)setup.Controls.Find("destination",true)[0];path.Text=@"D:\CodexTools\CodexQuotaSidebar";Capture(setup,"install-location");
+            foreach(string language in new[]{"zh-CN","zh-TW","en"}){Locale.Set(language);Capture(setup,"install-location-"+language);}
             setup.Scale(new SizeF(1.5f,1.5f));Capture(setup,"location-150");setup.Scale(new SizeF(2f/3f,2f/3f));
             path.Text="relative";Click(setup);Capture(setup,"invalid-location");
             Assert(setup.Controls.Find("setupError",true).Length==1,"Invalid destination must show inline feedback");
@@ -91,6 +92,7 @@ internal static class NativeVisualTest {
             Capture(setup,"install-options");Click(setup);Wait(setup);
             Assert(installs==1,"Install callback missing");Capture(setup,"install-failed");Click(setup);Wait(setup);
             Assert(installs==2,"Retry did not invoke install");Capture(setup,"installed");
+            foreach(string language in new[]{"zh-CN","zh-TW","en"}){Locale.Set(language);Capture(setup,"installed-"+language);}
             Assert(launches==0,"Installer connected without consent");
             setup.Scale(new SizeF(1.5f,1.5f));Capture(setup,"installed-150");Click(setup);Assert(launches==1,"Connect callback missing");
         }
