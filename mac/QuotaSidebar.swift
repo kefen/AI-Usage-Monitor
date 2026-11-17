@@ -561,7 +561,13 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     }
     func assertV3Geometry() {
         func require(_ condition: @autoclosure () -> Bool, _ message: String = "Window resize contract failed") {
-            if !condition() { fputs("UI geometry failed (\(page)): \(message)\n", stderr); fflush(stderr); exit(1) }
+            if !condition() {
+                if let view = window.contentView, let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) {
+                    view.cacheDisplay(in: view.bounds, to: bitmap)
+                    try? bitmap.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: CommandLine.arguments.last!).appendingPathComponent("geometry-failure.png"))
+                }
+                fputs("UI geometry failed (\(page)): \(message)\n", stderr); fflush(stderr); exit(1)
+            }
         }
         func find(_ id: String, in view: NSView) -> NSView? {
             if view.identifier?.rawValue == id { return view }
@@ -581,7 +587,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             guard !view.isHiddenOrHasHiddenAncestor else { return }
             if view is NSControl || view is OptionalDatePicker {
                 let rect = view.convert(view.bounds, to: pageDocument)
-                require(rect.minX >= -1 && rect.maxX <= pageDocument.bounds.width + 1, "Control outside page: \(view)")
+                require(rect.minX >= -1 && rect.maxX <= pageDocument.bounds.width + 1, "Control outside page: \((view as? NSTextField)?.stringValue ?? view.description), rect=\(rect), document=\(pageDocument.bounds), body=\(body.frame)")
                 require(rect.maxY <= pageDocument.bounds.height + 1, "Control clipped below document")
                 if view is NSControl { return }
             }

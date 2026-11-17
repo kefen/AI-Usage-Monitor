@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-17 Native Readability Fixes
+- Windows 0.13.1 / macOS 0.5.1-alpha.1 / Chrome 0.4.1.
+- Clearer native text and DPI-aware Windows symbols; full translated navigation and action labels. Resizable windows, responsive forms and connection feedback retain the approved V3 layout.
+- Manual update checks move to About project. Only verified newer releases show a header icon beside language selection. Startup and six-hour polling keep up-to-date results distinct from transport and verification failures.
+- Safe desktop plan detection can briefly open the official usage menu and read an exact quota-source label. Manual corrections, specific tiers and saved dates remain protected; unknown labels are not guessed.
+- Mac adds native calendar selection, optional dates and immediate monthly/yearly renewal estimates. Windows credits display whole numbers and reset dates accept seconds or milliseconds.
+- Three languages, settings backups, signed metadata and transactional updates remain. Mac is still unnotarized; live Intel-account and Stage Manager acceptance require user verification.
+
 ## 2026-11-17 Approved V3 Interface
 - Windows 0.13.0 / macOS 0.5.0-alpha.1 / Chrome 0.4.0.
 - Native quota rulers and shared-scale daily/monthly-average comparison; browser quota bars and readable Token rows. All eleven selected sidebar fields appear in the overview; missing values never become zero.
