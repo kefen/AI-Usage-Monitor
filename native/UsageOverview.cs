@@ -43,8 +43,8 @@ internal sealed class UsageOverview : UserControl {
     void Arrange(){
         if(groups[10]==null)return;
         float s;using(var g=CreateGraphics())s=g.DpiX/96f;
-        AutoScrollMinSize=new Size(0,(int)Math.Ceiling(560*s));
-        canvas.Size=new Size(Math.Max(0,Width-SystemInformation.VerticalScrollBarWidth-4),(int)Math.Ceiling(560*s));
+        AutoScrollMinSize=new Size(0,(int)Math.Ceiling(536*s));
+        canvas.Size=new Size(Math.Max(0,Width-SystemInformation.VerticalScrollBarWidth-4),(int)Math.Ceiling(536*s));
         float w=canvas.Width/s,left=(w-36)*.465f,right=left+36,rw=w-right;
         Bounds(quotaTitle,0,0,left,24,s);Bounds(tokenTitle,right,0,rw,24,s);Bounds(scope,right,28,rw,22,s);
         int q=0;for(int i=0;i<2;i++)if(selected[i]){Bounds(groups[i],0,40+q*142,left,128,s);Bounds(names[i],0,0,left,22,s);Bounds(values[i],0,25,left,40,s);Bounds(charts[i],0,68,left,36,s);Bounds(captions[i],0,106,left,22,s);q++;}
@@ -54,7 +54,7 @@ internal sealed class UsageOverview : UserControl {
         Bounds(details,0,382,w,86,s);int count=0;for(int i=6;i<=8;i++)if(selected[i])count++;n=0;
         for(int i=6;i<=8;i++)if(selected[i]){float width=(w-40)/Math.Max(1,count);Bounds(groups[i],20+n++*width,12,width,62,s);Bounds(names[i],0,0,width,24,s);Bounds(values[i],0,30,width,28,s);captions[i].Visible=false;}
         Bounds(meta,0,482,w,42,s);float x=0;for(int i=9;i<=10;i++)if(selected[i]){Bounds(groups[i],x,8,210,28,s);Bounds(names[i],0,0,i==9?40:68,26,s);Bounds(values[i],i==9?44:72,0,138,26,s);captions[i].Visible=false;x+=210;}
-        Bounds(source,0,526,w,30,s);Bounds(empty,0,20,w,40,s);
+        Bounds(source,0,506,w,30,s);Bounds(empty,0,20,w,40,s);
         quotaTitle.Visible=selected[0]||selected[1];tokenTitle.Visible=scope.Visible=axis.Visible=selected[2]||selected[5];
         tail.Visible=selected[3]||selected[4];details.Visible=count>0;meta.Visible=selected[9]||selected[10];
         bool any=false;foreach(bool v in selected)any|=v;empty.Visible=!any;source.Visible=any;

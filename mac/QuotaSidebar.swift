@@ -578,7 +578,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             let f = footer.convert(footer.bounds, to: content), viewport = pageScroll.convert(pageScroll.bounds, to: content)
             require(content.bounds.contains(f) && viewport.minY >= f.maxY - 1, "Footer must stay visible outside scroll content")
         }
-        require(abs(pageDocument.bounds.width - pageScroll.contentView.bounds.width) < 2, "No horizontal scrolling")
+        require(abs(pageDocument.bounds.width - pageScroll.contentView.bounds.width) < 2, "No horizontal scrolling: document=\(pageDocument.bounds), viewport=\(pageScroll.contentView.bounds), body=\(body.frame)")
         require(pageDocument.bounds.height + 1 >= body.frame.maxY, "Document must include the entire page")
         func checkBounds(_ view: NSView) {
             guard !view.isHiddenOrHasHiddenAncestor else { return }

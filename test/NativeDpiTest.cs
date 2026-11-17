@@ -31,7 +31,7 @@ internal static class NativeDpiTest {
             Console.WriteLine("Actual window Graphics.DpiX="+dpi+"; no Control.Scale simulation");
             Console.WriteLine("Font="+window.Font+"; metric="+window.Controls.Find("metric3",true)[0].Font+"; autoscale="+window.AutoScaleDimensions+"; current="+window.CurrentAutoScaleDimensions);
             Assert(window.FormBorderStyle==FormBorderStyle.Sizable&&window.MaximizeBox,"Main window cannot resize/maximize");
-            foreach(var size in new[]{new Size(1040,740),new Size(1184,792)}){
+            foreach(var size in new[]{new Size(1040,740),new Size(1184,792),new Size(1440,1000)}){
                 window.ClientSize=size;Application.DoEvents();
                 Assert(window.ClientSize==size,"Requested physical viewport was not honored: "+window.ClientSize);
                 foreach(string page in new[]{"Usage overview","Sidebar content","Codex subscription record","Data and settings","Diagnostics","About project"}){
@@ -48,6 +48,7 @@ internal static class NativeDpiTest {
                             int width=save.Width;save.Text=Locale.T("Saved successfully");Check(window);Assert(save.Width==width,"Saved feedback changed button geometry");save.Text=Locale.T("Save");
                         }
                         var overview=window.Controls.Find("usageOverview",true)[0] as UsageOverview;if(page=="Usage overview"){if(overview.HorizontalScroll.Visible){Console.WriteLine("Overflow client="+overview.ClientSize+" display="+overview.DisplayRectangle);foreach(Control c in overview.Controls)Console.WriteLine(c.Name+" "+c.Bounds);}Assert(!overview.HorizontalScroll.Visible,"Overview has horizontal overflow");}
+                        if(page=="Usage overview"&&size.Width==1440)Assert(!overview.VerticalScroll.Visible,"Large overview should not require vertical scrolling");
                         using(var bitmap=new Bitmap(window.Width,window.Height)){using(var g=Graphics.FromImage(bitmap)){IntPtr dc=g.GetHdc();try{Assert(PrintWindow(window.Handle,dc,2),"Native window capture failed");}finally{g.ReleaseHdc(dc);}}bitmap.Save(Path.Combine(args[0],"dpi-"+dpi+"-"+size.Width+"-"+page.Replace(" ","-")+"-"+lang+".png"));}
                     }
                 }
