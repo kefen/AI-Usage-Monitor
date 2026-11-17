@@ -1,0 +1,29 @@
+{
+  "date": "2026-11-17",
+  "scope": "windows-only",
+  "windows": "0.13.4",
+  "unchanged": { "macos": "0.5.1-alpha.1", "chrome": "0.4.1" },
+  "sourceCommit": "a529f60483e38e3b71c4085bdf5ce6319f04a629",
+  "feedCommit": "43cdc1c3c3c1fbdf7e2c7350d51ecae9428f26fc",
+  "workflow": "https://github.com/kefen/codex-quota-sidebar/actions/runs/44071061013",
+  "candidateChecks": "https://github.com/kefen/codex-quota-sidebar/actions/runs/44071060827",
+  "release": "https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.13.4",
+  "verification": {
+    "sharedTests": 113,
+    "nativeExecutableTestGroups": 8,
+    "localActualDpi": 120,
+    "languages": ["en", "zh-CN", "zh-TW"],
+    "layouts": ["default screen-bounded window without scrolling", "900x1000 narrow physical viewport", "1040x740", "1184x792", "1440x1000", "tall narrow stacked sections"],
+    "installation": "Actual Setup extraction, 49 payload hashes, owned upgrades, shortcut migration, uninstall preservation, rollback and restart guards passed.",
+    "installedUpdater": "Actual CI package native assembly and bundled Node; spaced root ending in backslash. Current 0.13.4, release 0.13.4, available false.",
+    "oldVersionDownload": "Isolated 0.13.3-version fixture using the packaged updater detected 0.13.4; Chinese numbered notes; ready true; downloaded installer SHA256 matched.",
+    "feed": "Verified live pinned-key signature and package digest. Both Mac release entries and Chrome version exactly retained from the verified previous feed.",
+    "releaseAssets": "Downloaded all three public assets and matched their GitHub SHA256 digests and sizes."
+  },
+  "assets": [
+    { "name": "Codex-Quota-Sidebar-Windows-0.13.4-x64-Setup.exe", "size": 34889216, "sha256": "c176afd750a785ce5e0b25a21ef46dc05fe4317ab9a2e91c35ddbb847e9bc692" },
+    { "name": "Codex-Quota-Sidebar-source-windows-0.13.4-macos-0.5.1-alpha.1.zip", "size": 1137036, "sha256": "50c8c4bc830327bd45e5ade9726c3e2626df4a8e3c89f38cc07a6476736aa775" },
+    { "name": "SHA256SUMS-windows-v0.13.4.txt", "size": 247, "sha256": "b3353e7f00bb991d615bac63369db59ebe5a74a1424fcb17fe6aa6107cddff54" }
+  ],
+  "limitations": ["Windows installer remains unsigned; SmartScreen guidance retained.", "Exceptionally small viewports retain scrolling rather than hide data or shrink readable fonts.", "No Mac or Chrome artifact was rebuilt or published; historical Releases and tags retained.", "Old-version update test used an isolated version fixture, not a destructive live-app upgrade."]
+}

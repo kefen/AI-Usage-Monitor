@@ -197,5 +197,6 @@
   "docs/releases/notes-ui-fixes.json",
   ".github/workflows/publish-windows.yml",
   "docs/releases/accepted-windows-responsive.json",
-  "docs/releases/notes-windows-responsive.json"
+  "docs/releases/notes-windows-responsive.json",
+  "docs/releases/published-windows-responsive-20261117.json"
 ]
