@@ -188,5 +188,11 @@
   "docs/releases/notes-v3.json",
   ".github/workflows/publish-v3.yml",
   "docs/screenshots/display-choices.png",
-  "docs/screenshots/plan-and-dates.png"
+  "docs/screenshots/plan-and-dates.png",
+  "native/UpdateRunner.cs",
+  "test/UpdateRunnerTest.cs",
+  "test/NativeDpiTest.cs",
+  "test/plan-menu.test.mjs",
+  "docs/releases/accepted-ui-fixes.json",
+  "docs/releases/notes-ui-fixes.json"
 ]

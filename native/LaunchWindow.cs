@@ -6,6 +6,10 @@ using System.Windows.Forms;
 internal sealed class LaunchWindow : Form {
     readonly Label headline,subtitle,connection,quota,usage,lastSync;
     readonly Button retry,open;
+    readonly ProgressBar connecting;
+    Action<string> checkUpdate;
+    Button aboutUpdate;
+    bool updateAvailable;
     bool exiting;
     bool autoPlanAttempted;
     bool snapshotConnected;
@@ -34,40 +38,38 @@ internal sealed class LaunchWindow : Form {
     internal LaunchWindow(Action openCodex,Action reconnect,Action settings,Action stop){
         reconnectAction=reconnect;
         Text="Codex Quota Sidebar";MeterTheme.Style(this,1184,792);
+        Load+=(s,e)=>MinimumSize=new Size(900,640);
         body=MeterTheme.Body();Controls.Add(body);var header=MeterTheme.Header("","Windows");Controls.Add(header);
         var rail=new Panel{Dock=DockStyle.Left,Width=184,Padding=new Padding(12,22,12,16),BackColor=Color.FromArgb(245,247,250)};Controls.Add(rail);
         var nav=new FlowLayoutPanel{Dock=DockStyle.Top,Height=340,FlowDirection=FlowDirection.TopDown,WrapContents=false};rail.Controls.Add(nav);
-        var updates=MeterTheme.Button("checkUpdates","Check for updates",false);updates.Dock=DockStyle.Fill;updates.Height=36;var updateSlot=new Panel{Dock=DockStyle.Right,Width=148,Padding=new Padding(0,0,12,4)};updateSlot.Controls.Add(updates);header.Controls.Add(updateSlot);header.Controls.SetChildIndex(updateSlot,1);header.Controls.Find("brandCaption",true)[0].Parent.BringToFront();
+        var updates=MeterTheme.Button("installUpdate","",false);updates.AccessibleName=Locale.T("Update available");updates.Dock=DockStyle.Fill;MeterTheme.Glyph(updates,"\uE896");updates.Visible=false;var updateSlot=new Panel{Dock=DockStyle.Right,Width=48,Padding=new Padding(0,0,8,4),Visible=false};updateSlot.Controls.Add(updates);header.Controls.Add(updateSlot);header.Controls.SetChildIndex(updateSlot,1);header.Controls.Find("brandCaption",true)[0].Parent.BringToFront();
+        var updateTip=new ToolTip();updateTip.SetToolTip(updates,Locale.T("Update available"));Disposed+=(s,e)=>updateTip.Dispose();
         bool updating=false;Action<string> check=null;
         check=operation=>{
             if(updating)return;
             if(operation=="prepare"&&!ResolveEdits())return;
             if(operation=="prepare"){body.Enabled=false;rail.Enabled=false;}
-            updating=true;updates.Enabled=false;updates.Text=Locale.T(operation=="download"?"Downloading update...":"Checking for updates...");
+            updating=true;updates.Enabled=false;if(aboutUpdate!=null&&!aboutUpdate.IsDisposed){aboutUpdate.Enabled=false;aboutUpdate.Text=Locale.T(operation=="download"?"Downloading update...":"Checking for updates...");}
             System.Threading.Tasks.Task.Factory.StartNew(()=>{
-                string output="",failure=null;
-                try{
-                    var info=new System.Diagnostics.ProcessStartInfo(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"runtime","node.exe"),"\""+System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"src","update.mjs")+"\" "+operation+" \""+AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\')+"\" \""+AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\')+"\" "+System.Diagnostics.Process.GetCurrentProcess().Id){UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true};
-                    using(var p=System.Diagnostics.Process.Start(info)){var error=p.StandardError.ReadToEndAsync();var text=p.StandardOutput.ReadToEndAsync();if(!p.WaitForExit(180000)){p.Kill();throw new Exception("Update timed out");}output=text.Result;if(p.ExitCode!=0)throw new Exception("Update could not be verified or downloaded.");}
-                }catch(Exception e){failure=e.Message;}
+                var response=UpdateRunner.Run(AppDomain.CurrentDomain.BaseDirectory,operation);
                 if(IsDisposed)return;BeginInvoke((Action)(()=>{
-                    updating=false;updates.Enabled=true;body.Enabled=true;rail.Enabled=true;updates.Text=Locale.T("Check for updates");
-                    if(failure!=null){if(operation=="prepare"){ReadUpdateOutcome();MeterTheme.Error(UpdateOutcome??Locale.T("Update preparation failed. The meter is still running."));}else if(operation!="auto")MeterTheme.Error(Locale.T("Update check failed. Please try again later."));return;}
+                    updating=false;updates.Enabled=true;body.Enabled=true;rail.Enabled=true;if(aboutUpdate!=null&&!aboutUpdate.IsDisposed){aboutUpdate.Enabled=true;aboutUpdate.Text=Locale.T("Check for updates");}
+                    if(!response.Success){UpdateOutcome=Locale.T("Update check failed. Please try again later.")+" ("+response.Code+")";footerMessage.Text=UpdateOutcome;if(operation!="auto")MeterTheme.Error(UpdateOutcome);return;}
                     try{
-                        var result=new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<Dictionary<string,object>>(output);
+                        var result=response.Data;
                         if(operation=="prepare"){if(Prepared(result)){stop();return;}MeterTheme.Error(Locale.T("Update preparation failed. The meter is still running."));return;}
-                        if(!result.ContainsKey("available")||!Convert.ToBoolean(result["available"])){if(operation!="auto")MessageBox.Show(Locale.T("You are up to date."),Text);return;}
-                        updates.Text=Locale.T("Update available")+" "+result["version"];
+                        updateAvailable=(bool)result["available"];updateSlot.Visible=updates.Visible=updateAvailable;
+                        if(!updateAvailable){if(operation!="auto")MessageBox.Show(Locale.T("You are up to date."),Text);return;}
                         if(operation=="auto")return;
                         bool ready=result.ContainsKey("ready")&&Convert.ToBoolean(result["ready"]);
                         string prompt=Locale.T(ready?"Restart the companion to install the verified update? Codex stays open.":"Download this update in the background?");
-                        if(MessageBox.Show(prompt+"\n\n"+result["version"]+"\n"+result["notes"],Text,MessageBoxButtons.OKCancel,MessageBoxIcon.Information,MessageBoxDefaultButton.Button2)==DialogResult.OK)check(ready?"prepare":"download");
-                    }catch{MeterTheme.Error(Locale.T("Update check failed. Please try again later."));}
+                        if(MessageBox.Show(prompt+"\n\n"+result["version"]+"\n"+(result.ContainsKey("notes")?result["notes"]:""),Text,MessageBoxButtons.OKCancel,MessageBoxIcon.Information,MessageBoxDefaultButton.Button2)==DialogResult.OK)check(ready?"prepare":"download");
+                    }catch{if(operation!="auto")MeterTheme.Error(Locale.T("Update check failed. Please try again later.")+" (E_UPDATE_PRESENTATION)");}
                 }));
             });
         };
-        updates.Click+=(s,e)=>check("check");
-        var updateTimer=new System.Windows.Forms.Timer{Interval=86400000};updateTimer.Tick+=(s,e)=>check("auto");Disposed+=(s,e)=>updateTimer.Dispose();updateTimer.Start();
+        checkUpdate=check;updates.Click+=(s,e)=>check("download");
+        var updateTimer=new System.Windows.Forms.Timer{Interval=21600000};updateTimer.Tick+=(s,e)=>check("auto");Disposed+=(s,e)=>updateTimer.Dispose();updateTimer.Start();
         Shown+=(s,e)=>{if(System.IO.File.Exists(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"installation.json")))check("auto");};
         string[] glyphs={"\uE80F","\uE8A0","\uE77B","\uE713","\uE897","\uE946"};int navIndex=0;
         foreach(string label in new[]{"Usage overview","Sidebar content","Codex subscription record","Data and settings","Diagnostics","About project"}){
@@ -78,12 +80,14 @@ internal sealed class LaunchWindow : Form {
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));
         grid.RowStyles.Add(new RowStyle(SizeType.Absolute,58));grid.RowStyles.Add(new RowStyle(SizeType.Percent,100));overviewPage.Controls.Add(grid);
         headline=MeterTheme.Label("Usage overview",16.5f,MeterTheme.Ink);headline.Name="statusHeadline";headline.TextAlign=ContentAlignment.TopLeft;grid.Controls.Add(headline,0,0);
-        subtitle=MeterTheme.Label("Connecting",9,MeterTheme.Muted);subtitle.Name="statusDetail";subtitle.TextAlign=ContentAlignment.TopRight;grid.Controls.Add(subtitle,1,0);
+        var statusPanel=new Panel{Dock=DockStyle.Fill};grid.Controls.Add(statusPanel,1,0);
+        subtitle=MeterTheme.Label("Connecting",10,MeterTheme.Muted);subtitle.Name="statusDetail";subtitle.TextAlign=ContentAlignment.TopRight;statusPanel.Controls.Add(subtitle);
+        connecting=new ProgressBar{Name="connectionProgress",Dock=DockStyle.Bottom,Height=4,Minimum=0,Maximum=100,Value=35,Style=MeterTheme.AnimationEnabled?ProgressBarStyle.Marquee:ProgressBarStyle.Continuous,MarqueeAnimationSpeed=35};statusPanel.Controls.Add(connecting);connecting.BringToFront();
         overview=new UsageOverview();overview.Margin=new Padding(0);grid.Controls.Add(overview,0,1);grid.SetColumnSpan(overview,2);
         connection=new Label();quota=new Label();usage=new Label();
         lastSync=MeterTheme.Label("--",9,MeterTheme.Muted);
         var footer=MeterTheme.Footer();Controls.Add(footer);body.BringToFront();Controls.SetChildIndex(header,Controls.Count-1);
-        open=MeterTheme.Button("openCodex","Open Codex",true);open.Width=130;open.Enabled=false;MeterTheme.Glyph(open,"\uE8A7");open.Click+=(s,e)=>openCodex();
+        open=MeterTheme.Button("openCodex","Open Codex",true);open.Width=150;open.Enabled=true;MeterTheme.Glyph(open,"\uE8A7");open.Click+=(s,e)=>openCodex();
         retry=MeterTheme.Button("reconnect","Reconnect",false);retry.Width=132;retry.Enabled=false;MeterTheme.Glyph(retry,"\uE72C");retry.Click+=(s,e)=>reconnect();
         footer.Controls.Add(open);footer.Controls.Add(retry);
         var exit=MeterTheme.Button("exitSoftware","Exit software",false);exit.Width=140;exit.FlatAppearance.BorderSize=0;MeterTheme.Glyph(exit,"\uE7E8");exit.Click+=(s,e)=>{if(!ResolveEdits())return;if(MessageBox.Show(Locale.T("Quit the meter? Codex stays open."),Text,MessageBoxButtons.OKCancel,MessageBoxIcon.Question,MessageBoxDefaultButton.Button2)==DialogResult.OK)stop();};footer.Controls.Add(exit);
@@ -123,10 +127,10 @@ internal sealed class LaunchWindow : Form {
         currentPage=key;
         overviewPage.Visible=key=="Usage overview";
         foreach(var pair in navigation){pair.Key.BackColor=pair.Value==key?Color.FromArgb(231,238,252):Color.FromArgb(245,247,250);pair.Key.ForeColor=pair.Value==key?MeterTheme.Green:MeterTheme.Muted;}
-        if(key=="Usage overview"){overview.ReadSnapshot(snapshotConnected);overviewPage.BringToFront();return;}
+        if(key=="Usage overview"){overview.ReadSnapshot(snapshotConnected);overview.AutoScrollPosition=Point.Empty;overviewPage.BringToFront();return;}
         transient=new Panel{Dock=DockStyle.Fill,AutoScroll=false};body.Controls.Add(transient);transient.BringToFront();
         var title=MeterTheme.Label(key=="Codex subscription record"?"Plan and dates":key=="Sidebar content"?"Display content":key,16.5f,MeterTheme.Ink);title.Dock=DockStyle.Top;title.Height=50;transient.Controls.Add(title);
-        var content=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false,AutoScroll=false};transient.Controls.Add(content);content.BringToFront();
+        var content=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false,AutoScroll=true};transient.Controls.Add(content);content.BringToFront();
         Action<string> text=value=>{var p=MeterTheme.Label(value,10,MeterTheme.Muted);p.Dock=DockStyle.None;int width=Math.Max(400,body.ClientSize.Width-60);p.AutoSize=true;p.MinimumSize=new Size(width,24);p.MaximumSize=new Size(width,0);p.Margin=new Padding(0,0,0,8);content.Controls.Add(p);};
         Action<string,Action> command=(label,action)=>{var b=MeterTheme.Button(label,label,false);b.Width=260;b.Margin=new Padding(0,2,0,20);b.Click+=(s,e)=>action();content.Controls.Add(b);};
         Action<string,string,Action> settingRow=(label,description,action)=>{
@@ -134,6 +138,7 @@ internal sealed class LaunchWindow : Form {
             var heading=MeterTheme.Label(label,11,MeterTheme.Ink);heading.Dock=DockStyle.None;heading.SetBounds(0,16,width-220,28);row.Controls.Add(heading);
             var caption=MeterTheme.Label(description,9.75f,MeterTheme.Muted);caption.Dock=DockStyle.None;caption.SetBounds(0,48,width-220,46);row.Controls.Add(caption);
             var button=MeterTheme.Button(label,label,false);button.SetBounds(width-200,30,200,38);button.Click+=(s,e)=>action();row.Controls.Add(button);
+            row.SizeChanged+=(s,e)=>{heading.Width=caption.Width=Math.Max(0,row.Width-220);button.Left=Math.Max(0,row.Width-200);};
             row.Paint+=(s,e)=>{using(var pen=new Pen(MeterTheme.Line))e.Graphics.DrawLine(pen,0,row.Height-1,row.Width,row.Height-1);};content.Controls.Add(row);
         };
         if(key=="Codex subscription record"){
@@ -159,11 +164,13 @@ internal sealed class LaunchWindow : Form {
             text("3. Review the file, describe how to reproduce the problem, then attach it to a GitHub issue. Hide personal information in screenshots.");command("Submit feedback on GitHub",()=>System.Diagnostics.Process.Start(Locale.Repository+"/issues/new"));
             text("No automatic uploads. You choose what to submit. A GitHub account is required to post an issue.");
         }else if(key=="About project"){
+            aboutUpdate=MeterTheme.Button("checkUpdates","Check for updates",false);aboutUpdate.Width=240;aboutUpdate.Click+=(s,e)=>checkUpdate("check");content.Controls.Add(aboutUpdate);
             text("Codex Quota Sidebar by KEFEN");text("Local, read-only quota and Token indicators in the Codex sidebar. Choose the metrics you need; official controls always have priority.");
             var divider=new Panel{Width=Math.Max(400,body.ClientSize.Width-60),Height=1,BackColor=MeterTheme.Line,Margin=new Padding(0,6,0,14)};content.Controls.Add(divider);
             text("Author: KEFEN / License: MIT");text("Unofficial software. Not affiliated with or endorsed by OpenAI.");text("Uses the local CLI account. Token activity is not an API bill.");command("Visit GitHub project",()=>System.Diagnostics.Process.Start(Locale.Repository));
         }
-        Locale.Apply(transient);
+        bool sizing=false;Action fit=()=>{if(sizing||content.IsDisposed)return;sizing=true;try{int width=Math.Max(0,content.ClientSize.Width-SystemInformation.VerticalScrollBarWidth-4);foreach(Control child in content.Controls){var label=child as Label;if(label!=null){label.MinimumSize=new Size(width,24);label.MaximumSize=new Size(width,0);}else if(child is Panel)child.Width=width;}}finally{sizing=false;}};
+        content.SizeChanged+=(s,e)=>fit();fit();content.PerformLayout();Locale.Apply(transient);
     }
     static Label Row(TableLayoutPanel grid,int row,string key){grid.Controls.Add(MeterTheme.Label(key,10,MeterTheme.Muted),0,row);var value=MeterTheme.Label("--",10,MeterTheme.Ink);value.Name="statusRow"+row;grid.Controls.Add(value,1,row);return value;}
     internal void Present(){Show();WindowState=FormWindowState.Normal;Activate();}
@@ -185,7 +192,7 @@ internal sealed class LaunchWindow : Form {
         quota.Text=Available(data,"quotaAvailable");usage.Text=Available(data,"usageAvailable");
         DateTime stamp;lastSync.Text=Locale.T("Last checked")+": "+(data.ContainsKey("updatedAt")&&DateTime.TryParse(Convert.ToString(data["updatedAt"]),out stamp)?stamp.ToLocalTime().ToString("MM/dd HH:mm"):"--");
         if(failed&&data.ContainsKey("code"))subtitle.Text=Convert.ToString(data["code"]);
-        open.Enabled=mounted||failed||stage=="sidebar-missing";retry.Enabled=mounted||failed||stage=="sidebar-missing";
+        connecting.Visible=!mounted&&!failed;open.Enabled=true;retry.Enabled=mounted||failed||stage=="sidebar-missing";
         retry.BackColor=MeterTheme.Surface;retry.ForeColor=MeterTheme.Ink;
         open.BackColor=MeterTheme.Green;open.ForeColor=Color.White;
         AcceptButton=failed?retry:open;

@@ -3,15 +3,15 @@ import {createHash} from 'node:crypto';
 const repo='kefen/codex-quota-sidebar';
 const token=process.env.GITHUB_TOKEN,commit=process.env.GITHUB_SHA;
 if(!token||process.env.GITHUB_REPOSITORY!==repo||process.env.GITHUB_REF!=='refs/heads/main'||!/^[a-f0-9]{40}$/.test(commit||''))throw Error('Expected authorized main-branch workflow');
-const accepted=JSON.parse(await readFile('docs/releases/accepted-v3.json','utf8'));
+const accepted=JSON.parse(await readFile('docs/releases/accepted-ui-fixes.json','utf8'));
 const versions=JSON.parse(await readFile('versions.json','utf8'));
 const chrome=JSON.parse(await readFile('browser/manifest.json','utf8')).version;
-if(accepted.windows!=='0.13.0'||accepted.macos!=='0.5.0-alpha.1'||accepted.chrome!=='0.4.0'||accepted.uiApproved!==true||accepted.publicReleaseAuthorized!==true||accepted.verificationRequired!==true)throw Error('Not the authorized release set');
+if(accepted.windows!=='0.13.1'||accepted.macos!=='0.5.1-alpha.1'||accepted.chrome!=='0.4.1'||accepted.publicReleaseAuthorized!==true||accepted.verificationRequired!==true)throw Error('Not the authorized release set');
 if(versions.windows!==accepted.windows||versions.macos!==accepted.macos||chrome!==accepted.chrome)throw Error('Version mismatch');
 const source='Codex-Quota-Sidebar-source-windows-'+versions.windows+'-macos-'+versions.macos+'.zip';
 const macSource='Codex-Quota-Sidebar-macOS-'+versions.macos+'-source.zip';
 await writeFile('dist/'+macSource,await readFile('dist/'+source));
-const common='Approved V3 client design: native linear quota and Token comparisons, all eleven shared display choices, low-emphasis plan/date metadata, localized numbered update notes and header language controls. Existing dates, language and choices are backed up and preserved during upgrades. Best-effort plan-family detection reads only supported desktop metadata; unavailable data stays unknown, and manual corrections are protected until explicit detection. The current live client may not expose supported plan metadata. No price tier or purchase date is guessed. Three languages retained. Windows remains unsigned. Mac remains ad-hoc signed and unnotarized. Read the security and upgrade guide before installing; never disable system protections.';
+const common='Native readability and resizing fixes: complete localized actions, clearer text and DPI-aware icons, connection feedback and protected settings. Desktop manual update checks are in About; a header notice appears only for a verified newer release. Startup and periodic checks are polling, not a real-time push service. Valid up-to-date results remain distinct from network and verification failures. Plan detection can briefly open the official usage menu to read a strict quota-source label, then restore the menu it opened. Manual corrections, specific tiers and dates stay protected; unsupported labels remain unknown. Mac adds native calendar selection and immediate month/year renewal estimates. All eleven choices and three languages retained. Windows remains unsigned. Mac remains ad-hoc signed and unnotarized. Never disable system protections.';
 const sets=[
  {tag:'windows/v'+versions.windows,title:'Windows '+versions.windows+' / KEFEN',prerelease:false,files:['Codex-Quota-Sidebar-Windows-'+versions.windows+'-x64-Setup.exe',source],note:common+' Windows 10/11 x64. Unsigned installer; upgrade in the same folder to preserve settings. This is a follow-up to the user-accepted Windows baseline.'},
  {tag:'chrome/v'+chrome,title:'Chrome '+chrome+' / KEFEN',prerelease:true,files:['Codex-Quota-Sidebar-Chrome-'+chrome+'.zip'],note:common+' Experimental MV3 companion, not a Web Store listing. Requires the desktop monitor and exact extension-ID native-host registration. Real-profile acceptance pending.'},
@@ -23,7 +23,7 @@ async function request(path,method='GET',data){
  if(!response.ok)throw Error('GitHub API '+response.status+' '+method+' '+path);
  return response.status===204?null:response.json();
 }
-const notes=JSON.parse(await readFile('docs/releases/notes-v3.json','utf8'));
+const notes=JSON.parse(await readFile('docs/releases/notes-ui-fixes.json','utf8'));
 const localizedNotes=Object.entries({'English':'en','简体中文':'zh-CN','繁體中文':'zh-TW'}).map(([heading,locale])=>'## '+heading+'\n'+notes[locale].map((line,i)=>(i+1)+'. '+line).join('\n')).join('\n\n');
 const published=[];
 for(const set of sets){

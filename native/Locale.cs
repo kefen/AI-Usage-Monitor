@@ -24,12 +24,23 @@ internal static class Locale {
         if(String.IsNullOrEmpty(text))return text;
         if(text.Trim()!=text)return text.Substring(0,text.Length-text.TrimStart().Length)+T(text.Trim())+text.Substring(text.TrimEnd().Length);
         string key=text;string[] values;
-        if(!Catalog.TryGetValue(key,out values)){foreach(var pair in Catalog)if(pair.Value.Contains(text)){key=pair.Key;values=pair.Value;break;}}
+        if(!Catalog.TryGetValue(key,out values)){
+            // These overview labels share translations with legacy catalog aliases.
+            foreach(string preferred in new[]{"Credits","Quota remaining"}){
+                string[] aliases;if(Catalog.TryGetValue(preferred,out aliases)&&aliases.Contains(text)){key=preferred;values=aliases;break;}
+            }
+            if(values==null)foreach(var pair in Catalog)if(pair.Value.Contains(text)){key=pair.Key;values=pair.Value;break;}
+        }
         if(values!=null)return Language=="en"?key:values[Language=="zh-TW"?1:0];
         if(text.Contains(" / "))return String.Join(" / ",text.Split(new[]{" / "},StringSplitOptions.None).Select(T));
         if(text.Contains("\n"))return String.Join("\n",text.Split('\n').Select(T));
+        foreach(string label in new[]{"Remaining","Used"})foreach(string prefix in Translations(label))if(text.StartsWith(prefix+" ",StringComparison.Ordinal)){
+            string number=text.Substring(prefix.Length+1);
+            if(System.Text.RegularExpressions.Regex.IsMatch(number,@"^\d+(\.\d+)?%$"))return T(label)+" "+number;
+        }
         return text;
     }
+    internal static IEnumerable<string> Translations(string key){yield return key;string[] values;if(Catalog.TryGetValue(key,out values))foreach(string value in values)yield return value;}
     internal static void Apply(Control control){
         depth++;try{
         if(control is DateTimePicker)return;

@@ -47,6 +47,70 @@ export function planExpression() {
   return rendererExpression(`return (${accountPlan.toString()})();`,{});
 }
 
+export function usagePlanFromLabel(value) {
+  if(typeof value!=='string'||value.length>120)return null;
+  const text=value.replace(/\s+/g,' ').trim();
+  const match=/^(?:额度来源|額度來源)\s*[:：]\s*(?:你的|您的)\s*(free|go|plus|pro|business|enterprise|edu)\s*(?:套餐|方案)$/i.exec(text)||/^(?:quota source|rate limit source|usage source)\s*:\s*(?:your\s+)?(?:chatgpt\s+)?(free|go|plus|pro|business|enterprise|edu)\s+plan$/i.exec(text);
+  return match?match[1].toLowerCase():null;
+}
+
+function usageProbe(action,token,parse) {
+  const result={trusted:true};
+  const rails=document.querySelectorAll('aside.app-shell-left-panel [data-app-navigation-rail], aside[data-testid="app-shell-floating-left-panel"] [data-app-navigation-rail]');
+  if(rails.length!==1)return result;
+  const buttons=[...rails[0].querySelectorAll('button[aria-haspopup="menu"]')].filter(b=>/^(?:(?:view|查看)\s*)?(?:codex\s*)?(?:usage|usage limits|用量|使用量|用量概览|用量概覽|额度|額度)$/i.test(b.getAttribute('aria-label')||'')&&!b.closest('#local-codex-sidebar-meter'));
+  const visibleMenus=()=>[...document.querySelectorAll('[role="menu"], [role="dialog"]')].filter(n=>n.getClientRects().length>0);
+  const key='__cqsUsagePlanProbe';
+  if(action==='open') {
+    if(buttons.length!==1||window[key])return {...result,opened:false};
+    const button=buttons[0],expanded=button.getAttribute('aria-expanded')==='true';
+    if(!expanded&&visibleMenus().length)return {...result,opened:false};
+    const context={token,button,openedHere:!expanded,focus:document.activeElement};window[key]=context;
+    if(!expanded)button.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,button:0,pointerType:'mouse',isPrimary:true}));
+    return {...result,opened:true};
+  }
+  const context=window[key];if(!context||context.token!==token)return result;
+  if(action==='close') {
+    try {
+      if(context.openedHere&&context.button.isConnected&&context.button.getAttribute('aria-expanded')==='true') {
+        const focused=document.activeElement,restore=focused===context.button||visibleMenus().some(n=>n.contains(focused));
+        context.button.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,button:0,pointerType:'mouse',isPrimary:true}));
+        if(restore&&context.focus?.isConnected)context.focus.focus({preventScroll:true});
+      }
+    }finally{delete window[key];}
+    return result;
+  }
+  if(action!=='read'||!context.button.isConnected||context.button.getAttribute('aria-expanded')!=='true')return result;
+  const controls=context.button.getAttribute('aria-controls');
+  const menus=visibleMenus().filter(n=>n.getAttribute('role')==='menu'&&(!controls||n.id===controls));
+  if(menus.length!==1)return result;
+  const nodes=[...menus[0].querySelectorAll('*')];if(nodes.length>400)return result;
+  const plans=new Set();
+  for(const node of nodes) {
+    if(node.childElementCount||node.closest('[role="menuitem"],button,#local-codex-sidebar-meter'))continue;
+    const plan=parse(node.textContent);if(plan)plans.add(plan);
+  }
+  return plans.size===1?{...result,plan:[...plans][0]}:result;
+}
+
+export function usagePlanExpression(action,token) {
+  if(!['open','read','close'].includes(action)||!/^[a-f0-9-]{36}$/.test(token))throw Error('E_USAGE');
+  return rendererExpression(`return (${usageProbe.toString()})(${JSON.stringify(action)},${JSON.stringify(token)},(${usagePlanFromLabel.toString()}));`,{});
+}
+export async function readUsagePlan(target,port,api={}) {
+  const token=randomUUID(),run=action=>(api.evaluate||evaluate)(target,port,usagePlanExpression(action,token),1500);
+  let opened=false;
+  try {
+    const start=await run('open');opened=start?.trusted===true&&start.opened===true;
+    if(!opened)return null;
+    for(let i=0;i<3;i++) {
+      await (api.sleep||((ms)=>new Promise(r=>setTimeout(r,ms))))(180);
+      const result=await run('read');if(result?.trusted===true&&families.has(result.plan))return result.plan;
+    }
+  }catch{}finally{try{await run('close');}catch{}}
+  return null;
+}
+
 function readRecord(path, optional=false) {
   let fd;
   try {
@@ -114,7 +178,7 @@ export async function runPlan(command, root, api={}) {
       if(!Number.isInteger(port)||port<1024||port>65535)fail('E_DESKTOP_UNAVAILABLE');
       const targets=await (api.listTargets||listTargets)(port);
       if(!Array.isArray(targets)||targets.length>64)fail('E_DESKTOP_UNAVAILABLE');
-      const found=new Set();let unknown=false;
+      const found=new Set(),trusted=[];let unknown=false;
       for(const target of targets) {
         if(!validateTarget(target,port))continue;
         // HTTPS, CLI views and fixture file frames are not desktop main pages.
@@ -122,10 +186,15 @@ export async function runPlan(command, root, api={}) {
         const result=await (api.evaluate||evaluate)(target,port,planExpression());
         if(result?.trusted!==true)continue;
         queried=true;
+        trusted.push(target);
         if(families.has(result.plan))found.add(result.plan);else unknown=true;
       }
       if(!unknown&&found.size===1)plan=[...found][0];
-    } catch {fail('E_DESKTOP_UNAVAILABLE');}
+      if(!plan&&found.size===0&&trusted.length===1) {
+        if(readRecord(path,true).raw!==before.raw)fail('E_CONFIG_CHANGED');
+        plan=await readUsagePlan(trusted[0],port,api);
+      }
+    } catch(error) {if(error.message==='E_CONFIG_CHANGED')throw error;fail('E_DESKTOP_UNAVAILABLE');}
     if(!queried)fail('E_DESKTOP_UNAVAILABLE');
     // Startup transport failures must not consume auto. Commit only after a
     // trusted renderer responds (even unknown), with the membership lock held.

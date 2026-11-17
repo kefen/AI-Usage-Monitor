@@ -1,0 +1,17 @@
+{
+  "en": [
+    "Clearer native text and icons, complete localized action labels, resizable Windows and Mac layouts.",
+    "Check for updates in About; show a header notice only for a verified new version. Distinguish latest, network and verification failures.",
+    "Read the official usage-source plan label while protecting manual changes; add Mac native calendars and immediate renewal estimates."
+  ],
+  "zh-CN": [
+    "改善字体和图标清晰度，补全中英文按钮文字，支持 Win 与 Mac 调整窗口大小。",
+    "检查更新移至关于项目，仅发现新版时显示顶部提醒，区分已是最新、网络失败及校验失败。",
+    "从官方用量来源识别套餐并保护手动修改；Mac 增加原生日期选择与即时续费推算。"
+  ],
+  "zh-TW": [
+    "改善字體和圖示清晰度，完整顯示中英文按鈕文字，支援 Win 與 Mac 調整視窗大小。",
+    "檢查更新移至關於專案，僅發現新版時顯示頂部提醒，區分已是最新、網路失敗及驗證失敗。",
+    "從官方用量來源辨識方案並保護手動修改；Mac 加入原生日期選擇與即時續費推算。"
+  ]
+}

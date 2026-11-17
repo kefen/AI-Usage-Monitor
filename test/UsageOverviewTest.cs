@@ -5,6 +5,16 @@ internal static class UsageOverviewTest {
     [STAThread] static int Main(){
         foreach(string language in new[]{"en","zh-CN","zh-TW"}){Locale.Set(language);if(Locale.T("Language")=="")throw new Exception("Language missing");}
         Locale.Set("en");
+        foreach(string canonical in new[]{"Credits","Quota remaining"}){
+            using(var label=new Label{Text=canonical}){
+                foreach(string language in new[]{"en","zh-CN","zh-TW","en"}){Locale.Set(language);Locale.Apply(label);}
+                if(label.Text!=canonical)throw new Exception("Language cycle changed canonical label: "+canonical+" -> "+label.Text);
+            }
+        }
+        foreach(string language in new[]{"zh-CN","zh-TW"}){
+            Locale.Set(language);string caption=Locale.T("Remaining 62% / Used 38%");Locale.Set("en");
+            if(Locale.T(caption)!="Remaining 62% / Used 38%")throw new Exception("Dynamic quota caption retained previous language");
+        }
         using(var view=new UsageOverview()){
             double now=10000000;
             var data=new Dictionary<string,object>{{"generatedAt",now},{"quotaAt",now},{"usageAt",now},{"monthAverage",0},{"week",1200000},{"lifetime",0},{"daily",new Dictionary<string,object>{{"date","2026-11-14"},{"value",0}}},{"windows",new[]{new Dictionary<string,object>{{"minutes",300},{"remaining",75}}}}};
@@ -27,6 +37,16 @@ internal static class UsageOverviewTest {
             if(view.Controls.Find("metric9",true)[0].Text!="Pro"||view.Controls.Find("metric10",true)[0].Text!="2026-12-13")throw new Exception("Subscription metadata missing");
             data["creditBalance"]="invalid";data["resetCredits"]=-1;view.UpdateSnapshot(data,true,now);
             if(view.Controls.Find("metric8",true)[0].Text!="--"||view.Controls.Find("metric7",true)[0].Text!="--")throw new Exception("Invalid quota values fabricated");
+            data["creditBalance"]="162.811999999";
+            data["windows"]=new[]{new Dictionary<string,object>{{"minutes",300},{"remaining",75},{"resetsAt",1794916800d}}};
+            view.UpdateSnapshot(data,true,now);
+            if(view.Controls.Find("metric8",true)[0].Text!="162")throw new Exception("Credits must be floored to whole credits");
+            string reset=view.Controls.Find("metric6",true)[0].Text;
+            string expected=new DateTime(1970,1,1,0,0,0,DateTimeKind.Utc).AddSeconds(1794916800d).ToLocalTime().ToString("MM/dd HH:mm");
+            if(reset!=expected)throw new Exception("Epoch seconds interpreted as milliseconds: "+reset);
+            data["windows"]=new[]{new Dictionary<string,object>{{"minutes",300},{"remaining",75},{"resetsAt",1794916800000d}}};
+            view.UpdateSnapshot(data,true,now);
+            if(view.Controls.Find("metric6",true)[0].Text!=expected)throw new Exception("Millisecond reset compatibility lost");
             view.UpdateSnapshot(data,true,now+90001);
             if(view.Controls.Find("metric0",true)[0].Text!="--")throw new Exception("Stale data leaked");
             if(view.Controls.Find("metricCaption0",true)[0].Text!=Locale.T("Data expired"))throw new Exception("Expired state must be explicit");

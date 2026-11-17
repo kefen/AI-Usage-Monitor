@@ -45,7 +45,7 @@ internal static class NativeVisualTest {
                 Locale.Set(language);
                 double now=(DateTime.UtcNow-new DateTime(1970,1,1)).TotalMilliseconds;
                 window.UpdateState("mounted",new Dictionary<string,object>{{"quotaAvailable",true},{"usageAvailable",true},{"updatedAt",DateTime.UtcNow.ToString("o")}});
-                var metrics=(UsageOverview)window.Controls.Find("metric0",true)[0].Parent.Parent;
+                var metrics=(UsageOverview)window.Controls.Find("usageOverview",true)[0];
                 metrics.UpdateSnapshot(new Dictionary<string,object>{{"generatedAt",now},{"quotaAt",now},{"usageAt",now},{"creditBalance","162"},{"resetCredits",3},{"planBadge","Pro 100"},{"renewalDate","2026-12-13"},{"monthAverage",125350000},{"week",96900000},{"lifetime",3010000000d},{"daily",new Dictionary<string,object>{{"date",DateTime.Now.Date.AddDays(-1).ToString("yyyy-MM-dd")},{"value",202650000}}},{"windows",new[]{new Dictionary<string,object>{{"minutes",300},{"remaining",62},{"resetsAt",now+86400000}},new Dictionary<string,object>{{"minutes",10080},{"remaining",37}}}}},true,now);
                 Capture(window,"overview-"+language);
                 metrics.UpdateSnapshot(new Dictionary<string,object>{{"generatedAt",now},{"quotaAt",now},{"usageAt",now},{"monthAverage",0},{"lifetime",3010000000d},{"daily",new Dictionary<string,object>{{"date",DateTime.Now.Date.AddDays(-1).ToString("yyyy-MM-dd")},{"value",0}}},{"windows",new[]{new Dictionary<string,object>{{"minutes",10080},{"remaining",37}}}}},true,now);

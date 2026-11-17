@@ -7,7 +7,16 @@ import {fileURLToPath} from 'node:url';
 import {backupSettings,verifySettings,restoreSettings,localizedNotes,canonicalEntry,transactionState,waitForRecord} from './update-transaction.mjs';
 const feedURL='https://raw.githubusercontent.com/kefen/codex-quota-sidebar/main/docs/updates/latest.json';
 export const wholeCredits=value=>typeof value==='string'&&/^\d+(\.\d+)?$/.test(value)&&Number.isSafeInteger(Math.floor(Number(value)))?String(Math.floor(Number(value))):'--';
-export const reusableCheck=(state,current,language,now=Date.now())=>state.current===current&&state.language===language&&Number.isFinite(state.checkedAt)&&state.checkedAt<=now&&now-state.checkedAt<86400000;
+export const reusableCheck=(state,current,language,now=Date.now())=>state.current===current&&state.language===language&&Number.isFinite(state.checkedAt)&&state.checkedAt<=now&&now-state.checkedAt<21600000;
+export function updateError(error) {
+ const message=String(error?.message||'');
+ const code=/^E_UPDATE_[A-Z_]+$/.test(message)?message:
+  /signature/i.test(message)?'E_UPDATE_SIGNATURE':
+  /checksum/i.test(message)?'E_UPDATE_CHECKSUM':
+  /fetch|network|timed?\s*out|abort/i.test(message)?'E_UPDATE_NETWORK':
+  ['ENOENT','EACCES','EPERM'].includes(error?.code)?'E_UPDATE_CONFIGURATION':'E_UPDATE_METADATA';
+ return {error:code};
+}
 export function newer(a,b){
  const parse=v=>{const m=/^(\d+)\.(\d+)\.(\d+)(?:-(alpha|beta)\.(\d+))?$/.exec(v);if(!m)throw Error('Invalid version');return [+m[1],+m[2],+m[3],m[4]==='alpha'?0:m[4]==='beta'?1:2,+(m[5]||0)];};
  const x=parse(a),y=parse(b);for(let i=0;i<x.length;i++)if(x[i]!==y[i])return x[i]>y[i];return false;
@@ -21,16 +30,24 @@ export function verifyFeed(envelope,key,now=Date.now()){
  const bytes=Buffer.from(envelope.payload,'base64');if(!verify(null,bytes,key,Buffer.from(envelope.signature,'base64')))throw Error('Update signature rejected');
  const data=JSON.parse(bytes);if(data.schema!==1||!Number.isSafeInteger(data.expiresAt)||data.expiresAt<now||!data.releases)throw Error('Update feed expired or invalid');return data;
 }
-async function bytes(url,limit,asset=false){
+export async function updateBytes(url,limit,asset=false,fetcher=fetch,delay=ms=>new Promise(r=>setTimeout(r,ms))){
  let current=url;
  for(let i=0;i<6;i++){
   const u=new URL(current);if(u.protocol!=='https:'||!(u.hostname==='raw.githubusercontent.com'||asset&&['github.com','release-assets.githubusercontent.com','objects.githubusercontent.com'].includes(u.hostname)))throw Error('Untrusted redirect');
-  const r=await fetch(current,{redirect:'manual',signal:AbortSignal.timeout(120000),headers:{'User-Agent':'Codex-Quota-Sidebar-Updater'}});
+  let r;
+  for(let attempt=0;attempt<(asset?1:2);attempt++){
+   try{
+    r=await fetcher(current,{redirect:'manual',signal:AbortSignal.timeout(asset?120000:8000),headers:{'User-Agent':'Codex-Quota-Sidebar-Updater'}});
+    if(r.status===429||r.status>=500)throw Error('E_UPDATE_NETWORK');
+    break;
+   }catch{if(asset||attempt===1)throw Error('E_UPDATE_NETWORK');await delay(250);}
+  }
   if([301,302,303,307,308].includes(r.status)){current=new URL(r.headers.get('location'),current).href;continue;}
   if(!r.ok)throw Error('Update network error '+r.status);if(Number(r.headers.get('content-length'))>limit)throw Error('Update too large');
   const chunks=[];let size=0;for await(const c of r.body){size+=c.length;if(size>limit)throw Error('Update too large');chunks.push(c);}return Buffer.concat(chunks);
  }throw Error('Too many redirects');
 }
+const bytes=updateBytes;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const run=(file,args)=>{const r=spawnSync(file,args,{windowsHide:true,timeout:180000,encoding:'utf8'});if(r.error||r.status!==0)throw Error('Update operation failed: '+basename(file));return r.stdout;};
 async function noLinks(path){for(let p=resolve(path);;p=dirname(p)){if((await lstat(p)).isSymbolicLink())throw Error('Linked update paths are not supported');if(dirname(p)===p)break;}}
@@ -136,4 +153,8 @@ async function main(){
  }
  await writeFile(statePath,JSON.stringify(state));console.log(JSON.stringify(state));
 }
-if(canonicalEntry(process.argv[1],import.meta.url))main().catch(e=>{console.log(JSON.stringify({error:e.message}));process.exitCode=1;});
+if(canonicalEntry(process.argv[1],import.meta.url))main().catch(async e=>{
+ const result=updateError(e);
+ try{if(process.argv[2]!=='apply'){const folder=join(await realpath(resolve(process.argv[3])),'.runtime','updates');await noLinks(folder);await transactionState(join(folder,'last-error.json'),'check-failed',{code:result.error});}}catch{}
+ console.log(JSON.stringify(result));process.exitCode=1;
+});

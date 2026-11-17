@@ -9,7 +9,7 @@ using System.Windows.Forms;
 internal static class LocalDiagnostics {
     internal static string Snapshot(string root){
         var report=new Dictionary<string,object>{{"tool","Codex Quota Sidebar by KEFEN"},{"version",MeterTheme.Version},{"exportedAt",DateTime.UtcNow.ToString("o")},{"osVersion",Environment.OSVersion.Version.ToString()}};
-        foreach(string file in new[]{"status.json","background.json","updates/transaction.json"}){
+        foreach(string file in new[]{"status.json","background.json","updates/transaction.json","updates/native-diagnostic.json","updates/last-error.json"}){
             var safe=new Dictionary<string,object>();
             try{
                 string path=Path.Combine(root,file);

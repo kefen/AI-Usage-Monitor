@@ -7,6 +7,16 @@ using System.Text;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 
+internal sealed class BlankDatePicker : DateTimePicker {
+    bool known;
+    internal BlankDatePicker(){ShowCheckBox=false;Format=DateTimePickerFormat.Custom;CustomFormat=" ";}
+    public new bool Checked {get{return known;}set{known=value;CustomFormat=value?"yyyy-MM-dd":" ";}}
+    internal void Clear(){Checked=false;base.OnValueChanged(EventArgs.Empty);}
+    protected override void OnValueChanged(EventArgs e){Checked=true;base.OnValueChanged(e);}
+    protected override void OnCloseUp(EventArgs e){Checked=true;base.OnValueChanged(EventArgs.Empty);base.OnCloseUp(e);}
+    protected override void OnKeyDown(KeyEventArgs e){if(e.KeyCode==Keys.Delete||e.KeyCode==Keys.Back){Clear();e.Handled=true;}else base.OnKeyDown(e);}
+}
+
 internal static class MeterPreferences {
     static readonly JavaScriptSerializer Json=new JavaScriptSerializer();
     internal static Dictionary<string,object> Read(string path){try{return Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(path,Encoding.UTF8));}catch{return new Dictionary<string,object>();}}
@@ -47,16 +57,19 @@ internal static class MeterPreferences {
             default:return Locale.T("Desktop detection unavailable. Connect Codex and try again.");
         }
     }
-    static DateTimePicker DateInput(string name,string saved){
+    static BlankDatePicker DateInput(string name,string saved){
         DateTime date;bool known=DateTime.TryParseExact(saved,"yyyy-MM-dd",CultureInfo.InvariantCulture,DateTimeStyles.None,out date);
-        var input=new DateTimePicker{Name=name,ShowCheckBox=true,Format=DateTimePickerFormat.Custom,CustomFormat=known?"yyyy-MM-dd":" ",Dock=DockStyle.Fill,Checked=known};
+        var input=new BlankDatePicker{Name=name,Dock=DockStyle.Fill,Checked=known};
         if(known)input.Value=date;input.Checked=known;input.ValueChanged+=(s,e)=>input.CustomFormat=input.Checked?"yyyy-MM-dd":" ";return input;
     }
-    static void LoadDate(DateTimePicker input,string saved){DateTime date;bool known=DateTime.TryParseExact(saved,"yyyy-MM-dd",CultureInfo.InvariantCulture,DateTimeStyles.None,out date);if(known)input.Value=date;input.Checked=known;input.CustomFormat=known?"yyyy-MM-dd":" ";}
-    static Panel Field(string label,Control control){var panel=new Panel{Dock=DockStyle.Fill,Margin=new Padding(0,0,24,0)};var caption=MeterTheme.Label(label,10,MeterTheme.Ink);caption.Dock=DockStyle.Top;caption.Height=28;var box=new Panel{Dock=DockStyle.Top,Height=40,Padding=new Padding(0,3,0,0)};box.Controls.Add(control);panel.Controls.Add(box);panel.Controls.Add(caption);box.BringToFront();return panel;}
+    static void LoadDate(BlankDatePicker input,string saved){DateTime date;bool known=DateTime.TryParseExact(saved,"yyyy-MM-dd",CultureInfo.InvariantCulture,DateTimeStyles.None,out date);if(known)input.Value=date;input.Checked=known;}
+    static Panel Field(string label,Control control){var panel=new Panel{Dock=DockStyle.Fill,Margin=new Padding(0,0,24,0)};var caption=MeterTheme.Label(label,10,MeterTheme.Ink);caption.Dock=DockStyle.Top;caption.Height=28;var box=new Panel{Dock=DockStyle.Top,Height=40,Padding=new Padding(0,3,0,0)};box.Controls.Add(control);
+        var date=control as BlankDatePicker;if(date!=null){var clear=MeterTheme.Button(control.Name+"Clear","",false);MeterTheme.Glyph(clear,"\uE711");clear.AccessibleName=Locale.T("Clear selection");clear.Dock=DockStyle.Right;clear.Width=36;clear.Margin=new Padding(0);clear.Click+=(s,e)=>date.Clear();box.Controls.Add(clear);control.BringToFront();box.SizeChanged+=(s,e)=>clear.Height=box.ClientSize.Height-box.Padding.Vertical;var tip=new ToolTip();tip.SetToolTip(clear,Locale.T("Clear selection"));clear.Disposed+=(s,e)=>tip.Dispose();}
+        panel.Controls.Add(box);panel.Controls.Add(caption);box.BringToFront();return panel;}
     internal static Form Create(string root,bool embedded){
         Directory.CreateDirectory(root);string memberPath=Path.Combine(root,"membership.json");var data=Read(memberPath);
         var form=new Form();form.Text=Locale.T("Codex Quota Sidebar - Settings");MeterTheme.Style(form,960,640);form.MinimizeBox=false;
+        if(embedded)form.MinimumSize=Size.Empty;
         var body=MeterTheme.Body();body.AutoScroll=false;body.Padding=embedded?new Padding(0):new Padding(30,24,30,24);form.Controls.Add(body);if(!embedded)form.Controls.Add(MeterTheme.Header("Codex subscription record","Windows"));
         var content=new Panel{Name="planContent",Dock=DockStyle.Top,Height=530};body.Controls.Add(content);body.BringToFront();
         var optional=MeterTheme.Label("Only record your existing Codex subscription. No sign-up or purchase for this tool.",10,MeterTheme.Muted);optional.Dock=DockStyle.Top;optional.Height=46;content.Controls.Add(optional);
@@ -85,7 +98,7 @@ internal static class MeterPreferences {
         Action arrange=()=>{
             if(arranging)return;arranging=true;
             try{
-                float scale;using(var g=content.CreateGraphics())scale=form.Font.Size/10*g.DpiX/96f;
+                float scale;using(var g=content.CreateGraphics())scale=g.DpiX/96f;
                 int available=Math.Max(0,body.ClientSize.Height-body.Padding.Vertical);
                 // Keep the approved spacing when it fits; reclaim whitespace before scrolling.
                 float room=Math.Max(0,Math.Min(1,(available/scale-420)/110));

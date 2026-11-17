@@ -1,0 +1,12 @@
+{
+  "windows": "0.13.1",
+  "macos": "0.5.1-alpha.1",
+  "chrome": "0.4.1",
+  "publicReleaseAuthorized": true,
+  "verificationRequired": true,
+  "scope": "Native readability, resizing, update status and notification, official usage-source detection and calendar dates",
+  "date": "2026-11-17",
+  "deletePriorReleasesAfterVerification": false,
+  "macNotarized": false,
+  "intelLiveAccountAcceptancePending": true
+}

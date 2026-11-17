@@ -11,7 +11,8 @@ test('Mac metric dates use separate captions and packaged launch checks install 
 });
 test('Mac page content is pinned to the top independently of navigation height',async()=>{
  const ui=await read('mac/QuotaSidebar.swift');
- assert.match(ui,/body\.topAnchor\.constraint\(equalTo: split\.topAnchor\)/);
+ assert.match(ui,/body\.topAnchor\.constraint\(equalTo: pageDocument\.topAnchor\)/);
+ assert.match(ui,/pageScroll\.topAnchor\.constraint\(equalTo: split\.topAnchor\)/);
  assert.match(ui,/body\.distribution = \.fill/);
 });
 test('Mac restart is opt-in, graceful and never force-kills the official client',async()=>{

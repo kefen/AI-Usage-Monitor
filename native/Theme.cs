@@ -4,6 +4,8 @@ using System.IO;
 using System.Windows.Forms;
 
 internal static class MeterTheme {
+    [System.Runtime.InteropServices.DllImport("user32.dll")]static extern bool SystemParametersInfo(uint action,uint parameter,out bool value,uint flags);
+    internal static bool AnimationEnabled {get{bool enabled;return !SystemInformation.HighContrast&&SystemParametersInfo(0x1042,0,out enabled,0)&&enabled;}}
     internal static void Saved(Button button){
         button.Text=Locale.T("Saved successfully");button.BackColor=Surface;button.ForeColor=Blue;button.FlatAppearance.BorderColor=Blue;button.Enabled=false;
         var timer=new Timer{Interval=1400};
@@ -23,8 +25,8 @@ internal static class MeterTheme {
         get {try{string path=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"versions.json");if(!File.Exists(path))path=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"..","versions.json");var data=new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<System.Collections.Generic.Dictionary<string,object>>(File.ReadAllText(path));return Convert.ToString(data["windows"]);}catch{var v=typeof(MeterTheme).Assembly.GetName().Version;return v.Major==0&&v.Minor==0?"":v.ToString(3);}}
     }
     internal static void Glyph(Button button,string glyph){
-        var image=new Bitmap(18,18);using(var g=Graphics.FromImage(image))using(var f=new Font("Segoe MDL2 Assets",11,FontStyle.Regular))using(var brush=new SolidBrush(button.ForeColor)){g.TextRenderingHint=System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;g.DrawString(glyph,f,brush,-1,1);}
-        button.Image=image;button.ImageAlign=ContentAlignment.MiddleLeft;button.TextImageRelation=TextImageRelation.ImageBeforeText;button.Padding=new Padding(8,0,8,0);button.Disposed+=(s,e)=>image.Dispose();
+        var vector=button as V3Button;if(vector!=null)vector.Glyph=glyph;
+        button.Padding=new Padding(8,0,8,0);button.Invalidate();
     }
     internal static string Asset(string name){string root=Path.GetDirectoryName(typeof(MeterTheme).Assembly.Location);string p=Path.Combine(root,"assets",name);return File.Exists(p)?p:Path.Combine(root,"..","assets",name);}
     internal static Icon AppIcon(){try{return new Icon(Asset("cqs.ico"));}catch{return Icon.ExtractAssociatedIcon(Application.ExecutablePath)??(Icon)SystemIcons.Application.Clone();}}
@@ -34,9 +36,11 @@ internal static class MeterTheme {
         try{return new Icon(Asset(light?"tray-light.ico":"tray-dark.ico"));}catch{return AppIcon();}
     }
     internal static void Style(Form form,int width,int height){
+        // Defer autoscaling until the control tree exists, not the empty form.
+        form.SuspendLayout();form.Load+=(s,e)=>form.ResumeLayout(true);
         form.Font=Font(10);form.ForeColor=Ink;form.BackColor=Surface;form.Icon=AppIcon();
-        form.AutoScaleDimensions=new SizeF(96,96);form.AutoScaleMode=AutoScaleMode.Dpi;form.ClientSize=new Size(width,height);
-        form.FormBorderStyle=FormBorderStyle.FixedDialog;form.MaximizeBox=false;form.StartPosition=FormStartPosition.CenterScreen;
+        form.AutoScaleMode=AutoScaleMode.Dpi;form.AutoScaleDimensions=new SizeF(96,96);form.ClientSize=new Size(width,height);
+        form.FormBorderStyle=FormBorderStyle.Sizable;form.MaximizeBox=true;form.MinimumSize=new Size(Math.Min(width,1040),Math.Min(height,640));form.StartPosition=FormStartPosition.CenterScreen;
         form.Shown+=(s,e)=>Locale.Apply(form);
     }
     internal static Label Label(string text,float size,Color color){return new Label{Text=text,Font=Font(size),ForeColor=color,AutoSize=false,TextAlign=ContentAlignment.MiddleLeft,Dock=DockStyle.Fill,UseMnemonic=false};}
@@ -58,10 +62,15 @@ internal static class MeterTheme {
     internal static Button Button(string name,string label,bool primary){
         var b=new V3Button{Name=name,Text=label,Width=110,Height=38,FlatStyle=FlatStyle.Flat,Font=Font(9.75f),Margin=new Padding(10,0,0,0),Cursor=Cursors.Hand,UseVisualStyleBackColor=false,BackColor=primary?Green:Surface,ForeColor=primary?Color.White:Ink};
         b.FlatAppearance.BorderColor=primary?Green:Color.FromArgb(203,208,215);b.FlatAppearance.BorderSize=1;
-        b.FlatAppearance.MouseOverBackColor=primary?Color.FromArgb(30,85,192):Color.FromArgb(240,245,252);return b;
+        b.FlatAppearance.MouseOverBackColor=primary?Color.FromArgb(30,85,192):Color.FromArgb(240,245,252);
+        if(name=="save"||name=="saveDisplay")using(var g=Graphics.FromHwnd(IntPtr.Zero)){
+            int width=110;var flags=TextFormatFlags.NoPadding|TextFormatFlags.NoPrefix|TextFormatFlags.SingleLine;
+            foreach(string text in Locale.Translations("Saved successfully"))width=Math.Max(width,(int)Math.Ceiling(TextRenderer.MeasureText(g,text,b.Font,new Size(Int32.MaxValue,Int32.MaxValue),flags).Width*96/g.DpiX)+24);
+            b.Width=width;b.MinimumSize=new Size(width,0);
+        }
+        return b;
     }
     internal static FlowLayoutPanel Footer(){var footer=new FlowLayoutPanel{Dock=DockStyle.Bottom,Height=64,Padding=new Padding(16,13,24,12),FlowDirection=FlowDirection.RightToLeft,WrapContents=false,BackColor=Surface};footer.Paint+=(s,e)=>{using(var p=new Pen(Line))e.Graphics.DrawLine(p,0,0,footer.Width,0);};return footer;}
-    internal static void ReleaseCheck(Panel header){var slot=new Panel{Dock=DockStyle.Right,Width=148,Padding=new Padding(0,0,12,4)};var button=Button("checkUpdates","Check for updates",false);button.Dock=DockStyle.Fill;button.Click+=(s,e)=>System.Diagnostics.Process.Start(Locale.Repository+"/releases/latest");slot.Controls.Add(button);header.Controls.Add(slot);header.Controls.SetChildIndex(slot,1);header.Controls.Find("brandCaption",true)[0].Parent.BringToFront();}
     internal static Panel Body(){return new Panel{Dock=DockStyle.Fill,Padding=new Padding(30,24,30,24),AutoScroll=false,BackColor=Surface};}
     internal static bool Consent(){
         using(var form=new Form()){
@@ -88,6 +97,16 @@ internal static class MeterTheme {
 }
 
 internal sealed class V3Button : Button {
+    internal string Glyph;
+    protected override void OnHandleCreated(EventArgs e){
+        base.OnHandleCreated(e);
+        if(Name!="save"&&Name!="saveDisplay")return;
+        using(var g=CreateGraphics()){
+            int width=Width;var flags=TextFormatFlags.NoPadding|TextFormatFlags.NoPrefix|TextFormatFlags.SingleLine;
+            foreach(string text in Locale.Translations("Saved successfully"))width=Math.Max(width,TextRenderer.MeasureText(g,text,Font,new Size(Int32.MaxValue,Int32.MaxValue),flags).Width+(int)Math.Ceiling(24*g.DpiX/96));
+            MinimumSize=new Size(width,0);Width=width;
+        }
+    }
     bool hover;
     protected override void OnMouseEnter(EventArgs e){hover=true;Invalidate();base.OnMouseEnter(e);}
     protected override void OnMouseLeave(EventArgs e){hover=false;Invalidate();base.OnMouseLeave(e);}
@@ -100,9 +119,11 @@ internal sealed class V3Button : Button {
             path.AddArc(rect.Left,rect.Top,r*2,r*2,180,90);path.AddArc(rect.Right-r*2,rect.Top,r*2,r*2,270,90);path.AddArc(rect.Right-r*2,rect.Bottom-r*2,r*2,r*2,0,90);path.AddArc(rect.Left,rect.Bottom-r*2,r*2,r*2,90,90);path.CloseFigure();
             using(var brush=new SolidBrush(background))g.FillPath(brush,path);if(FlatAppearance.BorderSize>0)using(var pen=new Pen(FlatAppearance.BorderColor))g.DrawPath(pen,path);
         }
-        int image=Image==null?0:18,gap=image==0?0:8;var size=TextRenderer.MeasureText(Text,Font,new Size(Width,Height),TextFormatFlags.NoPadding);int x=TextAlign==ContentAlignment.MiddleLeft?Padding.Left:Math.Max(6,(Width-size.Width-image-gap)/2);
-        if(Image!=null)g.DrawImage(Image,new Rectangle(x,(Height-18)/2,18,18));
-        TextRenderer.DrawText(g,Text,Font,new Rectangle(x+image+gap,0,Math.Max(0,Width-x-image-gap-4),Height),Enabled?ForeColor:SystemColors.GrayText,TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis|TextFormatFlags.NoPrefix);
+        float dpi=g.DpiX/96f;int image=String.IsNullOrEmpty(Glyph)?0:(int)Math.Ceiling(20*dpi),gap=image==0||String.IsNullOrEmpty(Text)?0:(int)(8*dpi);var flags=TextFormatFlags.NoPadding|TextFormatFlags.NoPrefix|TextFormatFlags.SingleLine;
+        var size=TextRenderer.MeasureText(g,Text,Font,new Size(Int32.MaxValue,Height),flags);int x=TextAlign==ContentAlignment.MiddleLeft?Padding.Left:Math.Max((int)(6*dpi),(Width-size.Width-image-gap)/2);
+        Color ink=Enabled?ForeColor:SystemColors.GrayText;
+        if(image>0)using(var font=new Font("Segoe MDL2 Assets",11,FontStyle.Regular))TextRenderer.DrawText(g,Glyph,font,new Rectangle(x,0,image,Height),ink,flags|TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter);
+        TextRenderer.DrawText(g,Text,Font,new Rectangle(x+image+gap,0,Math.Max(0,Width-x-image-gap-(int)(4*dpi)),Height),ink,flags|TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis);
         if(Focused&&ShowFocusCues)ControlPaint.DrawFocusRectangle(g,new Rectangle(4,4,Width-8,Height-8));
     }
 }

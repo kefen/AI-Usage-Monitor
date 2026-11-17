@@ -15,8 +15,9 @@ internal static class PreferencesTest {
         using(var host=new Form{Name="smallWorkArea",ClientSize=new Size(940,496),StartPosition=FormStartPosition.CenterScreen})
         using(var form=MeterPreferences.Create(Path.Combine(root,"compact"),true)){
             form.TopLevel=false;form.FormBorderStyle=FormBorderStyle.None;form.Dock=DockStyle.Fill;host.Controls.Add(form);host.Show();form.Show();
+            float dpi;using(var g=host.CreateGraphics())dpi=g.DpiX/96f;
             foreach(int height in new[]{496,460,420,530,496}){
-                host.ClientSize=new Size(940,height);Application.DoEvents();
+                host.ClientSize=new Size((int)(940*dpi),(int)(height*dpi));Application.DoEvents();
                 foreach(string language in new[]{"en","zh-CN","zh-TW"}){
                     Locale.Set(language);Application.DoEvents();
                     foreach(string name in new[]{"save","detectPlan","plan","tier","dateMode","purchaseDate","nextDate","membershipEnabled","planSource"})AssertContained(form.Controls.Find(name,true)[0],host);
@@ -37,8 +38,8 @@ internal static class PreferencesTest {
         if(!blocked||!File.Exists(lockPath)||File.Exists(Path.Combine(locked,"membership.json")))throw new Exception("Manual save bypassed another plan writer's lock");File.Delete(lockPath);
         using(var blank=MeterPreferences.Create(empty,true)){
             blank.Show();Application.DoEvents();
-            var purchase=(DateTimePicker)blank.Controls.Find("purchaseDate",true)[0];
-            if(!purchase.ShowCheckBox||purchase.Checked)throw new Exception("Blank purchase date must stay optional, not silently become today");
+            var purchase=(BlankDatePicker)blank.Controls.Find("purchaseDate",true)[0];
+            if(purchase.ShowCheckBox||purchase.Checked)throw new Exception("Blank purchase date needs native calendar without fuzzy checkbox");
             ((Button)blank.Controls.Find("save",true)[0]).PerformClick();
             if(File.Exists(Path.Combine(empty,"membership.json"))&&File.ReadAllText(Path.Combine(empty,"membership.json")).Contains(DateTime.Today.ToString("yyyy-MM-dd")))throw new Exception("Empty record invented today's date");
         }
@@ -53,8 +54,8 @@ internal static class PreferencesTest {
                     foreach(string language in new[]{"zh-CN","zh-TW","en"}){Locale.Set(language);if(selectedPlan.SelectedIndex!=before||String.IsNullOrEmpty(selectedPlan.Text))throw new Exception("Language switch lost plan selection");}
                     if(action=="save"){
                         ((CheckBox)form.Controls.Find("membershipEnabled",true)[0]).Checked=true;
-                        ((DateTimePicker)form.Controls.Find("purchaseDate",true)[0]).Value=new DateTime(2026,1,31);
-                        ((DateTimePicker)form.Controls.Find("purchaseDate",true)[0]).Checked=true;
+                        ((BlankDatePicker)form.Controls.Find("purchaseDate",true)[0]).Value=new DateTime(2026,1,31);
+                        ((BlankDatePicker)form.Controls.Find("purchaseDate",true)[0]).Checked=true;
                         if(((DateTimePicker)form.Controls.Find("nextDate",true)[0]).Value.Date!=new DateTime(2026,2,28))throw new Exception("Monthly preview mismatch");
                     }
                     using(var bitmap=new Bitmap(form.Width,form.Height)){form.DrawToBitmap(bitmap,new Rectangle(0,0,form.Width,form.Height));bitmap.Save(Path.Combine(root,"preferences-"+action+".png"));}

@@ -1,13 +1,13 @@
-name: Publish approved V3 release set
+name: Publish native readability fixes
 on:
   push:
     branches: [main]
-    paths: ['docs/releases/accepted-v3.json']
+    paths: ['docs/releases/accepted-ui-fixes.json']
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: publish-v3-0.13.0
+  group: publish-v3-0.13.1
   cancel-in-progress: false
 jobs:
   windows:

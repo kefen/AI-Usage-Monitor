@@ -8,6 +8,32 @@ struct MetricDatum {
 }
 
 enum MetricPresentation {
+    static func strictBoolean(_ value: Any?) -> Bool? {
+        guard let value = value as? NSNumber, CFGetTypeID(value) == CFBooleanGetTypeID() else { return nil }
+        return value.boolValue
+    }
+    static let updateFailureReasons = [
+        "E_UPDATE_NETWORK": "Cannot reach the update server. Check your connection and try again.",
+        "E_UPDATE_SIGNATURE": "The update signature could not be verified. No update was installed.",
+        "E_UPDATE_CHECKSUM": "The update file failed verification. No update was installed.",
+        "E_UPDATE_CONFIGURATION": "Update configuration could not be read. Check the installation and try again.",
+        "E_UPDATE_METADATA": "Update information is invalid or unavailable. Try again later.",
+        "E_UPDATE_APP_STILL_RUNNING": "The old companion is still running. The update was not installed.",
+        "E_UPDATE_INSTALL_LOCATION": "Reopen the companion from Applications before updating.",
+        "E_UPDATE_BUNDLE_VERSION": "The downloaded app version does not match the verified update.",
+        "E_UPDATE_LAUNCH_UNVERIFIED": "The updated app did not pass launch verification.",
+        "E_UPDATE_WORKER_NOT_READY": "The update worker is not ready. The companion will stay open.",
+        "E_UPDATE_HANDSHAKE_TIMEOUT": "Update verification timed out. The companion will stay open."
+    ]
+    static func updateFailureCode(_ result: [String: Any]?) -> String? {
+        guard let code = result?["error"] as? String, updateFailureReasons[code] != nil else { return nil }
+        return code
+    }
+    static func persistedUpdateFailureCode(_ record: [String: Any], since started: Double) -> String? {
+        guard record["stage"] as? String == "check-failed", let stamp = number(record["updatedAt"]), stamp >= started,
+              let code = record["code"] as? String else { return nil }
+        return updateFailureCode(["error": code])
+    }
     static let keys = ["plan", "renewal", "short", "week", "reset", "resetCredits", "credits", "daily", "average", "weekly", "lifetime"]
     static func recordDate(_ text: String?) -> Date? {
         let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "yyyy-MM-dd"; f.isLenient = false
@@ -16,7 +42,8 @@ enum MetricPresentation {
     }
     static func renewal(_ member: [String: Any]) -> String? {
         guard member["enabled"] as? Bool == true else { return nil }
-        if let text = member["date"] as? String, recordDate(text) != nil { return text }
+        let estimated = member["monthlyEstimate"] as? Bool == true || member["annualEstimate"] as? Bool == true
+        if !estimated, let text = member["date"] as? String, recordDate(text) != nil { return text }
         guard let start = recordDate(member["purchaseDate"] as? String), member["monthlyEstimate"] as? Bool == true || member["annualEstimate"] as? Bool == true else { return nil }
         let calendar = Calendar(identifier: .gregorian)
         guard let end = calendar.date(byAdding: member["annualEstimate"] as? Bool == true ? .year : .month, value: 1, to: start) else { return nil }
@@ -28,6 +55,13 @@ enum MetricPresentation {
         let unit = pow(10, floor(log10(largest)))
         return ceil(largest / unit / 0.5) * unit * 0.5
     }
+    static func resetMilliseconds(_ raw: Any?) -> Double? {
+        guard let value = number(raw), value > 0 else { return nil }
+        // Core timestamps are seconds; also accept millisecond snapshots, as on Windows.
+        let milliseconds = value < 100_000_000_000 ? value * 1000 : value
+        guard milliseconds.isFinite, milliseconds < 253_402_300_800_000 else { return nil }
+        return milliseconds
+    }
     static func overview(_ snapshot: [String: Any], display: [String: Any], member: [String: Any], connected: Bool, now: Double) -> [String: MetricDatum] {
         let base = values(snapshot, connected: connected, now: now)
         var result = Dictionary(uniqueKeysWithValues: zip(["short", "week", "daily", "weekly", "lifetime", "average"], base))
@@ -36,7 +70,7 @@ enum MetricPresentation {
         let freshQuota = connected && number(snapshot["generatedAt"]).map { now >= $0 && now - $0 < 90000 } == true && number(snapshot["quotaAt"]).map { now >= $0 && now - $0 < 180000 } == true
         if freshQuota {
             let windows = snapshot["windows"] as? [[String: Any]] ?? []
-            if let stamp = windows.compactMap({ number($0["resetsAt"]) }).filter({ $0 > now }).min() {
+            if let stamp = windows.compactMap({ resetMilliseconds($0["resetsAt"]) }).filter({ $0 > now }).min() {
                 let f = DateFormatter(); f.dateStyle = .short; f.timeStyle = .short
                 result["reset"] = MetricDatum(value: f.string(from: Date(timeIntervalSince1970: stamp / 1000)), caption: "")
             }

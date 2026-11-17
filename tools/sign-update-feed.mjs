@@ -6,7 +6,7 @@ const versions=JSON.parse(await readFile('versions.json','utf8'));
 const chrome=JSON.parse(await readFile('browser/manifest.json','utf8')).version;
 const folder=process.env.CQS_SIGNING_DIRECTORY;if(!folder)throw Error('CQS_SIGNING_DIRECTORY must point outside the repository');
 const releases={};
-const notesByLocale=JSON.parse(await readFile('docs/releases/notes-v3.json','utf8'));
+const notesByLocale=JSON.parse(await readFile('docs/releases/notes-ui-fixes.json','utf8'));
 const notes=notesByLocale.en.map((line,i)=>(i+1)+'. '+line).join('\n');
 for(const [target,version,name,tag] of [
  ['windows-x64',versions.windows,'Codex-Quota-Sidebar-Windows-'+versions.windows+'-x64-Setup.exe','windows/v'+versions.windows],

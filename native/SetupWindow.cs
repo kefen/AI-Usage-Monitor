@@ -23,7 +23,6 @@ internal sealed class SetupWindow : Form {
         original=Destination=destination;this.operation=operation;this.launch=launch;this.configure=configure;this.detect=detect??SetupSupport.FindCodex;
         Text="Codex Quota Sidebar";MeterTheme.Style(this,1184,792);
         body=MeterTheme.Body();Controls.Add(body);var header=MeterTheme.Header("Setup","Windows "+MeterTheme.Version);Controls.Add(header);
-        MeterTheme.ReleaseCheck(header);
         rail=new Panel{Dock=DockStyle.Left,Width=184,Padding=new Padding(12,22,12,16),BackColor=Color.FromArgb(246,247,249)};Controls.Add(rail);
         var list=new TableLayoutPanel{Dock=DockStyle.Top,ColumnCount=1,RowCount=4,Height=184};
         string[] names={"Environment","Install location","Display options","Install and connect"};

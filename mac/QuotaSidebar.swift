@@ -1,6 +1,51 @@
 import AppKit
 import Darwin
 
+final class PageDocument: NSView {
+    override var isFlipped: Bool { true }
+}
+
+// NSDatePicker has no nil value. Keep presence explicit instead of inventing a date.
+final class OptionalDatePicker: NSStackView {
+    let picker = NSDatePicker()
+    let presence = NSButton(checkboxWithTitle: "", target: nil, action: nil)
+    var onChange: (() -> Void)?
+    var isEnabled = true { didSet { presence.isEnabled = isEnabled; picker.isEnabled = isEnabled && presence.state == .on } }
+    var stringValue: String {
+        get {
+            guard presence.state == .on else { return "" }
+            let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "yyyy-MM-dd"
+            return f.string(from: picker.dateValue)
+        }
+        set {
+            let value = MetricPresentation.recordDate(newValue)
+            presence.state = value == nil ? .off : .on
+            if let value = value { picker.dateValue = value }
+            picker.isEnabled = isEnabled && value != nil
+        }
+    }
+    init() {
+        super.init(frame: .zero)
+        orientation = .horizontal; alignment = .centerY; spacing = 8
+        picker.datePickerStyle = .textFieldAndStepper; picker.datePickerElements = .yearMonthDay
+        picker.presentsCalendarOverlay = true; picker.font = .systemFont(ofSize: 14)
+        picker.calendar = Calendar(identifier: .gregorian)
+        picker.target = self; picker.action = #selector(changed)
+        presence.target = self; presence.action = #selector(changed)
+        addArrangedSubview(presence); addArrangedSubview(picker)
+        heightAnchor.constraint(equalToConstant: 36).isActive = true
+        stringValue = ""
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+    func localize(_ title: String) {
+        picker.locale = Locale(identifier: CqsLocale.language)
+        picker.setAccessibilityLabel(CqsLocale.t(title))
+        presence.setAccessibilityLabel(CqsLocale.t("Set date") + ": " + CqsLocale.t(title))
+        presence.toolTip = CqsLocale.t("Set date")
+    }
+    @objc func changed() { picker.isEnabled = isEnabled && presence.state == .on; onChange?() }
+}
+
 private func drawSymbol(_ image: NSImage, in rect: NSRect, color: NSColor) {
     let tinted = NSImage(size: rect.size, flipped: false) { bounds in
         image.draw(in: bounds)
@@ -15,7 +60,7 @@ final class FlatPopUpButton: NSPopUpButton {
     override var intrinsicContentSize: NSSize {
         let text = selectedItem?.title ?? ""
         let width = (text as NSString).size(withAttributes: [.font: font ?? NSFont.systemFont(ofSize: 13)]).width
-        return NSSize(width: max(80, ceil(width) + (leadingSymbol == nil ? 44 : 66)), height: 36)
+        return NSSize(width: max(80, ceil(width) + (leadingSymbol == nil ? 36 : 52)), height: 36)
     }
     override func draw(_ dirtyRect: NSRect) {
         let frame = bounds.insetBy(dx: 0.5, dy: 0.5)
@@ -26,15 +71,15 @@ final class FlatPopUpButton: NSPopUpButton {
         var left: CGFloat = 12
         if let symbol = leadingSymbol, let image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil) {
             drawSymbol(image, in: NSRect(x: 10, y: (bounds.height - 16) / 2, width: 16, height: 16), color: .secondaryLabelColor)
-            left = 34
+            left = 30
         }
         let paragraph = NSMutableParagraphStyle(); paragraph.lineBreakMode = .byTruncatingTail
         let attributes: [NSAttributedString.Key: Any] = [.font: font ?? NSFont.systemFont(ofSize: 13), .foregroundColor: color, .paragraphStyle: paragraph]
         let text = selectedItem?.title ?? ""
         let height = (text as NSString).size(withAttributes: attributes).height
-        (text as NSString).draw(in: NSRect(x: left, y: (bounds.height - height) / 2, width: max(0, bounds.width - left - 30), height: height), withAttributes: attributes)
+        (text as NSString).draw(in: NSRect(x: left, y: (bounds.height - height) / 2, width: max(0, bounds.width - left - 22), height: height), withAttributes: attributes)
         if let arrow = NSImage(systemSymbolName: "chevron.down", accessibilityDescription: nil) {
-            drawSymbol(arrow, in: NSRect(x: bounds.width - 22, y: (bounds.height - 12) / 2, width: 12, height: 12), color: color)
+            drawSymbol(arrow, in: NSRect(x: bounds.width - 18, y: (bounds.height - 10) / 2, width: 10, height: 10), color: color)
         }
         if window?.firstResponder === self {
             NSColor.keyboardFocusIndicatorColor.setStroke(); border.lineWidth = 2; border.stroke()
@@ -83,6 +128,16 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     var window: NSWindow!
     var statusItem: NSStatusItem!
     var body = NSStackView()
+    let pageScroll = NSScrollView()
+    let pageDocument = PageDocument()
+    var responsiveLayouts: [(CGFloat) -> Void] = []
+    var connectionTimer: Timer?
+    var connectionAnimationStart: Date?
+    var connectionFrame = 0
+    var planFailure = ""
+    var updateNotice: NSButton!
+    var updateAvailable = false
+    var availableVersion = ""
     var headline = NSTextField(labelWithString: CqsLocale.t("Connecting"))
     var detail = NSTextField(wrappingLabelWithString: CqsLocale.t("Waiting for client and data."))
     var rows: [NSTextField] = []
@@ -130,6 +185,8 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     var dailyNote: NSTextField?
     var overviewSignature = ""
     var planProcess: Process?
+    var planTimeout: Timer?
+    weak var detectPlanButton: NSButton?
     var autoPlanAttempted = false
     var planSource = "manual"
     var familyEdited = false
@@ -161,9 +218,9 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     var errorText = ""
     let enabled = NSButton(checkboxWithTitle: CqsLocale.t("Show Codex renewal date"), target: nil, action: nil)
     let plan = FlatPopUpButton()
-    let purchase = NSTextField()
+    let purchase = OptionalDatePicker()
     let mode = FlatPopUpButton()
-    let next = NSTextField()
+    let next = OptionalDatePicker()
     let green = NSColor(calibratedRed: 0.157, green: 0.392, blue: 0.843, alpha: 1)
     func read(_ name: String) -> [String: Any] {
         guard let data = try? Data(contentsOf: runtime.appendingPathComponent(name)),
@@ -195,7 +252,9 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         catch { alert(error.localizedDescription); NSApp.terminate(nil); return }
         if let data = try? Data(contentsOf: runtime.appendingPathComponent("language.json")), let saved = (try? JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed])) as? String, ["en", "zh-CN", "zh-TW"].contains(saved) { CqsLocale.language = saved }
         NSApp.setActivationPolicy(.accessory)
-        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1184, height: 792), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1184, height: 820), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
+        window.contentMinSize = NSSize(width: 820, height: 520)
+        window.collectionBehavior = [.fullScreenPrimary]
         window.title = "Codex Quota Sidebar"; window.delegate = self; window.center(); window.isReleasedWhenClosed = false
         window.appearance = NSAppearance(named: .aqua)
         window.backgroundColor = .white
@@ -220,11 +279,18 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         let headerGap = NSView(); header.addArrangedSubview(headerGap); headerGap.setContentHuggingPriority(.defaultLow, for: .horizontal)
         headerGap.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         header.setVisibilityPriority(.mustHold, for: icon); header.setVisibilityPriority(.mustHold, for: words)
-        updateButton = button("Check for updates", #selector(checkUpdates)); setIcon(updateButton, "arrow.down.circle"); header.addArrangedSubview(updateButton)
+        updateButton = button("Check for updates", #selector(checkUpdates))
+        updateNotice = NSButton(image: NSImage(systemSymbolName: "bell.badge", accessibilityDescription: CqsLocale.t("Update available")) ?? NSImage(), target: self, action: #selector(checkUpdates))
+        updateNotice.bezelStyle = .texturedRounded; updateNotice.imagePosition = .imageOnly
+        updateNotice.setAccessibilityLabel(CqsLocale.t("Update available")); updateNotice.toolTip = CqsLocale.t("Update available")
+        updateNotice.isHidden = true; header.addArrangedSubview(updateNotice)
+        updateNotice.widthAnchor.constraint(equalToConstant: 36).isActive = true
+        updateNotice.heightAnchor.constraint(equalToConstant: 36).isActive = true
         languagePicker.identifier = NSUserInterfaceItemIdentifier("language")
         languagePicker.font = .systemFont(ofSize: 13, weight: .regular); languagePicker.isBordered = false; languagePicker.leadingSymbol = "character.bubble"
         languagePicker.heightAnchor.constraint(equalToConstant: 36).isActive = true
-        languagePicker.widthAnchor.constraint(equalToConstant: 148).isActive = true
+        languagePicker.setContentHuggingPriority(.required, for: .horizontal)
+        languagePicker.setContentCompressionResistancePriority(.required, for: .horizontal)
         languagePicker.addItems(withTitles: ["English", "简体中文", "繁體中文"])
         languagePicker.selectItem(at: CqsLocale.language == "en" ? 0 : CqsLocale.language == "zh-CN" ? 1 : 2)
         languagePicker.target = self; languagePicker.action = #selector(changeLanguage); header.addArrangedSubview(languagePicker)
@@ -236,28 +302,41 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         for (key, label, action) in [("overview", "Usage overview", #selector(showStatus)), ("display", "Display choices", #selector(showDisplay)), ("subscription", "Plan and dates", #selector(showSettings)), ("data", "Data and settings", #selector(showData)), ("help", "Diagnostics", #selector(showHelp)), ("about", "About project", #selector(showAbout))] {
             if key == "about" { let space = NSView(); navigation.addArrangedSubview(space); space.setContentHuggingPriority(.defaultLow, for: .vertical) }
             let control = button(label, action); control.alignment = .left
+            control.font = .systemFont(ofSize: 14, weight: .medium)
             for constraint in control.constraints where constraint.firstAttribute == .width { constraint.isActive = false }
             control.layer?.borderWidth = 0; control.layer?.backgroundColor = NSColor.clear.cgColor
-            control.widthAnchor.constraint(equalToConstant: 160).isActive = true
+            control.widthAnchor.constraint(equalToConstant: 184).isActive = true
             setIcon(control, ["overview": "square.grid.2x2", "display": "sidebar.left", "subscription": "checkmark.seal", "data": "slider.horizontal.3", "help": "lifepreserver", "about": "info.circle"][key]!)
             navigationButtons.append((key, control)); navigation.addArrangedSubview(control)
         }
-        navigation.widthAnchor.constraint(equalToConstant: 184).isActive = true
-        navigation.heightAnchor.constraint(greaterThanOrEqualToConstant: 490).isActive = true
+        navigation.widthAnchor.constraint(equalToConstant: 208).isActive = true
         body.orientation = .vertical; body.alignment = .leading; body.spacing = 14; body.distribution = .fill
         body.setContentHuggingPriority(.required, for: .vertical)
         navigation.translatesAutoresizingMaskIntoConstraints = false; body.translatesAutoresizingMaskIntoConstraints = false
-        split.addSubview(navigation); split.addSubview(body); container.addArrangedSubview(split)
+        pageScroll.translatesAutoresizingMaskIntoConstraints = false
+        pageScroll.drawsBackground = false; pageScroll.hasVerticalScroller = true; pageScroll.autohidesScrollers = true
+        pageScroll.hasHorizontalScroller = false; pageScroll.horizontalScrollElasticity = .none; pageScroll.verticalScrollElasticity = .none
+        pageScroll.scrollerStyle = .overlay
+        pageDocument.translatesAutoresizingMaskIntoConstraints = false
+        pageScroll.documentView = pageDocument; pageDocument.addSubview(body)
+        split.addSubview(navigation); split.addSubview(pageScroll); container.addArrangedSubview(split)
+        let naturalHeight = pageDocument.heightAnchor.constraint(equalTo: body.heightAnchor)
+        naturalHeight.priority = .defaultHigh
         NSLayoutConstraint.activate([
             split.widthAnchor.constraint(equalTo: container.widthAnchor),
-            split.heightAnchor.constraint(equalToConstant: 646),
             navigation.leadingAnchor.constraint(equalTo: split.leadingAnchor),
             navigation.topAnchor.constraint(equalTo: split.topAnchor),
             navigation.bottomAnchor.constraint(equalTo: split.bottomAnchor),
-            body.leadingAnchor.constraint(equalTo: navigation.trailingAnchor, constant: 30),
-            body.trailingAnchor.constraint(equalTo: split.trailingAnchor, constant: -30),
-            body.topAnchor.constraint(equalTo: split.topAnchor),
-            body.bottomAnchor.constraint(lessThanOrEqualTo: split.bottomAnchor)
+            pageScroll.leadingAnchor.constraint(equalTo: navigation.trailingAnchor, constant: 24),
+            pageScroll.trailingAnchor.constraint(equalTo: split.trailingAnchor, constant: -24),
+            pageScroll.topAnchor.constraint(equalTo: split.topAnchor),
+            pageScroll.bottomAnchor.constraint(equalTo: split.bottomAnchor),
+            pageDocument.widthAnchor.constraint(equalTo: pageScroll.contentView.widthAnchor),
+            pageDocument.heightAnchor.constraint(greaterThanOrEqualTo: pageScroll.contentView.heightAnchor), naturalHeight,
+            body.leadingAnchor.constraint(equalTo: pageDocument.leadingAnchor),
+            body.trailingAnchor.constraint(equalTo: pageDocument.trailingAnchor),
+            body.topAnchor.constraint(equalTo: pageDocument.topAnchor),
+            body.bottomAnchor.constraint(lessThanOrEqualTo: pageDocument.bottomAnchor)
         ])
         body.edgeInsets = NSEdgeInsets(top: 26, left: 0, bottom: 12, right: 0)
         let footer = NSStackView(); footer.spacing = 8
@@ -274,6 +353,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         footer.addArrangedSubview(quit); footer.addArrangedSubview(retry); footer.addArrangedSubview(open)
         let footerLine = NSBox(); footerLine.boxType = .separator; footerLine.heightAnchor.constraint(equalToConstant: 1).isActive = true; container.addArrangedSubview(footerLine); footerLine.widthAnchor.constraint(equalTo: container.widthAnchor).isActive = true
         container.addArrangedSubview(footer); footer.widthAnchor.constraint(equalTo: container.widthAnchor).isActive = true
+        footer.identifier = NSUserInterfaceItemIdentifier("window-footer")
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let image = NSImage(contentsOf: root.appendingPathComponent("assets/tray-template.png")) { image.isTemplate = true; image.size = NSSize(width: 18, height: 18); statusItem.button?.image = image }
         statusItem.button?.toolTip = "Codex Quota Sidebar"
@@ -294,7 +374,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         catch { notify(CqsLocale.t("Update verification failed. Open Diagnostics.")) }
         lifecycle("acknowledgement returned")
         if !CommandLine.arguments.contains("--ui-smoke") { DispatchQueue.main.asyncAfter(deadline: .now() + 5) { self.runUpdate("auto") } }
-        if !CommandLine.arguments.contains("--ui-smoke") { Timer.scheduledTimer(withTimeInterval: 86400, repeats: true) { [weak self] _ in self?.runUpdate("auto") } }
+        if !CommandLine.arguments.contains("--ui-smoke") { Timer.scheduledTimer(withTimeInterval: 21600, repeats: true) { [weak self] _ in self?.runUpdate("auto") } }
         if CommandLine.arguments.contains("--ui-smoke") {
             lifecycle("scheduling smoke callback")
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.lifecycle("smoke callback entered"); self.smokeTest() }
@@ -317,7 +397,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     }
     func button(_ title: String, _ action: Selector, primary: Bool = false) -> NSButton {
         let result = FlatButton(title: CqsLocale.t(title), target: self, action: action)
-        result.isBordered = false; result.font = .systemFont(ofSize: 13, weight: .regular)
+        result.isBordered = false; result.font = .systemFont(ofSize: 14, weight: .regular)
         result.alignment = .center
         result.wantsLayer = true; result.layer?.cornerRadius = 4
         result.layer?.borderWidth = primary ? 0 : 1
@@ -346,6 +426,16 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         lifecycle("smokeTest entered")
         do {
             let output = URL(fileURLWithPath: CommandLine.arguments.last!); try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
+            for key in ["Credits", "Quota remaining", "Plan and dates", "Monthly daily average", "Display choices"] {
+                guard let translations = CqsLocale.catalog[key], translations.count == 2 else { preconditionFailure("Missing canonical locale key: \(key)") }
+                for (index, language) in ["zh-CN", "zh-TW"].enumerated() {
+                    let field = NSTextField(labelWithString: key)
+                    CqsLocale.language = language; CqsLocale.apply(field)
+                    precondition(field.stringValue == translations[index])
+                    CqsLocale.language = "en"; CqsLocale.apply(field)
+                    precondition(field.stringValue == key, "Reverse translation must retain canonical key: \(key)")
+                }
+            }
             for language in ["en", "zh-CN", "zh-TW"] {
                 CqsLocale.language = language; languagePicker.selectItem(at: language == "en" ? 0 : language == "zh-CN" ? 1 : 2)
                 for action in [showAuthorizationHelp, showStatus, showDisplay, showSettings, showData, showHelp, showAbout] {
@@ -356,7 +446,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
                     window.displayIfNeeded()
                     assertV3Geometry()
                     fputs("UI smoke: laid out \(page)\n", stderr)
-                    precondition(abs(body.frame.maxY - body.superview!.bounds.maxY) < 2, "Page content is not top aligned")
+                    precondition(abs(body.frame.minY - body.superview!.bounds.minY) < 2, "Page content is not top aligned")
                     if page == "subscription" { plan.selectItem(at: 2); enabled.state = .on; updateFields(); save(); precondition(!dirty && page == "subscription" && saveButton?.isEnabled == false) }
                     if page == "display" { saveDisplay(); precondition(!dirty && page == "display") }
                     let view = window.contentView!
@@ -365,6 +455,22 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
                     let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
                     view.cacheDisplay(in: view.bounds, to: bitmap)
                     try bitmap.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent(page + "-" + language + ".png"))
+                    for size in [NSSize(width: 820, height: 520), NSSize(width: 1024, height: 700), NSSize(width: 1440, height: 1000)] {
+                        window.setContentSize(size); adaptLayout(); window.displayIfNeeded(); assertV3Geometry()
+                        if let last = body.arrangedSubviews.last {
+                            let target = last.convert(last.bounds, to: pageDocument)
+                            pageDocument.scrollToVisible(target)
+                            precondition(pageScroll.contentView.documentVisibleRect.intersects(target), "Last page action must be reachable without hiding the footer")
+                            pageScroll.contentView.scroll(to: .zero)
+                        }
+                        if size.width == 1440 && size.height == 1000 {
+                            precondition(pageDocument.bounds.height <= pageScroll.contentView.bounds.height + 1, "Tall windows must not need vertical scrolling")
+                        }
+                        let resized = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
+                        view.cacheDisplay(in: view.bounds, to: resized)
+                        try resized.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent(page + "-" + language + "-\(Int(size.width))x\(Int(size.height)).png"))
+                    }
+                    window.setContentSize(NSSize(width: 1184, height: 820)); adaptLayout()
                 }
                 runtimeIssue = true; stage = "failed"; errorText = CqsLocale.t("Node runtime did not start. If macOS blocked node, review Privacy & Security and the installation guide, then reconnect. This does not establish a Codex signature error.") + "\nE_RUNTIME_START"
                 showStatus(); tick(); window.contentView!.layoutSubtreeIfNeeded()
@@ -379,7 +485,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
                 try restartBitmap.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("restart-required-" + language + ".png"))
                 errorText = "E_CDP_OWNER"; page = ""
                 showStatus(); showHelp(); showStatus(); tick(); window.contentView!.layoutSubtreeIfNeeded()
-                precondition(abs(body.frame.maxY - body.superview!.bounds.maxY) < 2, "Failure refresh shifted content")
+                precondition(abs(body.frame.minY - body.superview!.bounds.minY) < 2, "Failure refresh shifted content")
                 let ownerView = window.contentView!, ownerBitmap = ownerView.bitmapImageRepForCachingDisplay(in: ownerView.bounds)!
                 ownerView.cacheDisplay(in: ownerView.bounds, to: ownerBitmap)
                 try ownerBitmap.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("owner-failure-" + language + ".png"))
@@ -416,10 +522,39 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
                     try write("membership.json", member); page = ""; showSettings(); window.contentView!.layoutSubtreeIfNeeded()
                     assertV3Geometry()
                     if name == "blank" { precondition(purchase.stringValue.isEmpty && next.stringValue.isEmpty) }
+                    if name == "estimated" {
+                        precondition(next.stringValue == "2026-02-28" && !next.isEnabled)
+                        purchase.picker.dateValue = date("2024-02-29")!; purchase.changed()
+                        mode.selectItem(at: 3); updateFields(); precondition(next.stringValue == "2025-02-28")
+                        save()
+                        let savedMember = read("membership.json")
+                        precondition(savedMember["date"] as? String == "2025-02-28" && savedMember["purchaseDate"] as? String == "2024-02-29")
+                        precondition(savedMember["plan"] as? String == "plus", "Date edits must preserve the plan")
+                        purchase.presence.state = .off; purchase.changed(); precondition(next.stringValue.isEmpty)
+                        save(); precondition(read("membership.json")["purchaseDate"] == nil && read("membership.json")["date"] == nil)
+                        page = ""; showSettings(); precondition(purchase.stringValue.isEmpty && next.stringValue.isEmpty)
+                    }
                     let bitmap = connectedView.bitmapImageRepForCachingDisplay(in: connectedView.bounds)!; connectedView.cacheDisplay(in: connectedView.bounds, to: bitmap)
                     try bitmap.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("dates-" + name + "-" + language + ".png"))
                 }
                 stage = "stopped"; errorText = ""; page = ""
+            }
+            page = ""; stage = "starting"; showStatus()
+            if !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+                updateConnectionAnimation(); precondition(connectionTimer != nil)
+                connectionTimer?.fire(); precondition(headline.stringValue.hasSuffix("."))
+                connectionAnimationStart = Date().addingTimeInterval(-61); connectionTimer?.fire(); precondition(connectionTimer == nil)
+                updateConnectionAnimation(); precondition(connectionTimer == nil, "Animation must not restart after its time budget")
+            }
+            updateConnectionAnimation(reducedMotion: true); precondition(connectionTimer == nil)
+            stage = "mounted"; tick(); precondition(connectionTimer == nil)
+            for language in ["en", "zh-CN", "zh-TW"] {
+                CqsLocale.language = language
+                for code in ["E_PLAN_UNKNOWN", "E_DESKTOP_UNAVAILABLE", "E_MANUAL_LOCK", "E_BUSY", "E_CONFIG_INVALID", "E_ALREADY_ATTEMPTED", "E_NATIVE_PLAN_TIMEOUT"] {
+                    planFailure = code
+                    precondition(!planFailureMessage().contains("E_"))
+                    if language != "en" { precondition(!planFailureMessage().contains("Choose a plan")) }
+                }
             }
             let backup = try SettingsTransfer.exportData(runtime); try SettingsTransfer.restore(backup, at: runtime)
             do { _ = try SettingsTransfer.checked(Data("{\"auth.json\":{\"token\":\"do-not-import\"}}".utf8)); fatalError("Unknown settings accepted") } catch {}
@@ -434,14 +569,36 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             return nil
         }
         let content = window.contentView!
-        precondition(abs(languagePicker.bounds.height - 36) < 1 && languagePicker.bounds.width >= 148, "Language control must use the approved 36px height and icon width")
+        precondition(window.styleMask.contains(.resizable) && window.contentMinSize.width == 820)
+        precondition(abs(languagePicker.bounds.height - 36) < 1 && languagePicker.bounds.width >= languagePicker.intrinsicContentSize.width - 1 && languagePicker.bounds.width < 148, "Language popup should tightly fit its icon, label and chevron")
+        if let footer = find("window-footer", in: content) {
+            let f = footer.convert(footer.bounds, to: content), viewport = pageScroll.convert(pageScroll.bounds, to: content)
+            precondition(content.bounds.contains(f) && viewport.minY >= f.maxY - 1, "Footer must stay visible outside scroll content")
+        }
+        precondition(abs(pageDocument.bounds.width - pageScroll.contentView.bounds.width) < 2, "No horizontal scrolling")
+        precondition(pageDocument.bounds.height + 1 >= body.frame.maxY, "Document must include the entire page")
+        func checkBounds(_ view: NSView) {
+            guard !view.isHiddenOrHasHiddenAncestor else { return }
+            if view is NSControl || view is OptionalDatePicker {
+                let rect = view.convert(view.bounds, to: pageDocument)
+                precondition(rect.minX >= -1 && rect.maxX <= pageDocument.bounds.width + 1, "Control outside page: \(view)")
+                precondition(rect.maxY <= pageDocument.bounds.height + 1, "Control clipped below document")
+                if view is NSControl { return }
+            }
+            view.subviews.forEach { checkBounds($0) }
+        }
+        checkBounds(body)
         if page == "overview", let charts = find("overview-charts", in: content) {
             precondition(abs(charts.bounds.width - body.bounds.width) < 1, "Charts must span the full content width")
             if let quotas = find("quota-column", in: charts), let tokens = find("token-column", in: charts) {
                 let q = quotas.convert(quotas.bounds, to: charts), t = tokens.convert(tokens.bounds, to: charts)
-                precondition(abs(q.width + t.width + 38 - charts.bounds.width) < 2, "Chart columns must fill the available width, not hug intrinsic content")
-                precondition(abs(t.minX - q.maxX - 38) < 2 && abs(t.maxX - charts.bounds.width) < 2, "Chart gutter and right edge must match the reference")
-                precondition(q.width >= 415 && t.width >= 480, "Normal client requires approximately 420px quota and 484px token columns")
+                if charts.orientation == .horizontal {
+                    precondition(abs(q.width + t.width + 38 - charts.bounds.width) < 2, "Columns must fill available width")
+                    precondition(abs(t.minX - q.maxX - 38) < 2, "Columns must not overlap")
+                } else {
+                    precondition(abs(q.width - charts.bounds.width) < 2 && abs(t.width - charts.bounds.width) < 2, "Narrow charts must use full-width rows")
+                    precondition(q.maxY <= t.minY + 1 || t.maxY <= q.minY + 1, "Stacked charts must not overlap")
+                }
                 lifecycle("geometry quota=\(q.width), tokens=\(t.width), gutter=\(t.minX - q.maxX)")
             }
             func checkLabels(_ view: NSView) {
@@ -454,9 +611,9 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             checkLabels(charts)
         }
         if page == "subscription" {
-            precondition(plan.bounds.width >= 640 && plan.bounds.width <= 680, "Plan popup must fill the 760px row beside Detect")
+            precondition(plan.bounds.width > 200 && plan.bounds.width <= body.bounds.width, "Plan popup must fit available width")
             for control in [plan, tier, mode] { precondition(abs(control.bounds.height - 36) < 1, "Plan/date popups must be 36px high") }
-            for control in [purchase, next] { precondition(abs(control.bounds.height - 36) < 1 && control.bounds.width >= 367, "Date fields must fill their two-column tracks") }
+            for control in [purchase, next] { precondition(abs(control.bounds.height - 36) < 1 && control.bounds.width >= 260, "Native date pickers must fit adaptive form tracks") }
             lifecycle("geometry plan=\(plan.bounds.width)x\(plan.bounds.height), date=\(purchase.bounds.width)x\(purchase.bounds.height)")
         }
         if let button = find("open-codex", in: content) {
@@ -472,14 +629,70 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             precondition(whitePixels > 4, "Open Codex symbol must render white on the blue button")
         }
     }
-    func clear() { restartButton = nil; for view in body.arrangedSubviews { body.removeArrangedSubview(view); view.removeFromSuperview() } }
+    func clear() {
+        stopConnectionAnimation(); responsiveLayouts.removeAll(); restartButton = nil
+        for view in body.arrangedSubviews { body.removeArrangedSubview(view); view.removeFromSuperview() }
+        pageScroll.contentView.scroll(to: .zero)
+    }
+    func responsive(_ stack: NSStackView, threshold: CGFloat, ratio: CGFloat? = nil) {
+        var constraints: [NSLayoutConstraint] = []
+        var previous: Bool?
+        let layout: (CGFloat) -> Void = { width in
+            let narrow = width < threshold
+            guard previous != narrow else { return }; previous = narrow
+            NSLayoutConstraint.deactivate(constraints); constraints = []
+            stack.orientation = narrow ? .vertical : .horizontal
+            stack.alignment = narrow ? .leading : .top
+            stack.distribution = narrow || ratio != nil ? .fill : .fillEqually
+            let children = stack.arrangedSubviews
+            if narrow || children.count == 1 {
+                constraints = children.map { $0.widthAnchor.constraint(equalTo: stack.widthAnchor) }
+            } else if let ratio = ratio, children.count == 2 {
+                constraints = [children[0].widthAnchor.constraint(equalTo: stack.widthAnchor, multiplier: ratio, constant: -stack.spacing * ratio), children[1].widthAnchor.constraint(equalTo: stack.widthAnchor, multiplier: 1 - ratio, constant: -stack.spacing * (1 - ratio))]
+            }
+            NSLayoutConstraint.activate(constraints)
+        }
+        responsiveLayouts.append(layout)
+        layout(max(0, window.contentView!.bounds.width - 256))
+    }
+    func windowDidResize(_ notification: Notification) { adaptLayout() }
+    func adaptLayout() {
+        let width = max(0, window.contentView!.bounds.width - 256)
+        responsiveLayouts.forEach { $0(width) }
+        window.contentView?.layoutSubtreeIfNeeded()
+    }
+    func stopConnectionAnimation() { connectionTimer?.invalidate(); connectionTimer = nil; connectionAnimationStart = nil; connectionFrame = 0 }
+    func updateConnectionAnimation(reducedMotion: Bool? = nil) {
+        let connecting = page == "overview" && !runtimeIssue && !["failed", "stopped"].contains(stage) && !stage.hasPrefix("mounted")
+        guard connecting, window.isVisible, !window.isMiniaturized, !(reducedMotion ?? NSWorkspace.shared.accessibilityDisplayShouldReduceMotion) else { stopConnectionAnimation(); return }
+        // One finite animation per connection attempt; polling must not restart it.
+        if connectionAnimationStart == nil { connectionAnimationStart = Date() }
+        guard Date().timeIntervalSince(connectionAnimationStart!) < 60 else { connectionTimer?.invalidate(); connectionTimer = nil; return }
+        guard connectionTimer == nil else { return }
+        let timer = Timer(timeInterval: 0.5, repeats: true) { [weak self] timer in
+            guard let self = self else { timer.invalidate(); return }
+            guard self.window.isVisible, !self.window.isMiniaturized, self.page == "overview", !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
+                  !self.runtimeIssue, !["failed", "stopped"].contains(self.stage), !self.stage.hasPrefix("mounted"),
+                  let start = self.connectionAnimationStart, Date().timeIntervalSince(start) < 60 else { self.connectionTimer?.invalidate(); self.connectionTimer = nil; return }
+            self.connectionFrame = (self.connectionFrame + 1) % 4
+            self.headline.stringValue = CqsLocale.t(self.stage == "checking" ? "Checking runtime" : "Connecting") + String(repeating: ".", count: self.connectionFrame)
+        }
+        timer.tolerance = 0.1; RunLoop.main.add(timer, forMode: .common); connectionTimer = timer
+    }
     func present() {
         lifecycle("present localization begin")
         CqsLocale.apply(window.contentView!)
+        purchase.localize("Purchase date"); next.localize("Renewal / expiry")
+        languagePicker.invalidateIntrinsicContentSize()
+        updateNotice?.setAccessibilityLabel(CqsLocale.t("Update available"))
+        updateNotice?.toolTip = CqsLocale.t("Update available")
+        if updateAvailable && updateProcess == nil { updateButton.title = CqsLocale.t("Update available") + " " + availableVersion }
+        adaptLayout()
         lifecycle("present localization returned; activation begin")
         NSApp.activate(ignoringOtherApps: true)
         lifecycle("present activation returned; window ordering begin")
         window.makeKeyAndOrderFront(nil)
+        updateConnectionAnimation()
         lifecycle("present window ordering returned")
     }
     @objc func openGitHub() { NSWorkspace.shared.open(CqsLocale.repository) }
@@ -516,10 +729,12 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         let top = NSStackView(); top.alignment = .centerY
         let title = label("Usage overview", size: 22); top.addArrangedSubview(title)
         let gap = NSView(); top.addArrangedSubview(gap); gap.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        headline.font = .systemFont(ofSize: 12, weight: .regular); top.addArrangedSubview(headline)
+        headline.font = .systemFont(ofSize: 13, weight: .regular); top.addArrangedSubview(headline)
+        let statusWidth = ceil(((CqsLocale.t("Checking runtime") + "...") as NSString).size(withAttributes: [.font: headline.font!]).width)
+        headline.widthAnchor.constraint(greaterThanOrEqualToConstant: statusWidth).isActive = true
         body.addArrangedSubview(top); top.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true
-        detail.font = .systemFont(ofSize: 12, weight: .regular); detail.textColor = .secondaryLabelColor
-        detail.maximumNumberOfLines = 3
+        detail.font = .systemFont(ofSize: 13, weight: .regular); detail.textColor = .secondaryLabelColor
+        detail.maximumNumberOfLines = 0
         if runtimeIssue { authorizationButtons() }
         if errorText.trimmingCharacters(in: .whitespacesAndNewlines) == "E_RESTART_REQUIRED" {
             restartButton = button("Save work, restart and connect", #selector(confirmRestart), primary: true)
@@ -594,11 +809,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         if !tokens.arrangedSubviews.isEmpty { charts.addArrangedSubview(tokens) }
         if !charts.arrangedSubviews.isEmpty {
             body.addArrangedSubview(charts); charts.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true
-            charts.heightAnchor.constraint(equalToConstant: 326).isActive = true
-            if charts.arrangedSubviews.count == 2 {
-                quotas.widthAnchor.constraint(equalTo: charts.widthAnchor, multiplier: 0.87 / 1.87, constant: -38 * 0.87 / 1.87).isActive = true
-                tokens.widthAnchor.constraint(equalTo: charts.widthAnchor, multiplier: 1 / 1.87, constant: -38 / 1.87).isActive = true
-            } else if let only = charts.arrangedSubviews.first { only.widthAnchor.constraint(equalTo: charts.widthAnchor).isActive = true }
+            responsive(charts, threshold: 900, ratio: 0.87 / 1.87)
         }
         lifecycle("overview chart hierarchy built")
         let auxiliary = NSStackView(); auxiliary.distribution = .fillEqually; auxiliary.spacing = 24
@@ -627,7 +838,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         present(); lifecycle("overview present returned")
     }
     func label(_ text: String, size: CGFloat, muted: Bool = false) -> NSTextField {
-        let field = NSTextField(labelWithString: CqsLocale.t(text)); field.font = .systemFont(ofSize: size, weight: .regular); field.textColor = muted ? .secondaryLabelColor : .labelColor; return field
+        let field = NSTextField(labelWithString: CqsLocale.t(text)); field.font = .systemFont(ofSize: max(12, size), weight: .regular); field.textColor = muted ? .secondaryLabelColor : .labelColor; return field
     }
     func column(spacing: CGFloat) -> NSStackView { let stack = NSStackView(); stack.orientation = .vertical; stack.alignment = .leading; stack.distribution = .fill; stack.spacing = spacing; return stack }
     func separator() -> NSView { let view = NSBox(); view.boxType = .separator; view.heightAnchor.constraint(equalToConstant: 1).isActive = true; return view }
@@ -643,24 +854,28 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         plan.removeAllItems(); plan.addItems(withTitles: ["Free", "Go", "Plus", "Pro", "Business", "Enterprise", "Edu", CqsLocale.t("Other / unknown")])
         let index = ["free", "go", "plus", "pro", "business", "enterprise", "edu", "other"].firstIndex(of: member["plan"] as? String ?? "other") ?? 7
         plan.selectItem(at: index); plan.target = self; plan.action = #selector(planChanged)
-        for field in [purchase, next] { field.placeholderString = "yyyy-MM-dd"; field.font = .systemFont(ofSize: 13); field.target = self; field.action = #selector(updateFields); field.delegate = self; field.heightAnchor.constraint(equalToConstant: 36).isActive = true }
+        for field in [purchase, next] { field.onChange = { [weak self] in self?.updateFields() } }
         purchase.stringValue = member["purchaseDate"] as? String ?? ""; next.stringValue = member["date"] as? String ?? ""
         tier.removeAllItems(); tier.addItems(withTitles: [CqsLocale.t("Other / unknown"), "100", "200", "500", "Standard", "Premium"])
         tier.selectItem(at: ["unknown", "100", "200", "500", "standard", "premium"].firstIndex(of: member["tier"] as? String ?? "unknown") ?? 0); tier.target = self; tier.action = #selector(tierChanged)
         mode.removeAllItems(); mode.addItems(withTitles: [CqsLocale.t("Monthly estimate"), CqsLocale.t("Set renewal date"), CqsLocale.t("Set expiry date")]); mode.selectItem(at: member["monthlyEstimate"] as? Bool == true ? 0 : member["kind"] as? String == "expiry" ? 2 : 1); mode.target = self; mode.action = #selector(updateFields)
         mode.addItem(withTitle: CqsLocale.t("Business annual estimate")); if member["annualEstimate"] as? Bool == true { mode.selectItem(at: 3) }
-        let form = column(spacing: 18); form.widthAnchor.constraint(equalToConstant: 760).isActive = true
+        let form = column(spacing: 18)
         let planRow = NSStackView(); planRow.spacing = 12; planRow.alignment = .bottom; planRow.distribution = .fill
         let planField = formField("Plan badge", plan); planRow.addArrangedSubview(planField)
-        let detect = button("Detect plan", #selector(detectPlan)); detect.setContentHuggingPriority(.required, for: .horizontal); detect.setContentCompressionResistancePriority(.required, for: .horizontal)
+        let detect = button("Detect plan", #selector(detectPlan)); detectPlanButton = detect; detect.isEnabled = planProcess == nil
+        detect.setContentHuggingPriority(.required, for: .horizontal); detect.setContentCompressionResistancePriority(.required, for: .horizontal)
         let detectWidth = max(80, detect.intrinsicContentSize.width); detect.widthAnchor.constraint(equalToConstant: detectWidth).isActive = true; planRow.addArrangedSubview(detect)
         form.addArrangedSubview(planRow); planRow.widthAnchor.constraint(equalTo: form.widthAnchor).isActive = true
         planField.widthAnchor.constraint(equalTo: form.widthAnchor, constant: -detectWidth - 12).isActive = true
-        planSourceField.font = .systemFont(ofSize: 12); planSourceField.textColor = .secondaryLabelColor; form.addArrangedSubview(planSourceField)
+        planSourceField.font = .systemFont(ofSize: 13); planSourceField.textColor = .secondaryLabelColor
+        planSourceField.usesSingleLineMode = false; planSourceField.lineBreakMode = .byWordWrapping; planSourceField.cell?.wraps = true
+        form.addArrangedSubview(planSourceField); planSourceField.widthAnchor.constraint(equalTo: form.widthAnchor).isActive = true
         for fields in [[formField("Specific tier (manual, optional)", tier), formField("Date type", mode)], [formField("Purchase date", purchase), formField("Renewal / expiry", next)]] {
             let row = NSStackView(); row.distribution = .fillEqually; row.spacing = 24; fields.forEach { row.addArrangedSubview($0) }; form.addArrangedSubview(row); row.widthAnchor.constraint(equalTo: form.widthAnchor).isActive = true
+            responsive(row, threshold: 640)
         }
-        body.addArrangedSubview(form); updateFields()
+        body.addArrangedSubview(form); form.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true; updateFields()
         paragraph("Dates are optional. Detection never changes dates. Leave blank to hide.")
         body.addArrangedSubview(enabled)
         let commands = NSStackView(); commands.spacing = 8
@@ -668,14 +883,18 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     }
     @objc func updateFields() {
         markDirty()
-        next.isEnabled = mode.indexOfSelectedItem != 0 && mode.indexOfSelectedItem != 3
-        planSourceField.stringValue = CqsLocale.t(planSource == "desktop" ? "Desktop detection" : "Manual record (locked)")
+        let estimated = mode.indexOfSelectedItem == 0 || mode.indexOfSelectedItem == 3
+        if estimated {
+            next.stringValue = MetricPresentation.renewal(["enabled": true, "purchaseDate": purchase.stringValue, "monthlyEstimate": mode.indexOfSelectedItem == 0, "annualEstimate": mode.indexOfSelectedItem == 3]) ?? ""
+        }
+        next.isEnabled = !estimated
+        planSourceField.stringValue = planProcess != nil ? CqsLocale.t("Detecting plan. The official Codex usage panel may open briefly.") : planFailure.isEmpty ? CqsLocale.t(planSource == "desktop" ? "Desktop detection" : "Manual record (locked)") : planFailureMessage()
     }
     func formField(_ title: String, _ control: NSView) -> NSStackView {
         let field = column(spacing: 8); field.addArrangedSubview(label(title, size: 13)); field.addArrangedSubview(control)
         control.widthAnchor.constraint(equalTo: field.widthAnchor).isActive = true
         control.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        if let popup = control as? NSPopUpButton { popup.font = .systemFont(ofSize: 13, weight: .regular); popup.isBordered = false; popup.heightAnchor.constraint(equalToConstant: 36).isActive = true }
+        if let popup = control as? NSPopUpButton { popup.font = .systemFont(ofSize: 14, weight: .regular); popup.isBordered = false; popup.heightAnchor.constraint(equalToConstant: 36).isActive = true }
         return field
     }
     @objc func planChanged() { familyEdited = true; planSource = "manual"; updateFields() }
@@ -683,25 +902,67 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     func controlTextDidChange(_ obj: Notification) { markDirty() }
     @objc func detectPlan() {
         guard resolvePendingEdits() else { return }
-        let prompt = NSAlert(); prompt.messageText = CqsLocale.t("Detect plan from Codex desktop?"); prompt.informativeText = CqsLocale.t("Detection replaces the plan family only. Manual tier and dates stay unchanged."); prompt.addButton(withTitle: CqsLocale.t("Cancel")); prompt.addButton(withTitle: CqsLocale.t("Detect plan"))
+        let prompt = NSAlert(); prompt.messageText = CqsLocale.t("Detect plan from Codex desktop?"); prompt.informativeText = CqsLocale.t("Detection replaces the plan family only. Manual tier and dates stay unchanged.") + "\n\n" + CqsLocale.t("The official Codex usage panel may open briefly during detection."); prompt.addButton(withTitle: CqsLocale.t("Cancel")); prompt.addButton(withTitle: CqsLocale.t("Detect plan"))
         if prompt.runModal() == .alertSecondButtonReturn { runPlanDetection("detect") }
     }
     func runPlanDetection(_ operation: String) {
         guard planProcess == nil, !CommandLine.arguments.contains("--ui-smoke") else { return }
         let process = Process(); process.executableURL = root.appendingPathComponent("runtime/node"); process.arguments = [root.appendingPathComponent("src/plan.mjs").path, operation, root.path]
+        var environment = ProcessInfo.processInfo.environment
+        environment["LANG"] = "en_US.UTF-8"; environment["LC_ALL"] = "en_US.UTF-8"; process.environment = environment
         let output = Pipe(); process.standardOutput = output; process.standardError = FileHandle.nullDevice; planProcess = process
+        var timedOut = false
+        detectPlanButton?.isEnabled = false
+        if page == "subscription" { planSourceField.stringValue = CqsLocale.t("Detecting plan. The official Codex usage panel may open briefly.") }
+        if page == "overview" { detail.stringValue = CqsLocale.t("Detecting plan. The official Codex usage panel may open briefly."); detail.isHidden = false }
         process.terminationHandler = { [weak self] child in
             let data = output.fileHandleForReading.readDataToEndOfFile()
             DispatchQueue.main.async {
-                guard let self = self else { return }; self.planProcess = nil
+                guard let self = self else { return }; self.planTimeout?.invalidate(); self.planTimeout = nil; self.planProcess = nil; self.detectPlanButton?.isEnabled = true
+                if timedOut { self.planFailure = "E_NATIVE_PLAN_TIMEOUT"; self.showPlanFailure(operation); return }
+                // Parse UTF-8 JSON bytes directly: localized output must not depend on a shell codepage.
                 let result = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
                 if result?["detected"] as? Bool == true {
+                    self.planFailure = ""
                     if self.page == "subscription" && !self.dirty { self.page = ""; self.showSettings() }
                     if self.page == "overview" { self.updateMetrics(self.stage.hasPrefix("mounted")) }
-                } else if operation == "detect" { self.alert(CqsLocale.t(result?["error"] as? String ?? "E_DESKTOP_UNAVAILABLE")) }
+                } else {
+                    self.planFailure = result?["error"] as? String ?? "E_DESKTOP_UNAVAILABLE"
+                    self.showPlanFailure(operation)
+                }
             }
         }
-        do { try process.run() } catch { planProcess = nil; if operation == "detect" { alert(CqsLocale.t("E_DESKTOP_UNAVAILABLE")) } }
+        do {
+            try process.run()
+            let timeout = Timer(timeInterval: 30, repeats: false) { [weak self, weak process] _ in
+                guard let self = self, let process = process, self.planProcess === process, process.isRunning else { return }
+                timedOut = true; process.terminate()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self, weak process] in
+                    // Escalation is restricted to our own detector child, never the official client.
+                    guard let self = self, let process = process, self.planProcess === process, process.isRunning else { return }
+                    Darwin.kill(process.processIdentifier, SIGKILL)
+                }
+            }
+            timeout.tolerance = 0.1; RunLoop.main.add(timeout, forMode: .common); planTimeout = timeout
+        } catch { planProcess = nil; detectPlanButton?.isEnabled = true; planFailure = "E_DESKTOP_UNAVAILABLE"; showPlanFailure(operation) }
+    }
+    func planFailureMessage() -> String {
+        let reason: String
+        switch planFailure {
+        case "E_NATIVE_PLAN_TIMEOUT": reason = "Plan detection timed out."
+        case "E_MANUAL_LOCK": reason = "Your manual plan is locked and was kept."
+        case "E_PLAN_UNKNOWN": reason = "Codex did not return a recognized plan."
+        case "E_ALREADY_ATTEMPTED": reason = "Automatic detection has already been attempted."
+        case "E_BUSY", "E_CONFIG_CHANGED": reason = "Settings are being changed. Try detection again."
+        case "E_CONFIG_INVALID", "E_WRITE_FAILED": reason = "Plan settings could not be read or saved safely."
+        default: reason = "Codex desktop is not available for plan detection."
+        }
+        return CqsLocale.t(reason) + " " + CqsLocale.t("Choose a plan manually in Plan and dates, or retry Detect plan. Your tier and dates are unchanged.")
+    }
+    func showPlanFailure(_ operation: String) {
+        if page == "subscription" { planSourceField.stringValue = planFailureMessage() }
+        if page == "overview" { detail.stringValue = planFailureMessage(); detail.isHidden = false }
+        if operation == "detect" { alert(planFailureMessage()) }
     }
     @objc func showDisplay() {
         guard beginPage("display") else { return }; showingSettings = true; displayChecks = []
@@ -722,6 +983,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             }
         }
         body.addArrangedSubview(stack); stack.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true
+        responsive(stack, threshold: 700)
         updateSelectionCount()
         paragraph("One selection applies to the Codex sidebar, overview and browser panel.")
         paragraph("Official controls have priority. Scroll first; collapse only when space is very limited.")
@@ -738,7 +1000,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     @objc func selectNone() { displayChecks.forEach { $0.1.state = .off }; selectionChanged() }
     func paragraph(_ text: String) {
         let label = NSTextField(wrappingLabelWithString: CqsLocale.t(text)); label.font = .systemFont(ofSize: 13)
-        label.widthAnchor.constraint(lessThanOrEqualToConstant: 640).isActive = true; body.addArrangedSubview(label)
+        body.addArrangedSubview(label); label.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true
     }
     func heading(_ text: String) {
         let label = NSTextField(labelWithString: CqsLocale.t(text)); label.font = .systemFont(ofSize: 22, weight: .regular); body.addArrangedSubview(label)
@@ -812,7 +1074,8 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         paragraph("Unofficial software. Not affiliated with or endorsed by OpenAI.")
         paragraph("Author: KEFEN / License: MIT")
         body.addArrangedSubview(button("Visit GitHub project", #selector(openGitHub)))
-        body.addArrangedSubview(button("Show application in Finder", #selector(revealApplication))); present()
+        body.addArrangedSubview(button("Show application in Finder", #selector(revealApplication)))
+        body.addArrangedSubview(updateButton); present()
     }
     @objc func skip() { enabled.state = .off; save() }
     @objc func save() {
@@ -830,7 +1093,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         let selectedTier = ["unknown", "100", "200", "500", "standard", "premium"][tier.indexOfSelectedItem]
         if selectedTier != "unknown" || member["tier"] != nil { member["tier"] = selectedTier }
         if purchaseText.isEmpty { member.removeValue(forKey: "purchaseDate") } else { member["purchaseDate"] = purchaseText }
-        if nextText.isEmpty || mode.indexOfSelectedItem == 0 || mode.indexOfSelectedItem == 3 { member.removeValue(forKey: "date") } else { member["date"] = nextText }
+        if nextText.isEmpty { member.removeValue(forKey: "date") } else { member["date"] = nextText }
         member["kind"] = mode.indexOfSelectedItem == 2 ? "expiry" : "renewal"
         member["monthlyEstimate"] = mode.indexOfSelectedItem == 0; member["annualEstimate"] = mode.indexOfSelectedItem == 3; member["estimated"] = mode.indexOfSelectedItem == 0 || mode.indexOfSelectedItem == 3
         do { try write("membership.json", member); var prefs = read("preferences.json"); prefs["setupComplete"] = true; try write("preferences.json", prefs); saved(); if child == nil { start() } }
@@ -947,6 +1210,9 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         if feedbackUntil > Date(), stage != "failed", !runtimeIssue { detail.stringValue = feedback }
         if let issue = updateRecoveryMessage() { detail.stringValue = issue }
         detail.isHidden = mounted && feedbackUntil <= Date() && updateRecoveryMessage() == nil
+        if mounted && !planFailure.isEmpty && feedbackUntil <= Date() && updateRecoveryMessage() == nil { detail.stringValue = planFailureMessage(); detail.isHidden = false }
+        if mounted && planProcess != nil && updateRecoveryMessage() == nil { detail.stringValue = CqsLocale.t("Detecting plan. The official Codex usage panel may open briefly."); detail.isHidden = false }
+        updateConnectionAnimation()
         updateMetrics(mounted)
         CqsLocale.apply(window.contentView!)
     }
@@ -1032,13 +1298,19 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         } catch { alert(error.localizedDescription) }
     }
     @objc func checkUpdates() { runUpdate("check") }
+    func updateFailureMessage(_ code: String?) -> String {
+        guard let code = code, let english = MetricPresentation.updateFailureReasons[code] else { return CqsLocale.t("Update check failed. Please try again later.") }
+        let localized = CqsLocale.t(code)
+        return localized == code ? CqsLocale.t(english) : localized
+    }
     func runUpdate(_ operation: String) {
         guard updateProcess == nil else { return }
         if operation == "prepare" && !resolvePendingEdits() { return }
+        let operationStarted = Date().timeIntervalSince1970 * 1000
         let process = Process(); process.executableURL = root.appendingPathComponent("runtime/node")
         process.arguments = [root.appendingPathComponent("src/update.mjs").path, operation, root.path, Bundle.main.bundleURL.path, String(ProcessInfo.processInfo.processIdentifier)]
         let output = Pipe(); process.standardOutput = output; process.standardError = FileHandle.nullDevice
-        updateButton.isEnabled = false; updateButton.title = CqsLocale.t(operation == "download" ? "Downloading update..." : "Checking for updates...")
+        updateButton.isEnabled = false; updateNotice.isEnabled = false; updateButton.title = CqsLocale.t(operation == "download" ? "Downloading update..." : "Checking for updates...")
         updateProcess = process
         if operation == "prepare" {
             let sheet = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 320, height: 96), styleMask: [.titled], backing: .buffered, defer: false)
@@ -1050,24 +1322,37 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         process.terminationHandler = { [weak self] child in
             let data = output.fileHandleForReading.readDataToEndOfFile()
             DispatchQueue.main.async {
-                guard let self = self else { return }; self.updateProcess = nil; self.updateButton.isEnabled = true; self.updateButton.title = CqsLocale.t("Check for updates")
+                guard let self = self else { return }; self.updateProcess = nil; self.updateButton.isEnabled = true; self.updateNotice.isEnabled = true; self.updateButton.title = CqsLocale.t("Check for updates")
                 self.endUpdatePreparation()
-                guard child.terminationStatus == 0, let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { if operation != "auto" { self.alert(CqsLocale.t("Update check failed. Please try again later.")) }; return }
+                let parsed = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+                if child.terminationStatus != 0 || parsed == nil || parsed?["error"] != nil {
+                    let code = MetricPresentation.updateFailureCode(parsed) ?? MetricPresentation.persistedUpdateFailureCode(self.read("updates/last-error.json"), since: operationStarted)
+                    if operation != "auto" { self.alert(self.updateFailureMessage(code)) }
+                    return
+                }
+                guard let result = parsed else { return }
                 if operation == "prepare" {
-                    guard result["prepared"] as? Bool == true else { self.alert(CqsLocale.t("Update preparation failed. The app will stay open.")); return }
+                    guard MetricPresentation.strictBoolean(result["prepared"]) == true else { self.alert(CqsLocale.t("Update preparation failed. The app will stay open.")); return }
                     self.stop(); return
                 }
-                guard result["available"] as? Bool == true else { if operation != "auto" { self.alert(CqsLocale.t("You are up to date.")) }; return }
-                self.updateButton.title = CqsLocale.t("Update available") + " " + (result["version"] as? String ?? "")
+                guard let available = MetricPresentation.strictBoolean(result["available"]) else {
+                    if operation != "auto" { self.alert(self.updateFailureMessage("E_UPDATE_METADATA")) }
+                    return
+                }
+                self.updateAvailable = available
+                self.availableVersion = result["version"] as? String ?? ""
+                self.updateNotice.isHidden = !self.updateAvailable
+                guard self.updateAvailable else { if operation != "auto" { self.alert(CqsLocale.t("You are up to date.")) }; return }
+                self.updateButton.title = CqsLocale.t("Update available") + " " + self.availableVersion
                 if operation == "auto" { return }
-                let ready = result["ready"] as? Bool == true
+                let ready = MetricPresentation.strictBoolean(result["ready"]) == true
                 let dialog = NSAlert(); dialog.messageText = CqsLocale.t(ready ? "Restart the companion to install the verified update? Codex stays open." : "Download this update in the background?")
                 dialog.informativeText = (result["version"] as? String ?? "") + "\n\n" + (result["notes"] as? String ?? "")
                 dialog.addButton(withTitle: CqsLocale.t("Cancel")); dialog.addButton(withTitle: CqsLocale.t("Continue"))
                 if dialog.runModal() == .alertSecondButtonReturn { self.runUpdate(ready ? "prepare" : "download") }
             }
         }
-        do { try process.run() } catch { endUpdatePreparation(); updateProcess = nil; updateButton.isEnabled = true; updateButton.title = CqsLocale.t("Check for updates"); if operation != "auto" { alert(CqsLocale.t("Update check failed. Please try again later.")) } }
+        do { try process.run() } catch { endUpdatePreparation(); updateProcess = nil; updateButton.isEnabled = true; updateNotice.isEnabled = true; updateButton.title = CqsLocale.t("Check for updates"); if operation != "auto" { alert(updateFailureMessage("E_UPDATE_CONFIGURATION")) } }
     }
     func endUpdatePreparation() { if let sheet = updatePreparationSheet { window.endSheet(sheet); sheet.orderOut(nil); updatePreparationSheet = nil } }
     func resolvePendingEdits() -> Bool {
@@ -1087,7 +1372,9 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         if CommandLine.arguments.contains("--ui-smoke") { fputs("UI smoke alert: \(text)\n", stderr); exit(1) }
         let a = NSAlert(); a.messageText = "Codex Quota Sidebar"; a.informativeText = text; a.runModal()
     }
-    func windowShouldClose(_ sender: NSWindow) -> Bool { sender.orderOut(nil); return false }
+    func windowDidMiniaturize(_ notification: Notification) { stopConnectionAnimation() }
+    func windowDidDeminiaturize(_ notification: Notification) { updateConnectionAnimation() }
+    func windowShouldClose(_ sender: NSWindow) -> Bool { stopConnectionAnimation(); sender.orderOut(nil); return false }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply { guard resolvePendingEdits() else { return .terminateCancel }; if child?.isRunning == true { stop(); return .terminateCancel }; return .terminateNow }
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool { present(); return true }
 }
