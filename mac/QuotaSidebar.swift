@@ -707,10 +707,14 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         guard beginPage("display") else { return }; showingSettings = true; displayChecks = []
         let values = read("display.json"), stack = NSStackView(); stack.orientation = .horizontal; stack.alignment = .top; stack.spacing = 24; stack.distribution = .fillEqually
         heading("Display choices")
-        let toolbar = NSStackView(); toolbar.spacing = 12; toolbar.addArrangedSubview(selectionCount); toolbar.addArrangedSubview(button("Select all", #selector(selectAll))); toolbar.addArrangedSubview(button("Clear selection", #selector(selectNone))); body.addArrangedSubview(toolbar)
+        let toolbar = NSStackView(); toolbar.spacing = 12; toolbar.distribution = .fill; toolbar.alignment = .centerY
+        toolbar.addArrangedSubview(selectionCount)
+        let toolbarGap = NSView(); toolbarGap.setContentHuggingPriority(.defaultLow, for: .horizontal); toolbarGap.setContentCompressionResistancePriority(.defaultLow, for: .horizontal); toolbar.addArrangedSubview(toolbarGap)
+        toolbar.addArrangedSubview(button("Select all", #selector(selectAll))); toolbar.addArrangedSubview(button("Clear selection", #selector(selectNone))); body.addArrangedSubview(toolbar)
+        toolbar.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true; toolbar.heightAnchor.constraint(equalToConstant: 52).isActive = true; body.setCustomSpacing(30, after: toolbar)
         let groups: [(String, [(String, String)])] = [("Plan and dates", [("plan", "Plan badge"), ("renewal", "Renewal date")]), ("Quota and resets", [("short", "5-hour remaining"), ("week", "Weekly remaining"), ("reset", "Quota reset date"), ("resetCredits", "Reset count"), ("credits", "Credits")]), ("Token usage", [("daily", "Daily tokens"), ("average", "Monthly daily average"), ("weekly", "Weekly tokens"), ("lifetime", "Lifetime tokens")])]
         for (name, items) in groups {
-            let group = column(spacing: 10); group.addArrangedSubview(label(name, size: 14)); stack.addArrangedSubview(group)
+            let group = column(spacing: 0); let groupTitle = label(name, size: 14); group.addArrangedSubview(groupTitle); group.setCustomSpacing(14, after: groupTitle); stack.addArrangedSubview(group)
             for (key, title) in items {
                 let check = NSButton(checkboxWithTitle: CqsLocale.t(title), target: self, action: #selector(selectionChanged)); check.font = .systemFont(ofSize: 13, weight: .regular)
                 check.heightAnchor.constraint(equalToConstant: 38).isActive = true
@@ -719,6 +723,8 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         }
         body.addArrangedSubview(stack); stack.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true
         updateSelectionCount()
+        paragraph("One selection applies to the Codex sidebar, overview and browser panel.")
+        paragraph("Official controls have priority. Scroll first; collapse only when space is very limited.")
         paragraph("Changes apply automatically while connected. No reconnect is needed.")
         saveButton = button("Save", #selector(saveDisplay), primary: true); body.addArrangedSubview(saveButton!); editingReady = true; present()
     }

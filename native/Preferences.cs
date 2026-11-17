@@ -81,8 +81,33 @@ internal static class MeterPreferences {
         var buttons=new FlowLayoutPanel{Dock=DockStyle.Top,Height=70,Padding=new Padding(0,20,0,0),WrapContents=false};content.Controls.Add(buttons);buttons.BringToFront();
         var save=MeterTheme.Button("save","Save",true);save.Width=80;save.Margin=new Padding(0,0,14,0);var skip=MeterTheme.Button("skip","Skip / hide",false);var cancel=MeterTheme.Button("cancel","Cancel",false);cancel.DialogResult=DialogResult.Cancel;buttons.Controls.Add(save);if(!embedded){buttons.Controls.Add(skip);buttons.Controls.Add(cancel);form.CancelButton=cancel;}
         var hint=MeterTheme.Label("Changes apply after saving. No reconnect needed.",9,MeterTheme.Muted);hint.Dock=DockStyle.None;hint.Width=400;hint.Height=38;buttons.Controls.Add(hint);form.AcceptButton=save;
-        Action arrange=()=>{float dpi;using(var g=content.CreateGraphics())dpi=g.DpiX/96f;int width=Math.Min((int)(760*form.Font.Size/10*dpi),content.ClientSize.Width),y=0;foreach(Control row in new Control[]{optional,planRow,source,fields,note,enabled,buttons}){row.Dock=DockStyle.None;row.SetBounds(0,y,width,row.Height);y+=row.Height;}};
-        content.Resize+=(s,e)=>arrange();form.Shown+=(s,e)=>arrange();arrange();
+        bool arranging=false;
+        Action arrange=()=>{
+            if(arranging)return;arranging=true;
+            try{
+                float scale;using(var g=content.CreateGraphics())scale=form.Font.Size/10*g.DpiX/96f;
+                int available=Math.Max(0,body.ClientSize.Height-body.Padding.Vertical);
+                // Keep the approved spacing when it fits; reclaim whitespace before scrolling.
+                float room=Math.Max(0,Math.Min(1,(available/scale-420)/110));
+                int[] regular={46,94,42,186,46,46,70},compact={32,80,30,152,40,36,50};
+                Control[] rows={optional,planRow,source,fields,note,enabled,buttons};
+                int width=Math.Min((int)(760*scale),Math.Max(0,body.ClientSize.Width-body.Padding.Horizontal)),y=0;
+                for(int i=0;i<rows.Length;i++){
+                    int height=(int)Math.Floor((compact[i]+(regular[i]-compact[i])*room)*scale);
+                    rows[i].Dock=DockStyle.None;rows[i].SetBounds(0,y,width,height);y+=height;
+                }
+                planRow.Padding=new Padding(0,(int)((8+8*room)*scale),0,0);
+                detect.Margin=new Padding((int)(4*scale),(int)(30*scale),0,(int)(10*room*scale));
+                fields.Padding=new Padding(0,(int)((8+8*room)*scale),0,0);
+                float fieldHeight=(fields.Height-fields.Padding.Top-(int)(6*room*scale))/2f;
+                foreach(RowStyle row in fields.RowStyles){row.SizeType=SizeType.Absolute;row.Height=fieldHeight;}
+                buttons.Padding=new Padding(0,(int)((8+12*room)*scale),0,0);
+                content.Height=y;
+                body.AutoScroll=available<(int)(420*scale);
+                body.AutoScrollMinSize=body.AutoScroll?new Size(0,y):Size.Empty;
+            }finally{arranging=false;}
+        };
+        content.Resize+=(s,e)=>arrange();body.ClientSizeChanged+=(s,e)=>arrange();form.Shown+=(s,e)=>arrange();arrange();
         foreach(var p in new[]{planRow,fields})p.Paint+=(s,e)=>{using(var pen=new Pen(MeterTheme.Line))e.Graphics.DrawLine(pen,0,0,p.Width,0);};
         fields.Paint+=(s,e)=>{using(var pen=new Pen(MeterTheme.Line))e.Graphics.DrawLine(pen,0,fields.Height-1,fields.Width,fields.Height-1);};
         bool dirty=false,loading=false,planEdited=false,tierEdited=false;
