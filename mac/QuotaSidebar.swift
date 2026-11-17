@@ -563,57 +563,60 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         } catch { fputs("UI smoke failed: \(error)\n", stderr); exit(1) }
     }
     func assertV3Geometry() {
+        func require(_ condition: @autoclosure () -> Bool, _ message: String = "Window resize contract failed") {
+            if !condition() { fputs("UI geometry failed (\(page)): \(message)\n", stderr); fflush(stderr); exit(1) }
+        }
         func find(_ id: String, in view: NSView) -> NSView? {
             if view.identifier?.rawValue == id { return view }
             for child in view.subviews { if let found = find(id, in: child) { return found } }
             return nil
         }
         let content = window.contentView!
-        precondition(window.styleMask.contains(.resizable) && window.contentMinSize.width == 820)
-        precondition(abs(languagePicker.bounds.height - 36) < 1 && languagePicker.bounds.width >= languagePicker.intrinsicContentSize.width - 1 && languagePicker.bounds.width < 148, "Language popup should tightly fit its icon, label and chevron")
+        require(window.styleMask.contains(.resizable) && window.contentMinSize.width == 820)
+        require(abs(languagePicker.bounds.height - 36) < 1 && languagePicker.bounds.width >= languagePicker.intrinsicContentSize.width - 1 && languagePicker.bounds.width < 148, "Language popup should tightly fit its icon, label and chevron")
         if let footer = find("window-footer", in: content) {
             let f = footer.convert(footer.bounds, to: content), viewport = pageScroll.convert(pageScroll.bounds, to: content)
-            precondition(content.bounds.contains(f) && viewport.minY >= f.maxY - 1, "Footer must stay visible outside scroll content")
+            require(content.bounds.contains(f) && viewport.minY >= f.maxY - 1, "Footer must stay visible outside scroll content")
         }
-        precondition(abs(pageDocument.bounds.width - pageScroll.contentView.bounds.width) < 2, "No horizontal scrolling")
-        precondition(pageDocument.bounds.height + 1 >= body.frame.maxY, "Document must include the entire page")
+        require(abs(pageDocument.bounds.width - pageScroll.contentView.bounds.width) < 2, "No horizontal scrolling")
+        require(pageDocument.bounds.height + 1 >= body.frame.maxY, "Document must include the entire page")
         func checkBounds(_ view: NSView) {
             guard !view.isHiddenOrHasHiddenAncestor else { return }
             if view is NSControl || view is OptionalDatePicker {
                 let rect = view.convert(view.bounds, to: pageDocument)
-                precondition(rect.minX >= -1 && rect.maxX <= pageDocument.bounds.width + 1, "Control outside page: \(view)")
-                precondition(rect.maxY <= pageDocument.bounds.height + 1, "Control clipped below document")
+                require(rect.minX >= -1 && rect.maxX <= pageDocument.bounds.width + 1, "Control outside page: \(view)")
+                require(rect.maxY <= pageDocument.bounds.height + 1, "Control clipped below document")
                 if view is NSControl { return }
             }
             view.subviews.forEach { checkBounds($0) }
         }
         checkBounds(body)
         if page == "overview", let charts = find("overview-charts", in: content) as? NSStackView {
-            precondition(abs(charts.bounds.width - body.bounds.width) < 1, "Charts must span the full content width")
+            require(abs(charts.bounds.width - body.bounds.width) < 1, "Charts must span the full content width")
             if let quotas = find("quota-column", in: charts), let tokens = find("token-column", in: charts) {
                 let q = quotas.convert(quotas.bounds, to: charts), t = tokens.convert(tokens.bounds, to: charts)
                 if charts.orientation == .horizontal {
-                    precondition(abs(q.width + t.width + 38 - charts.bounds.width) < 2, "Columns must fill available width")
-                    precondition(abs(t.minX - q.maxX - 38) < 2, "Columns must not overlap")
+                    require(abs(q.width + t.width + 38 - charts.bounds.width) < 2, "Columns must fill available width")
+                    require(abs(t.minX - q.maxX - 38) < 2, "Columns must not overlap")
                 } else {
-                    precondition(abs(q.width - charts.bounds.width) < 2 && abs(t.width - charts.bounds.width) < 2, "Narrow charts must use full-width rows")
-                    precondition(q.maxY <= t.minY + 1 || t.maxY <= q.minY + 1, "Stacked charts must not overlap")
+                    require(abs(q.width - charts.bounds.width) < 2 && abs(t.width - charts.bounds.width) < 2, "Narrow charts must use full-width rows")
+                    require(q.maxY <= t.minY + 1 || t.maxY <= q.minY + 1, "Stacked charts must not overlap")
                 }
                 lifecycle("geometry quota=\(q.width), tokens=\(t.width), gutter=\(t.minX - q.maxX)")
             }
             func checkLabels(_ view: NSView) {
                 if view.identifier?.rawValue == "plot-label", let field = view as? NSTextField {
                     let width = (field.stringValue as NSString).size(withAttributes: [.font: field.font!]).width
-                    precondition(field.bounds.width >= ceil(width) + 2, "Localized plot label is clipped: \(field.stringValue)")
+                    require(field.bounds.width >= ceil(width) + 2, "Localized plot label is clipped: \(field.stringValue)")
                 }
                 view.subviews.forEach { checkLabels($0) }
             }
             checkLabels(charts)
         }
         if page == "subscription" {
-            precondition(plan.bounds.width > 200 && plan.bounds.width <= body.bounds.width, "Plan popup must fit available width")
-            for control in [plan, tier, mode] { precondition(abs(control.bounds.height - 36) < 1, "Plan/date popups must be 36px high") }
-            for control in [purchase, next] { precondition(abs(control.bounds.height - 36) < 1 && control.bounds.width >= 260, "Native date pickers must fit adaptive form tracks") }
+            require(plan.bounds.width > 200 && plan.bounds.width <= body.bounds.width, "Plan popup must fit available width")
+            for control in [plan, tier, mode] { require(abs(control.bounds.height - 36) < 1, "Plan/date popups must be 36px high") }
+            for control in [purchase, next] { require(abs(control.bounds.height - 36) < 1 && control.bounds.width >= 260, "Native date pickers must fit adaptive form tracks") }
             lifecycle("geometry plan=\(plan.bounds.width)x\(plan.bounds.height), date=\(purchase.bounds.width)x\(purchase.bounds.height)")
         }
         if let button = find("open-codex", in: content) {
@@ -626,7 +629,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             for y in y0..<y1 { for x in x0..<x1 {
                 if let color = bitmap.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB), color.alphaComponent > 0.8 && color.redComponent > 0.85 && color.greenComponent > 0.85 && color.blueComponent > 0.85 { whitePixels += 1 }
             } }
-            precondition(whitePixels > 4, "Open Codex symbol must render white on the blue button")
+            require(whitePixels > 4, "Open Codex symbol must render white on the blue button")
         }
     }
     func clear() {
