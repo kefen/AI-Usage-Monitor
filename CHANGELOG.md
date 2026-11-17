@@ -1,5 +1,26 @@
 # Changelog
 
+## Windows 0.13.4 - 2026-11-17
+- Windows-only public release; macOS 0.5.1-alpha.1 and Chrome 0.4.1 remain unchanged.
+- Fit the default window to its screen working area. Compact whitespace and reflow narrow chart rows; stack sections in tall narrow windows. Retain scroll fallback only when the available viewport genuinely cannot fit readable content.
+- Include the accepted 0.13.2/0.13.3 local fixes below: installed-path updater quoting, permanent version label, clean native navigation focus, immediate locale refresh, aligned footer/date/metadata controls and compatible plan tiers.
+- Three-language numbered release notes; preserve user settings, dates and manual plan corrections.
+
+## Windows 0.13.3 Local Test Candidate (Not Published)
+- Windows only; no GitHub publication, macOS or browser release update.
+- Align the permanent version label with navigation; use equal-width footer actions and equal gaps. Group the About page's actions on one row.
+- Repaint self-drawn navigation immediately when language changes, without waiting for polling or hover. Fit language selection to its text while preserving full dropdown choices.
+- Align page titles, overview columns and plan/renewal metadata. Preserve empty and missing data behavior.
+- Filter optional tiers by family: Pro offers its existing Pro tiers, Business its existing Business tiers, other families show an unavailable optional tier. Clear incompatible UI selections on family change; preserve dates and do not rewrite legacy files until explicit save.
+
+## Windows 0.13.2 Local Test Candidate (Not Published)
+- Windows-only fix; macOS 0.5.1-alpha.1 and Chrome 0.4.1 unchanged. Awaiting user installation acceptance; no GitHub release authorized for this candidate.
+- Quote Windows updater arguments correctly when the actual application root ends in a backslash. Reproduced configuration failure before the fix; the identical installed path now checks successfully.
+- Keep version text separate from transient operation and update-error messages.
+- Remove native button focus-border artifacts from navigation; retain keyboard and accessible activation.
+- Align compact clear-date icons with native date fields. Calculated dates are cleared through their source purchase date, not an independent action.
+- Use a short blue connection indicator, clear temporary connecting feedback on success/failure, and separate plan/date metadata from the source summary.
+
 ## 2026-11-17 Native Readability Fixes
 - Windows 0.13.1 / macOS 0.5.1-alpha.1 / Chrome 0.4.1.
 - Clearer native text and DPI-aware Windows symbols; full translated navigation and action labels. Resizable windows, responsive forms and connection feedback retain the approved V3 layout.

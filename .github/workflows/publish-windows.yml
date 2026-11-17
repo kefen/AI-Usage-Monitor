@@ -1,0 +1,56 @@
+name: Publish Windows responsive fixes
+on:
+  push:
+    branches: [main]
+    paths: ['docs/releases/accepted-windows-responsive.json']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: publish-windows-0.13.4
+  cancel-in-progress: false
+jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - shell: pwsh
+        run: |
+          ./Build-Windows.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
+          ./runtime/node.exe test/package-extract.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Extraction failed' }
+          ./test/install.test.ps1
+          ./test/rollback.test.ps1
+          ./test/restart.test.ps1
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-windows-responsive
+          path: |
+            dist/*Setup.exe
+            dist/*source*.zip
+          if-no-files-found: error
+  publish:
+    if: github.repository == 'kefen/codex-quota-sidebar' && github.ref == 'refs/heads/main'
+    needs: windows
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24.16.0'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: release-windows-responsive
+          path: dist
+      - run: node tools/publish-release.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CQS_RELEASE_SCOPE: windows-only

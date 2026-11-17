@@ -6,6 +6,10 @@ internal static class UpdateRunnerTest {
     static void Assert(bool ok,string message){if(!ok)throw new Exception(message);}
     static UpdateResult Child(string operation,int timeout){return UpdateRunner.Execute(new ProcessStartInfo(typeof(UpdateRunnerTest).Assembly.Location,"--child "+operation),timeout);}
     static int Main(string[] args){
+        if(args.Length>0&&args[0].EndsWith("update.mjs",StringComparison.OrdinalIgnoreCase)){
+            if(args.Length!=5||args[1]!="check"||args[2]!=args[3]){Console.WriteLine("{\"error\":\"E_TEST_ARGUMENTS\"}");return 1;}
+            Console.WriteLine("{\"available\":false,\"current\":\"0.13.1\",\"version\":\"0.13.1\"}");return 0;
+        }
         if(args.Length==2&&args[0]=="--child"){
             Console.OutputEncoding=new UTF8Encoding(false);
             switch(args[1]){
@@ -21,6 +25,9 @@ internal static class UpdateRunnerTest {
         foreach(string code in new[]{"E_UPDATE_NETWORK","E_UPDATE_SIGNATURE","E_UPDATE_CHECKSUM","E_UPDATE_CONFIGURATION","E_UPDATE_METADATA"})Assert(UpdateRunner.Parse("{\"error\":\""+code+"\"}",1).Code==code,"Exit 1 JSON code lost: "+code);
         string fixture=Path.Combine(args[0],"app root");Directory.CreateDirectory(Path.Combine(fixture,"runtime"));Directory.CreateDirectory(Path.Combine(fixture,"src"));File.WriteAllText(Path.Combine(fixture,"runtime","node.exe"),"");File.WriteAllText(Path.Combine(fixture,"src","update.mjs"),"");
         Assert(UpdateRunner.AppRoot(Path.Combine(fixture,"runtime"))==fixture,"Runtime subdirectory root resolution failed");
+        File.Copy(typeof(UpdateRunnerTest).Assembly.Location,Path.Combine(fixture,"runtime","node.exe"),true);
+        var trailing=UpdateRunner.Run(fixture+Path.DirectorySeparatorChar,"check");
+        Assert(trailing.Success,"Actual AppDomain trailing-slash root corrupted child arguments: "+trailing.Code);
         Assert(Child("junk",5000).Code=="E_UPDATE_JSON","Junk stdout accepted");
         Assert(Child("large",5000).Code=="E_UPDATE_OUTPUT_LIMIT","Output unbounded");
         Assert(Child("timeout",100).Code=="E_UPDATE_TIMEOUT","Timeout lost");

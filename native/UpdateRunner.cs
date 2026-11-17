@@ -11,6 +11,14 @@ internal sealed class UpdateResult {
     internal bool Success {get{return Code==null;}}
 }
 internal static class UpdateRunner {
+    internal static string Quote(string value){
+        var result=new StringBuilder("\"");int slashes=0;
+        foreach(char c in value){
+            if(c=='\\'){slashes++;continue;}
+            result.Append('\\',c=='\"'?slashes*2+1:slashes);result.Append(c);slashes=0;
+        }
+        result.Append('\\',slashes*2);return result.Append('"').ToString();
+    }
     internal static string SafeCode(string value,string fallback){return System.Text.RegularExpressions.Regex.IsMatch(value??"",@"^E_[A-Z0-9_]{1,64}$")?value:fallback;}
     internal static UpdateResult Parse(string output,int exitCode){
         try{
@@ -47,7 +55,7 @@ internal static class UpdateRunner {
     internal static UpdateResult Run(string start,string operation){
         try{
             string root=AppRoot(start);
-            var info=new ProcessStartInfo(Path.Combine(root,"runtime","node.exe"),"\""+Path.Combine(root,"src","update.mjs")+"\" "+operation+" \""+root+"\" \""+root+"\" "+Process.GetCurrentProcess().Id){WorkingDirectory=root};
+            var info=new ProcessStartInfo(Path.Combine(root,"runtime","node.exe"),Quote(Path.Combine(root,"src","update.mjs"))+" "+Quote(operation)+" "+Quote(root)+" "+Quote(root)+" "+Process.GetCurrentProcess().Id){WorkingDirectory=root};
             var result=Execute(info,180000);
             if(!result.Success)try{string folder=Path.Combine(root,".runtime","updates");Directory.CreateDirectory(folder);File.WriteAllText(Path.Combine(folder,"native-diagnostic.json"),new JavaScriptSerializer().Serialize(new{code=result.Code,operation=operation,at=DateTime.UtcNow.ToString("o")}),new UTF8Encoding(false));}catch{}
             return result;

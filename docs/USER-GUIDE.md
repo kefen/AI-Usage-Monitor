@@ -100,7 +100,12 @@ Windows UI using test fixtures, not real account data.
 
 Open [Releases](https://github.com/kefen/codex-quota-sidebar/releases).
 For Windows 10/11 x64, download the asset ending in
-`Windows-0.13.1-x64-Setup.exe`, plus its SHA256 file if verifying integrity.
+`Windows-0.13.4-x64-Setup.exe`, plus its SHA256 file if verifying integrity.
+
+Windows 0.13.4 fits the default overview to the screen. Narrow columns move chart
+tracks below their labels; tall narrow windows stack sections. All selected data
+stays available. On exceptionally small windows, scrolling remains a fallback
+instead of clipping data. macOS and Chrome packages are unchanged in this release.
 Chrome uses the separate `Chrome-0.4.1.zip`. Mac has experimental architecture-specific DMGs (see below).
 The unsigned Windows executable may trigger an unknown-publisher warning.
 Verify its origin; never disable security software to get around a detection.

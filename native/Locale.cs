@@ -19,7 +19,7 @@ internal static class Locale {
     static string SystemLanguage(){string id=CultureInfo.CurrentUICulture.Name;return id.StartsWith("zh",StringComparison.OrdinalIgnoreCase)?(id.Contains("TW")||id.Contains("HK")||id.Contains("Hant")?"zh-TW":"zh-CN"):"en";}
     internal static void Load(string runtime){root=runtime;try{string value=File.ReadAllText(Path.Combine(root,"language.json")).Trim().Trim('"');if(new[]{"en","zh-CN","zh-TW"}.Contains(value))Language=value;}catch{}}
     internal static void Save(string runtime){Directory.CreateDirectory(runtime);File.WriteAllText(Path.Combine(runtime,"language.json"),"\""+Language+"\"",new UTF8Encoding(false));root=runtime;}
-    internal static void Set(string value){if(applying||!new[]{"en","zh-CN","zh-TW"}.Contains(value))return;Language=value;if(root!=null&&Directory.Exists(root))Save(root);applying=true;try{foreach(Form f in Application.OpenForms)Apply(f);}finally{applying=false;}}
+    internal static void Set(string value){if(applying||!new[]{"en","zh-CN","zh-TW"}.Contains(value))return;Language=value;if(root!=null&&Directory.Exists(root))Save(root);applying=true;try{foreach(Form f in Application.OpenForms){f.SuspendLayout();try{Apply(f);}finally{f.ResumeLayout(true);}if(f.IsHandleCreated)f.Refresh();}}finally{applying=false;}}
     internal static string T(string text){
         if(String.IsNullOrEmpty(text))return text;
         if(text.Trim()!=text)return text.Substring(0,text.Length-text.TrimStart().Length)+T(text.Trim())+text.Substring(text.TrimEnd().Length);

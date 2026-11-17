@@ -55,7 +55,7 @@ none is currently shipped. Windows 7/8 and 32-bit x86 are not supported.
 
 ## Screenshots
 
-**Current versions:** Windows **0.13.1**, macOS **0.5.1-alpha.1**
+**Current versions:** Windows **0.13.4**, macOS **0.5.1-alpha.1**
 (Apple Silicon and Intel), Chrome **0.4.1**.
 
 The V3 desktop overview uses quota rulers and a shared-scale comparison of daily
@@ -113,7 +113,7 @@ not evidence of live-account connection acceptance.
 
 | Platform | Version | Availability |
 | --- | --- | --- |
-| Windows 10/11 x64 | 0.13.1 | V3 interface; unsigned installer |
+| Windows 10/11 x64 | 0.13.4 | Responsive V3 overview; unsigned installer |
 | macOS Apple Silicon / Intel | 0.5.1-alpha.1 | V3 experimental DMGs; not notarized; prior Apple Silicon connection user-confirmed, Intel account testing pending |
 | Chrome MV3 | 0.4.1 | V3 companion extension; requires the local desktop monitor and native host |
 
@@ -128,7 +128,7 @@ does not make an ARM-only official client compatible with Intel.
 
 ## Downloads And Instructions
 
-- [Windows installer and checksums](https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.13.1)
+- [Windows installer and checksums](https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.13.4)
 - [Chrome extension ZIP](https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.4.1)
 - [macOS experimental installers, both architectures](https://github.com/kefen/codex-quota-sidebar/releases/tag/macos/v0.5.1-alpha.1)
 - **[Step-by-step illustrated user guide](docs/USER-GUIDE.md)**

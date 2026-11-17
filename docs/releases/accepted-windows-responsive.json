@@ -1,0 +1,9 @@
+{
+  "windows": "0.13.4",
+  "macos": "0.5.1-alpha.1",
+  "chrome": "0.4.1",
+  "windowsOnly": true,
+  "publicReleaseAuthorized": true,
+  "verificationRequired": true,
+  "scope": "User accepted Windows local fixes; finish default no-scroll and narrow reflow, then publish Windows only."
+}

@@ -194,5 +194,8 @@
   "test/NativeDpiTest.cs",
   "test/plan-menu.test.mjs",
   "docs/releases/accepted-ui-fixes.json",
-  "docs/releases/notes-ui-fixes.json"
+  "docs/releases/notes-ui-fixes.json",
+  ".github/workflows/publish-windows.yml",
+  "docs/releases/accepted-windows-responsive.json",
+  "docs/releases/notes-windows-responsive.json"
 ]

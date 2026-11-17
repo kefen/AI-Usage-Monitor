@@ -3,6 +3,32 @@ using System.IO;
 using System.Drawing;
 using System.Windows.Forms;
 internal static class PreferencesTest {
+    static void TierCompatibility(string root){
+        Directory.CreateDirectory(root);string path=Path.Combine(root,"membership.json");
+        File.WriteAllText(path,"{\"enabled\":true,\"plan\":\"pro\",\"tier\":\"100\",\"purchaseDate\":\"2026-11-13\",\"date\":\"2026-12-13\",\"kind\":\"renewal\"}");
+        using(var form=MeterPreferences.Create(root,true)){
+            form.Show();Application.DoEvents();
+            var plan=(ComboBox)form.Controls.Find("plan",true)[0];var tier=(ComboBox)form.Controls.Find("tier",true)[0];
+            if(tier.Items.Count!=4||tier.Text!="Pro 100")throw new Exception("Pro must expose only compatible optional tiers");
+            plan.SelectedIndex=4;
+            if(tier.Items.Count!=3||tier.SelectedIndex!=0||tier.Items.Contains("Pro 100"))throw new Exception("Business retained an incompatible Pro tier");
+            tier.SelectedIndex=2;
+            foreach(string language in new[]{"zh-CN","zh-TW","en"}){Locale.Set(language);if(plan.SelectedIndex!=4||tier.SelectedIndex!=2||tier.Items.Count!=3)throw new Exception("Language switch changed the dependent tier selection");}
+            foreach(int family in new[]{0,1,2,5,6,7}){plan.SelectedIndex=family;if(tier.Enabled||tier.Items.Count!=1)throw new Exception("Unsupported family exposed paid tiers");}
+            plan.SelectedIndex=6;
+            if(tier.Enabled||tier.Items.Count!=1||tier.SelectedIndex!=0)throw new Exception("Edu must not offer Pro or Business tiers");
+            ((Button)form.Controls.Find("save",true)[0]).PerformClick();
+            var saved=MeterPreferences.Read(path);
+            if(Convert.ToString(saved["plan"])!="edu"||Convert.ToString(saved["tier"])!="unknown")throw new Exception("Save retained an incompatible tier");
+            if(Convert.ToString(saved["purchaseDate"])!="2026-11-13"||Convert.ToString(saved["date"])!="2026-12-13")throw new Exception("Changing plan altered saved dates");
+        }
+        File.WriteAllText(path,"{\"plan\":\"edu\",\"tier\":\"100\"}");string prior=File.ReadAllText(path);
+        using(var form=MeterPreferences.Create(root,true)){
+            var tier=(ComboBox)form.Controls.Find("tier",true)[0];
+            if(tier.Enabled||tier.SelectedIndex!=0)throw new Exception("Legacy incompatible record leaked into displayed tier");
+            if(File.ReadAllText(path)!=prior)throw new Exception("Opening the form silently rewrote a legacy record");
+        }
+    }
     static void AssertContained(Control control,Control viewport){
         var bounds=control.RectangleToScreen(control.ClientRectangle);
         for(Control parent=control.Parent;parent!=null;parent=parent.Parent){
@@ -22,6 +48,8 @@ internal static class PreferencesTest {
                     Locale.Set(language);Application.DoEvents();
                     foreach(string name in new[]{"save","detectPlan","plan","tier","dateMode","purchaseDate","nextDate","membershipEnabled","planSource"})AssertContained(form.Controls.Find(name,true)[0],host);
                     var body=(Panel)form.Controls.Find("planContent",true)[0].Parent;
+                    var next=form.Controls.Find("nextDate",true)[0];var clear=form.Controls.Find("nextDateClear",true)[0];
+                    if(!next.Enabled&&clear.Enabled)throw new Exception("Calculated renewal must not have an active independent clear action");
                     if(body.AutoScroll||body.VerticalScroll.Visible)throw new Exception("Normal small-work-area form must not scroll");
                     using(var bitmap=new Bitmap(host.Width,host.Height)){host.DrawToBitmap(bitmap,new Rectangle(0,0,host.Width,host.Height));bitmap.Save(Path.Combine(root,"compact-"+height+"-"+language+".png"));}
                 }
@@ -31,6 +59,7 @@ internal static class PreferencesTest {
     }
     [STAThread] static int Main(string[] args){
         Application.EnableVisualStyles();Locale.Set("en");string root=args[0];Directory.CreateDirectory(root);
+        TierCompatibility(Path.Combine(root,"tier-link"));
         CompactLayout(root);
         string empty=Path.Combine(root,"blank");Directory.CreateDirectory(empty);
         string locked=Path.Combine(root,"locked");Directory.CreateDirectory(locked);string lockPath=Path.Combine(locked,"membership.json.lock");File.WriteAllText(lockPath,"held");
@@ -57,6 +86,10 @@ internal static class PreferencesTest {
                         ((BlankDatePicker)form.Controls.Find("purchaseDate",true)[0]).Value=new DateTime(2026,1,31);
                         ((BlankDatePicker)form.Controls.Find("purchaseDate",true)[0]).Checked=true;
                         if(((DateTimePicker)form.Controls.Find("nextDate",true)[0]).Value.Date!=new DateTime(2026,2,28))throw new Exception("Monthly preview mismatch");
+                        var purchase=(BlankDatePicker)form.Controls.Find("purchaseDate",true)[0];var clear=(NavigationItem)form.Controls.Find("purchaseDateClear",true)[0];var next=(BlankDatePicker)form.Controls.Find("nextDate",true)[0];
+                        if(!clear.Visible||clear.Height!=purchase.Height)throw new Exception("Clear-date icon must match the native date field height");
+                        clear.PerformClick();if(purchase.Checked||next.Checked||clear.Visible)throw new Exception("Clearing purchase date did not clear its estimate and hide the clear action");
+                        purchase.Value=new DateTime(2026,1,31);purchase.Checked=true;
                     }
                     using(var bitmap=new Bitmap(form.Width,form.Height)){form.DrawToBitmap(bitmap,new Rectangle(0,0,form.Width,form.Height));bitmap.Save(Path.Combine(root,"preferences-"+action+".png"));}
                     ((Button)form.Controls.Find(action,true)[0]).PerformClick();

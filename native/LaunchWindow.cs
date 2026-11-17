@@ -6,7 +6,7 @@ using System.Windows.Forms;
 internal sealed class LaunchWindow : Form {
     readonly Label headline,subtitle,connection,quota,usage,lastSync;
     readonly Button retry,open;
-    readonly ProgressBar connecting;
+    readonly ConnectionIndicator connecting;
     Action<string> checkUpdate;
     Button aboutUpdate;
     bool updateAvailable;
@@ -29,7 +29,7 @@ internal sealed class LaunchWindow : Form {
     readonly UsageOverview overview;
     readonly Panel body,overviewPage;
     readonly string root=System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,".runtime");
-    readonly Dictionary<Button,string> navigation=new Dictionary<Button,string>();
+    readonly Dictionary<NavigationItem,string> navigation=new Dictionary<NavigationItem,string>();
     readonly Action reconnectAction;
     readonly Label footerMessage;
     Form editor;
@@ -38,8 +38,15 @@ internal sealed class LaunchWindow : Form {
     internal LaunchWindow(Action openCodex,Action reconnect,Action settings,Action stop){
         reconnectAction=reconnect;
         Text="Codex Quota Sidebar";MeterTheme.Style(this,1184,792);
-        Load+=(s,e)=>MinimumSize=new Size(900,640);
+        Load+=(s,e)=>{
+            float scale;using(var g=CreateGraphics())scale=g.DpiX/96f;
+            var work=Screen.FromControl(this).WorkingArea;
+            MinimumSize=new Size(Math.Min(work.Width,(int)(680*scale)),Math.Min(work.Height,(int)(500*scale)));
+            Size=new Size(Math.Min(work.Width,Width),Math.Min(work.Height,(int)(860*scale)));
+            Location=new Point(work.Left+(work.Width-Width)/2,work.Top+(work.Height-Height)/2);
+        };
         body=MeterTheme.Body();Controls.Add(body);var header=MeterTheme.Header("","Windows");Controls.Add(header);
+        body.Padding=new Padding(30,16,30,16);
         var rail=new Panel{Dock=DockStyle.Left,Width=184,Padding=new Padding(12,22,12,16),BackColor=Color.FromArgb(245,247,250)};Controls.Add(rail);
         var nav=new FlowLayoutPanel{Dock=DockStyle.Top,Height=340,FlowDirection=FlowDirection.TopDown,WrapContents=false};rail.Controls.Add(nav);
         var updates=MeterTheme.Button("installUpdate","",false);updates.AccessibleName=Locale.T("Update available");updates.Dock=DockStyle.Fill;MeterTheme.Glyph(updates,"\uE896");updates.Visible=false;var updateSlot=new Panel{Dock=DockStyle.Right,Width=48,Padding=new Padding(0,0,8,4),Visible=false};updateSlot.Controls.Add(updates);header.Controls.Add(updateSlot);header.Controls.SetChildIndex(updateSlot,1);header.Controls.Find("brandCaption",true)[0].Parent.BringToFront();
@@ -55,6 +62,7 @@ internal sealed class LaunchWindow : Form {
                 if(IsDisposed)return;BeginInvoke((Action)(()=>{
                     updating=false;updates.Enabled=true;body.Enabled=true;rail.Enabled=true;if(aboutUpdate!=null&&!aboutUpdate.IsDisposed){aboutUpdate.Enabled=true;aboutUpdate.Text=Locale.T("Check for updates");}
                     if(!response.Success){UpdateOutcome=Locale.T("Update check failed. Please try again later.")+" ("+response.Code+")";footerMessage.Text=UpdateOutcome;if(operation!="auto")MeterTheme.Error(UpdateOutcome);return;}
+                    if(footerMessage.Text==UpdateOutcome)footerMessage.Text="";UpdateOutcome=null;
                     try{
                         var result=response.Data;
                         if(operation=="prepare"){if(Prepared(result)){stop();return;}MeterTheme.Error(Locale.T("Update preparation failed. The meter is still running."));return;}
@@ -73,27 +81,41 @@ internal sealed class LaunchWindow : Form {
         Shown+=(s,e)=>{if(System.IO.File.Exists(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"installation.json")))check("auto");};
         string[] glyphs={"\uE80F","\uE8A0","\uE77B","\uE713","\uE897","\uE946"};int navIndex=0;
         foreach(string label in new[]{"Usage overview","Sidebar content","Codex subscription record","Data and settings","Diagnostics","About project"}){
-            string key=label;var b=MeterTheme.Button(key,key=="Codex subscription record"?"Plan and dates":key=="Sidebar content"?"Display content":key,false);b.Font=MeterTheme.Font(9.75f);b.Width=160;b.Height=40;b.TextAlign=ContentAlignment.MiddleLeft;b.Margin=new Padding(0,0,0,5);b.BackColor=rail.BackColor;b.FlatAppearance.BorderSize=0;MeterTheme.Glyph(b,glyphs[navIndex++]);b.Click+=(s,e)=>ShowPage(key);if(key=="About project"){b.Dock=DockStyle.Bottom;rail.Controls.Add(b);}else nav.Controls.Add(b);navigation[b]=key;
+            string key=label;var b=new NavigationItem{Name=key,Text=key=="Codex subscription record"?"Plan and dates":key=="Sidebar content"?"Display content":key,Glyph=glyphs[navIndex++],Font=MeterTheme.Font(9.75f),Width=160,Height=40,Margin=new Padding(0,0,0,5),BackColor=rail.BackColor,ForeColor=MeterTheme.Muted};
+            b.Click+=(s,e)=>ShowPage(key);if(key=="About project"){b.Dock=DockStyle.Bottom;rail.Controls.Add(b);}else nav.Controls.Add(b);navigation[b]=key;
         }
         overviewPage=new Panel{Dock=DockStyle.Fill};body.Controls.Add(overviewPage);
         var grid=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=2,RowCount=2,Margin=new Padding(0)};
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));
-        grid.RowStyles.Add(new RowStyle(SizeType.Absolute,58));grid.RowStyles.Add(new RowStyle(SizeType.Percent,100));overviewPage.Controls.Add(grid);
-        headline=MeterTheme.Label("Usage overview",16.5f,MeterTheme.Ink);headline.Name="statusHeadline";headline.TextAlign=ContentAlignment.TopLeft;grid.Controls.Add(headline,0,0);
+        grid.RowStyles.Add(new RowStyle(SizeType.Absolute,50));grid.RowStyles.Add(new RowStyle(SizeType.Percent,100));overviewPage.Controls.Add(grid);
+        headline=MeterTheme.PageTitle("Usage overview");headline.Name="statusHeadline";headline.Margin=Padding.Empty;grid.Controls.Add(headline,0,0);
         var statusPanel=new Panel{Dock=DockStyle.Fill};grid.Controls.Add(statusPanel,1,0);
         subtitle=MeterTheme.Label("Connecting",10,MeterTheme.Muted);subtitle.Name="statusDetail";subtitle.TextAlign=ContentAlignment.TopRight;statusPanel.Controls.Add(subtitle);
-        connecting=new ProgressBar{Name="connectionProgress",Dock=DockStyle.Bottom,Height=4,Minimum=0,Maximum=100,Value=35,Style=MeterTheme.AnimationEnabled?ProgressBarStyle.Marquee:ProgressBarStyle.Continuous,MarqueeAnimationSpeed=35};statusPanel.Controls.Add(connecting);connecting.BringToFront();
+        subtitle.Dock=DockStyle.None;
+        connecting=new ConnectionIndicator{Name="connectionProgress"};statusPanel.Controls.Add(connecting);
+        Action arrangeStatus=()=>{float scale;using(var g=statusPanel.CreateGraphics())scale=g.DpiX/96f;int width=Math.Min(statusPanel.ClientSize.Width,(int)(136*scale));subtitle.SetBounds(0,0,statusPanel.ClientSize.Width,(int)(28*scale));connecting.SetBounds(statusPanel.ClientSize.Width-width,(int)(36*scale),width,Math.Max(3,(int)(3*scale)));};
+        statusPanel.SizeChanged+=(s,e)=>arrangeStatus();arrangeStatus();
         overview=new UsageOverview();overview.Margin=new Padding(0);grid.Controls.Add(overview,0,1);grid.SetColumnSpan(overview,2);
         connection=new Label();quota=new Label();usage=new Label();
         lastSync=MeterTheme.Label("--",9,MeterTheme.Muted);
-        var footer=MeterTheme.Footer();Controls.Add(footer);body.BringToFront();Controls.SetChildIndex(header,Controls.Count-1);
+        var footer=new Panel{Name="mainFooter",Dock=DockStyle.Bottom,Height=64,Padding=new Padding(12,13,24,12),BackColor=MeterTheme.Surface};
+        footer.Paint+=(s,e)=>{using(var pen=new Pen(MeterTheme.Line))e.Graphics.DrawLine(pen,0,0,footer.Width,0);};Controls.Add(footer);body.BringToFront();Controls.SetChildIndex(header,Controls.Count-1);
         open=MeterTheme.Button("openCodex","Open Codex",true);open.Width=150;open.Enabled=true;MeterTheme.Glyph(open,"\uE8A7");open.Click+=(s,e)=>openCodex();
         retry=MeterTheme.Button("reconnect","Reconnect",false);retry.Width=132;retry.Enabled=false;MeterTheme.Glyph(retry,"\uE72C");retry.Click+=(s,e)=>reconnect();
         footer.Controls.Add(open);footer.Controls.Add(retry);
-        var exit=MeterTheme.Button("exitSoftware","Exit software",false);exit.Width=140;exit.FlatAppearance.BorderSize=0;MeterTheme.Glyph(exit,"\uE7E8");exit.Click+=(s,e)=>{if(!ResolveEdits())return;if(MessageBox.Show(Locale.T("Quit the meter? Codex stays open."),Text,MessageBoxButtons.OKCancel,MessageBoxIcon.Question,MessageBoxDefaultButton.Button2)==DialogResult.OK)stop();};footer.Controls.Add(exit);
-        footerMessage=MeterTheme.Label("Windows "+MeterTheme.Version+" / "+Locale.T("Local connection"),8,MeterTheme.Muted);footerMessage.Dock=DockStyle.None;footerMessage.Width=500;footerMessage.Height=38;footer.Controls.Add(footerMessage);
-        Action footerLayout=()=>footerMessage.Width=Math.Max(180,footer.ClientSize.Width-open.Width-retry.Width-exit.Width-88);
-        footer.Layout+=(s,e)=>{int target=Math.Max(180,footer.ClientSize.Width-open.Width-retry.Width-exit.Width-88);if(footerMessage.Width!=target)footerMessage.Width=target;};footerLayout();
+        var exit=new NavigationItem{Name="exitSoftware",Text="Exit software",Glyph="\uE7E8",CenterContent=true,Font=MeterTheme.Font(9.75f),Width=140,Height=38,BackColor=MeterTheme.Surface,ForeColor=MeterTheme.Ink};exit.Click+=(s,e)=>{if(!ResolveEdits())return;if(MessageBox.Show(Locale.T("Quit the meter? Codex stays open."),Text,MessageBoxButtons.OKCancel,MessageBoxIcon.Question,MessageBoxDefaultButton.Button2)==DialogResult.OK)stop();};footer.Controls.Add(exit);
+        var identity=new Panel{Name="footerIdentity",Width=500,Height=38,Margin=new Padding(0)};
+        var version=MeterTheme.Label("Windows "+MeterTheme.Version,8.5f,MeterTheme.Muted);version.Name="footerVersion";version.Dock=DockStyle.None;
+        footerMessage=MeterTheme.Label("",8,MeterTheme.Muted);footerMessage.Name="footerFeedback";footerMessage.Dock=DockStyle.None;footerMessage.AutoEllipsis=true;
+        identity.Controls.Add(footerMessage);identity.Controls.Add(version);footer.Controls.Add(identity);
+        bool footerSizing=false;Action footerLayout=()=>{if(footerSizing)return;footerSizing=true;try{
+            float scale;using(var g=footer.CreateGraphics())scale=g.DpiX/96f;
+            int width=(int)(152*scale),gap=(int)(12*scale),height=(int)(38*scale),left=footer.ClientSize.Width-footer.Padding.Right-width*3-gap*2,top=Math.Max(0,(footer.ClientSize.Height-height)/2);
+            exit.SetBounds(left,top,width,height);retry.SetBounds(left+width+gap,top,width,height);open.SetBounds(left+(width+gap)*2,top,width,height);
+            identity.SetBounds(footer.Padding.Left,top,Math.Max(0,left-footer.Padding.Left-(int)(16*scale)),height);
+            int line=(int)(18*scale);bool hasFeedback=!String.IsNullOrEmpty(footerMessage.Text);footerMessage.Visible=hasFeedback;version.SetBounds(0,hasFeedback?0:(height-line)/2,identity.Width,line);footerMessage.SetBounds(0,height-line,identity.Width,line);
+        }finally{footerSizing=false;}};
+        footer.Layout+=(s,e)=>footerLayout();footerMessage.TextChanged+=(s,e)=>footerLayout();footerLayout();
         ShowPage("Usage overview");
         ReadUpdateOutcome();
         FormClosing+=(s,e)=>{if(!exiting&&e.CloseReason==CloseReason.UserClosing){e.Cancel=true;Hide();}};
@@ -129,7 +151,7 @@ internal sealed class LaunchWindow : Form {
         foreach(var pair in navigation){pair.Key.BackColor=pair.Value==key?Color.FromArgb(231,238,252):Color.FromArgb(245,247,250);pair.Key.ForeColor=pair.Value==key?MeterTheme.Green:MeterTheme.Muted;}
         if(key=="Usage overview"){overview.ReadSnapshot(snapshotConnected);overview.AutoScrollPosition=Point.Empty;overviewPage.BringToFront();return;}
         transient=new Panel{Dock=DockStyle.Fill,AutoScroll=false};body.Controls.Add(transient);transient.BringToFront();
-        var title=MeterTheme.Label(key=="Codex subscription record"?"Plan and dates":key=="Sidebar content"?"Display content":key,16.5f,MeterTheme.Ink);title.Dock=DockStyle.Top;title.Height=50;transient.Controls.Add(title);
+        var title=MeterTheme.PageTitle(key=="Codex subscription record"?"Plan and dates":key=="Sidebar content"?"Display content":key);title.Dock=DockStyle.Top;title.Height=50;transient.Controls.Add(title);
         var content=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false,AutoScroll=true};transient.Controls.Add(content);content.BringToFront();
         Action<string> text=value=>{var p=MeterTheme.Label(value,10,MeterTheme.Muted);p.Dock=DockStyle.None;int width=Math.Max(400,body.ClientSize.Width-60);p.AutoSize=true;p.MinimumSize=new Size(width,24);p.MaximumSize=new Size(width,0);p.Margin=new Padding(0,0,0,8);content.Controls.Add(p);};
         Action<string,Action> command=(label,action)=>{var b=MeterTheme.Button(label,label,false);b.Width=260;b.Margin=new Padding(0,2,0,20);b.Click+=(s,e)=>action();content.Controls.Add(b);};
@@ -164,12 +186,16 @@ internal sealed class LaunchWindow : Form {
             text("3. Review the file, describe how to reproduce the problem, then attach it to a GitHub issue. Hide personal information in screenshots.");command("Submit feedback on GitHub",()=>System.Diagnostics.Process.Start(Locale.Repository+"/issues/new"));
             text("No automatic uploads. You choose what to submit. A GitHub account is required to post an issue.");
         }else if(key=="About project"){
-            aboutUpdate=MeterTheme.Button("checkUpdates","Check for updates",false);aboutUpdate.Width=240;aboutUpdate.Click+=(s,e)=>checkUpdate("check");content.Controls.Add(aboutUpdate);
             text("Codex Quota Sidebar by KEFEN");text("Local, read-only quota and Token indicators in the Codex sidebar. Choose the metrics you need; official controls always have priority.");
             var divider=new Panel{Width=Math.Max(400,body.ClientSize.Width-60),Height=1,BackColor=MeterTheme.Line,Margin=new Padding(0,6,0,14)};content.Controls.Add(divider);
-            text("Author: KEFEN / License: MIT");text("Unofficial software. Not affiliated with or endorsed by OpenAI.");text("Uses the local CLI account. Token activity is not an API bill.");command("Visit GitHub project",()=>System.Diagnostics.Process.Start(Locale.Repository));
+            text("Author: KEFEN / License: MIT");text("Unofficial software. Not affiliated with or endorsed by OpenAI.");text("Uses the local CLI account. Token activity is not an API bill.");
+            float scale;using(var g=body.CreateGraphics())scale=g.DpiX/96f;
+            foreach(Control item in content.Controls)if(item is Label)item.Margin=new Padding(0,0,0,(int)(12*scale));
+            var actions=new FlowLayoutPanel{Name="aboutActions",Height=(int)(40*scale),WrapContents=false,Margin=new Padding(0,(int)(10*scale),0,0)};
+            aboutUpdate=MeterTheme.Button("checkUpdates","Check for updates",false);aboutUpdate.SetBounds(0,0,(int)(200*scale),(int)(38*scale));aboutUpdate.Margin=new Padding(0,0,(int)(12*scale),0);aboutUpdate.Click+=(s,e)=>checkUpdate("check");actions.Controls.Add(aboutUpdate);
+            var github=MeterTheme.Button("projectLink","Visit GitHub project",false);github.Size=aboutUpdate.Size;github.Margin=Padding.Empty;github.Click+=(s,e)=>System.Diagnostics.Process.Start(Locale.Repository);actions.Controls.Add(github);content.Controls.Add(actions);
         }
-        bool sizing=false;Action fit=()=>{if(sizing||content.IsDisposed)return;sizing=true;try{int width=Math.Max(0,content.ClientSize.Width-SystemInformation.VerticalScrollBarWidth-4);foreach(Control child in content.Controls){var label=child as Label;if(label!=null){label.MinimumSize=new Size(width,24);label.MaximumSize=new Size(width,0);}else if(child is Panel)child.Width=width;}}finally{sizing=false;}};
+        bool sizing=false;Action fit=()=>{if(sizing||content.IsDisposed)return;sizing=true;try{int width=Math.Max(0,content.ClientSize.Width-SystemInformation.VerticalScrollBarWidth-4);if(key=="About project")using(var g=content.CreateGraphics())width=Math.Min(width,(int)(720*g.DpiX/96));foreach(Control child in content.Controls){var label=child as Label;if(label!=null){label.MinimumSize=new Size(width,24);label.MaximumSize=new Size(width,0);}else if(child is Panel)child.Width=width;}}finally{sizing=false;}};
         content.SizeChanged+=(s,e)=>fit();fit();content.PerformLayout();Locale.Apply(transient);
     }
     static Label Row(TableLayoutPanel grid,int row,string key){grid.Controls.Add(MeterTheme.Label(key,10,MeterTheme.Muted),0,row);var value=MeterTheme.Label("--",10,MeterTheme.Ink);value.Name="statusRow"+row;grid.Controls.Add(value,1,row);return value;}
@@ -192,13 +218,14 @@ internal sealed class LaunchWindow : Form {
         quota.Text=Available(data,"quotaAvailable");usage.Text=Available(data,"usageAvailable");
         DateTime stamp;lastSync.Text=Locale.T("Last checked")+": "+(data.ContainsKey("updatedAt")&&DateTime.TryParse(Convert.ToString(data["updatedAt"]),out stamp)?stamp.ToLocalTime().ToString("MM/dd HH:mm"):"--");
         if(failed&&data.ContainsKey("code"))subtitle.Text=Convert.ToString(data["code"]);
-        connecting.Visible=!mounted&&!failed;open.Enabled=true;retry.Enabled=mounted||failed||stage=="sidebar-missing";
+        connecting.Active=!mounted&&!failed;open.Enabled=true;retry.Enabled=mounted||failed||stage=="sidebar-missing";
         retry.BackColor=MeterTheme.Surface;retry.ForeColor=MeterTheme.Ink;
         open.BackColor=MeterTheme.Green;open.ForeColor=Color.White;
         AcceptButton=failed?retry:open;
         overview.ReadSnapshot(mounted);
         if(mounted&&!autoPlanAttempted){autoPlanAttempted=true;string appRoot=AppDomain.CurrentDomain.BaseDirectory;var member=MeterPreferences.Read(System.IO.Path.Combine(root,"membership.json"));bool manual=member.Count>0&&(!member.ContainsKey("planSource")||Convert.ToString(member["planSource"])!="desktop"||member.ContainsKey("manualOverride")&&Convert.ToString(member["manualOverride"])=="True");if(!manual&&System.IO.File.Exists(System.IO.Path.Combine(appRoot,"src","plan.mjs")))MeterPreferences.DetectPlan(this,appRoot,"auto",result=>{overview.ReadSnapshot(snapshotConnected);});}
-        if(DateTime.UtcNow<feedbackUntil)subtitle.Text=feedback;
+        if(mounted||failed){feedbackUntil=DateTime.MinValue;if(footerMessage.Text==feedback)footerMessage.Text="";}
+        else if(DateTime.UtcNow<feedbackUntil)subtitle.Text=feedback;
         Locale.Apply(this);
     }
     static string Available(Dictionary<string,object> data,string key){return data.ContainsKey(key)?Convert.ToBoolean(data[key])?Locale.T("Synced"):Locale.T("Unavailable"):"--";}

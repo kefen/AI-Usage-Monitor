@@ -44,6 +44,7 @@ internal static class MeterTheme {
         form.Shown+=(s,e)=>Locale.Apply(form);
     }
     internal static Label Label(string text,float size,Color color){return new Label{Text=text,Font=Font(size),ForeColor=color,AutoSize=false,TextAlign=ContentAlignment.MiddleLeft,Dock=DockStyle.Fill,UseMnemonic=false};}
+    internal static Label PageTitle(string text){return new PageTitleLabel{Text=text,Font=Font(16.5f),ForeColor=Ink,AutoSize=false,TextAlign=ContentAlignment.TopLeft,Dock=DockStyle.Fill,UseMnemonic=false};}
     internal static Panel Header(string section,string version){
         var panel=new Panel{Dock=DockStyle.Top,Height=82,Padding=new Padding(26,22,26,20),BackColor=Surface};
         var icon=new PictureBox{Dock=DockStyle.Left,Width=40,SizeMode=PictureBoxSizeMode.Zoom};
@@ -54,6 +55,14 @@ internal static class MeterTheme {
         words.Controls.Add(caption);words.Controls.Add(title);panel.Controls.Add(words);panel.Controls.Add(icon);
         var languages=new Panel{Name="languageControl",Dock=DockStyle.Right,Width=148,Padding=new Padding(27,5,6,0)};
         var language=Locale.Picker();language.Dock=DockStyle.Fill;language.Font=Font(9.75f);languages.Controls.Add(language);
+        Action fitLanguage=()=>{if(!language.IsHandleCreated)return;using(var g=language.CreateGraphics()){
+            var flags=TextFormatFlags.NoPadding|TextFormatFlags.NoPrefix|TextFormatFlags.SingleLine;int extra=SystemInformation.VerticalScrollBarWidth+(int)(12*g.DpiX/96f);
+            int text=TextRenderer.MeasureText(g,language.Text,language.Font,new Size(Int32.MaxValue,Int32.MaxValue),flags).Width;
+            languages.Width=text+extra+languages.Padding.Horizontal;
+            int widest=0;foreach(object item in language.Items)widest=Math.Max(widest,TextRenderer.MeasureText(g,Convert.ToString(item),language.Font,new Size(Int32.MaxValue,Int32.MaxValue),flags).Width);language.DropDownWidth=widest+extra;
+        }};
+        language.SelectedIndexChanged+=(s,e)=>fitLanguage();language.FontChanged+=(s,e)=>fitLanguage();
+        panel.HandleCreated+=(s,e)=>panel.BeginInvoke((Action)(()=>{if(!panel.IsDisposed)fitLanguage();}));
         languages.Paint+=(s,e)=>{using(var pen=new Pen(Color.FromArgb(203,208,215)))e.Graphics.DrawRectangle(pen,0,0,languages.Width-1,35);using(var f=new Font("Segoe MDL2 Assets",11))using(var brush=new SolidBrush(Muted))e.Graphics.DrawString("\uE8C1",f,brush,7,10);};
         panel.Controls.Add(languages);words.BringToFront();
         panel.Paint+=(s,e)=>{using(var pen=new Pen(Line))e.Graphics.DrawLine(pen,0,panel.Height-1,panel.Width,panel.Height-1);};
@@ -96,7 +105,76 @@ internal static class MeterTheme {
     }
 }
 
+internal sealed class PageTitleLabel : Label {
+    protected override void OnPaint(PaintEventArgs e){
+        int inset;using(var reference=MeterTheme.Font(10))inset=(int)Math.Ceiling(reference.GetHeight(e.Graphics)/6f);
+        TextRenderer.DrawText(e.Graphics,Text,Font,new Rectangle(inset,0,Math.Max(0,Width-inset),Height),ForeColor,TextFormatFlags.NoPadding|TextFormatFlags.NoPrefix|TextFormatFlags.SingleLine|TextFormatFlags.Top);
+    }
+}
+
+internal sealed class NavigationItem : Control {
+    internal string Glyph="";bool hover;
+    internal bool CenterContent=false;
+    internal NavigationItem(){SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.ResizeRedraw|ControlStyles.Selectable,true);TabStop=true;Cursor=Cursors.Hand;AccessibleRole=AccessibleRole.PushButton;}
+    internal void PerformClick(){if(Enabled)OnClick(EventArgs.Empty);}
+    protected override void OnTextChanged(EventArgs e){base.OnTextChanged(e);Invalidate();}
+    protected override bool IsInputKey(Keys keyData){var key=keyData&Keys.KeyCode;return key==Keys.Enter||key==Keys.Space||base.IsInputKey(keyData);}
+    protected override AccessibleObject CreateAccessibilityInstance(){return new ActionAccessibility(this);}
+    sealed class ActionAccessibility : ControlAccessibleObject {
+        readonly NavigationItem action;
+        internal ActionAccessibility(NavigationItem owner):base(owner){action=owner;}
+        public override void DoDefaultAction(){action.PerformClick();}
+    }
+    protected override void OnMouseDown(MouseEventArgs e){if(e.Button==MouseButtons.Left)Focus();base.OnMouseDown(e);}
+    protected override void OnMouseEnter(EventArgs e){hover=true;Invalidate();base.OnMouseEnter(e);}
+    protected override void OnMouseLeave(EventArgs e){hover=false;Invalidate();base.OnMouseLeave(e);}
+    protected override void OnGotFocus(EventArgs e){base.OnGotFocus(e);Invalidate();}
+    protected override void OnLostFocus(EventArgs e){base.OnLostFocus(e);Invalidate();}
+    protected override void OnKeyDown(KeyEventArgs e){if(e.KeyCode==Keys.Space||e.KeyCode==Keys.Enter){PerformClick();e.Handled=true;e.SuppressKeyPress=true;}base.OnKeyDown(e);}
+    protected override void OnPaint(PaintEventArgs e){
+        var g=e.Graphics;g.Clear(Parent==null?BackColor:Parent.BackColor);g.SmoothingMode=System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+        Color background=hover&&ForeColor!=MeterTheme.Green?Color.FromArgb(237,241,247):BackColor;
+        float r=4*g.DpiX/96f;var rect=new RectangleF(0,0,Width-1,Height-1);
+        using(var path=new System.Drawing.Drawing2D.GraphicsPath()){
+            path.AddArc(rect.Left,rect.Top,r*2,r*2,180,90);path.AddArc(rect.Right-r*2,rect.Top,r*2,r*2,270,90);path.AddArc(rect.Right-r*2,rect.Bottom-r*2,r*2,r*2,0,90);path.AddArc(rect.Left,rect.Bottom-r*2,r*2,r*2,90,90);path.CloseFigure();
+            using(var brush=new SolidBrush(background))g.FillPath(brush,path);
+        }
+        float s=g.DpiX/96f;var flags=TextFormatFlags.NoPadding|TextFormatFlags.NoPrefix|TextFormatFlags.SingleLine|TextFormatFlags.VerticalCenter;
+        int icon=(int)(20*s),left=String.IsNullOrEmpty(Text)?Math.Max(0,(Width-icon)/2):(int)(8*s);
+        if(CenterContent&&!String.IsNullOrEmpty(Text)){int text=TextRenderer.MeasureText(g,Text,Font,new Size(Int32.MaxValue,Height),flags).Width;left=Math.Max(0,(Width-icon-(int)(8*s)-text)/2);}
+        using(var font=new Font("Segoe MDL2 Assets",11))TextRenderer.DrawText(g,Glyph,font,new Rectangle(left,0,icon,Height),ForeColor,flags|TextFormatFlags.HorizontalCenter);
+        int textLeft=CenterContent?left+icon+(int)(8*s):(int)(36*s);
+        TextRenderer.DrawText(g,Text,Font,new Rectangle(textLeft,0,Math.Max(0,Width-textLeft-(int)(4*s)),Height),ForeColor,flags);
+        if(Focused&&ShowFocusCues)ControlPaint.DrawFocusRectangle(g,new Rectangle(4,4,Width-8,Height-8));
+    }
+}
+
+internal sealed class ConnectionIndicator : Control {
+    readonly Timer timer=new Timer{Interval=80};
+    bool active;DateTime started;int frame;
+    internal bool Active {get{return active;}set{if(active!=value){active=value;started=DateTime.UtcNow;frame=14;}Visible=value;RefreshAnimation();}}
+    internal ConnectionIndicator(){
+        SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer,true);
+        timer.Tick+=(s,e)=>{if(!Visible||DateTime.UtcNow-started>TimeSpan.FromSeconds(60)){timer.Stop();return;}frame=(frame+1)%40;Invalidate();};
+    }
+    void RefreshAnimation(){if(active&&Visible&&MeterTheme.AnimationEnabled&&DateTime.UtcNow-started<TimeSpan.FromSeconds(60))timer.Start();else timer.Stop();Invalidate();}
+    protected override void OnVisibleChanged(EventArgs e){base.OnVisibleChanged(e);RefreshAnimation();}
+    protected override void OnPaint(PaintEventArgs e){
+        e.Graphics.Clear(MeterTheme.Line);int segment=Math.Max(1,Width/3);
+        int x=MeterTheme.AnimationEnabled?(int)((Width+segment)*(frame/40f))-segment:(Width-segment)/2;
+        using(var brush=new SolidBrush(MeterTheme.Blue))e.Graphics.FillRectangle(brush,x,0,segment,Height);
+    }
+    protected override void Dispose(bool disposing){if(disposing)timer.Dispose();base.Dispose(disposing);}
+}
+
 internal sealed class V3Button : Button {
+    internal V3Button(){
+        SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.ResizeRedraw,true);
+        FlatStyle=FlatStyle.Flat;
+    }
+    protected override void OnPaintBackground(PaintEventArgs e){e.Graphics.Clear(Parent==null?MeterTheme.Surface:Parent.BackColor);}
+    protected override void OnGotFocus(EventArgs e){base.OnGotFocus(e);Invalidate();}
+    protected override void OnLostFocus(EventArgs e){base.OnLostFocus(e);Invalidate();if(Parent!=null)Parent.Invalidate(Bounds);}
     internal string Glyph;
     protected override void OnHandleCreated(EventArgs e){
         base.OnHandleCreated(e);

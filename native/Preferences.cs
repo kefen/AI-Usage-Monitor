@@ -9,8 +9,9 @@ using System.Windows.Forms;
 
 internal sealed class BlankDatePicker : DateTimePicker {
     bool known;
+    internal event EventHandler PresenceChanged;
     internal BlankDatePicker(){ShowCheckBox=false;Format=DateTimePickerFormat.Custom;CustomFormat=" ";}
-    public new bool Checked {get{return known;}set{known=value;CustomFormat=value?"yyyy-MM-dd":" ";}}
+    public new bool Checked {get{return known;}set{bool changed=known!=value;known=value;CustomFormat=value?"yyyy-MM-dd":" ";if(changed&&PresenceChanged!=null)PresenceChanged(this,EventArgs.Empty);}}
     internal void Clear(){Checked=false;base.OnValueChanged(EventArgs.Empty);}
     protected override void OnValueChanged(EventArgs e){Checked=true;base.OnValueChanged(e);}
     protected override void OnCloseUp(EventArgs e){Checked=true;base.OnValueChanged(EventArgs.Empty);base.OnCloseUp(e);}
@@ -18,6 +19,7 @@ internal sealed class BlankDatePicker : DateTimePicker {
 }
 
 internal static class MeterPreferences {
+    static string[] TiersFor(string family){return family=="pro"?new[]{"unknown","100","200","500"}:family=="business"?new[]{"unknown","standard","premium"}:new[]{"unknown"};}
     static readonly JavaScriptSerializer Json=new JavaScriptSerializer();
     internal static Dictionary<string,object> Read(string path){try{return Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(path,Encoding.UTF8));}catch{return new Dictionary<string,object>();}}
     static string Value(Dictionary<string,object> data,string key,string fallback){return data.ContainsKey(key)?Convert.ToString(data[key]):fallback;}
@@ -64,7 +66,21 @@ internal static class MeterPreferences {
     }
     static void LoadDate(BlankDatePicker input,string saved){DateTime date;bool known=DateTime.TryParseExact(saved,"yyyy-MM-dd",CultureInfo.InvariantCulture,DateTimeStyles.None,out date);if(known)input.Value=date;input.Checked=known;}
     static Panel Field(string label,Control control){var panel=new Panel{Dock=DockStyle.Fill,Margin=new Padding(0,0,24,0)};var caption=MeterTheme.Label(label,10,MeterTheme.Ink);caption.Dock=DockStyle.Top;caption.Height=28;var box=new Panel{Dock=DockStyle.Top,Height=40,Padding=new Padding(0,3,0,0)};box.Controls.Add(control);
-        var date=control as BlankDatePicker;if(date!=null){var clear=MeterTheme.Button(control.Name+"Clear","",false);MeterTheme.Glyph(clear,"\uE711");clear.AccessibleName=Locale.T("Clear selection");clear.Dock=DockStyle.Right;clear.Width=36;clear.Margin=new Padding(0);clear.Click+=(s,e)=>date.Clear();box.Controls.Add(clear);control.BringToFront();box.SizeChanged+=(s,e)=>clear.Height=box.ClientSize.Height-box.Padding.Vertical;var tip=new ToolTip();tip.SetToolTip(clear,Locale.T("Clear selection"));clear.Disposed+=(s,e)=>tip.Dispose();}
+        var date=control as BlankDatePicker;if(date!=null){
+            date.Dock=DockStyle.None;date.MinimumSize=Size.Empty;
+            var clear=new NavigationItem{Name=control.Name+"Clear",Text="",Glyph="\uE711",AccessibleName=Locale.T("Clear selection"),ForeColor=MeterTheme.Muted,BackColor=MeterTheme.Surface,Margin=new Padding(0)};
+            clear.Click+=(s,e)=>date.Clear();box.Controls.Add(clear);
+            bool layingOut=false;Action arrangeDate=()=>{if(layingOut)return;layingOut=true;try{
+                float scale;using(var g=box.CreateGraphics())scale=g.DpiX/96f;
+                int height=date.PreferredHeight,gap=(int)(6*scale),y=Math.Max(0,(box.ClientSize.Height-height)/2);
+                date.SetBounds(0,y,Math.Max(0,box.ClientSize.Width-height-gap),height);
+                clear.SetBounds(Math.Max(0,box.ClientSize.Width-height),y,height,height);
+                clear.Visible=date.Enabled&&date.Checked;clear.Enabled=date.Enabled&&date.Checked;
+            }finally{layingOut=false;}};
+            box.SizeChanged+=(s,e)=>arrangeDate();date.EnabledChanged+=(s,e)=>arrangeDate();date.ValueChanged+=(s,e)=>arrangeDate();date.FontChanged+=(s,e)=>arrangeDate();box.HandleCreated+=(s,e)=>arrangeDate();
+            date.PresenceChanged+=(s,e)=>arrangeDate();
+            var tip=new ToolTip();tip.SetToolTip(clear,Locale.T("Clear selection"));clear.Disposed+=(s,e)=>tip.Dispose();
+        }
         panel.Controls.Add(box);panel.Controls.Add(caption);box.BringToFront();return panel;}
     internal static Form Create(string root,bool embedded){
         Directory.CreateDirectory(root);string memberPath=Path.Combine(root,"membership.json");var data=Read(memberPath);
@@ -81,12 +97,18 @@ internal static class MeterPreferences {
         var source=MeterTheme.Label(Value(data,"planSource","")=="desktop"?"Plan family detected from Codex desktop":"Manual record preserved",9,Value(data,"planSource","")=="desktop"?Color.FromArgb(25,112,90):MeterTheme.Amber);source.Name="planSource";source.Dock=DockStyle.Top;source.Height=42;content.Controls.Add(source);source.BringToFront();
         var fields=new TableLayoutPanel{Dock=DockStyle.Top,Height=186,ColumnCount=2,RowCount=2,Padding=new Padding(0,16,0,0)};fields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));fields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));fields.RowStyles.Add(new RowStyle(SizeType.Absolute,82));fields.RowStyles.Add(new RowStyle(SizeType.Absolute,82));content.Controls.Add(fields);fields.BringToFront();
         var tier=new ComboBox{Name="tier",DropDownStyle=ComboBoxStyle.DropDownList,Dock=DockStyle.Fill};
-        string[] tierIds={"unknown","100","200","500","standard","premium"};
-        Action loadTier=()=>{string prior=Value(data,"tier","unknown");tier.Items.Clear();tier.Items.AddRange(new object[]{Locale.T("Unknown / not recorded"),"Pro 100","Pro 200","Pro 500","Business Standard","Business Premium"});tier.SelectedIndex=0;for(int i=0;i<tier.Items.Count;i++)if(tierIds[i]==prior)tier.SelectedIndex=i;};loadTier();
+        string[] tierIds=new string[0];bool refreshingTier=false;
+        Action<string> populateTiers=prior=>{refreshingTier=true;tier.BeginUpdate();try{
+            string family=ids[Math.Max(0,plan.SelectedIndex)];
+            tierIds=TiersFor(family);
+            tier.Items.Clear();foreach(string id in tierIds)tier.Items.Add(id=="unknown"?Locale.T("Unknown / not recorded"):id=="standard"?"Business Standard":id=="premium"?"Business Premium":"Pro "+id);
+            tier.SelectedIndex=0;for(int i=0;i<tierIds.Length;i++)if(tierIds[i]==prior)tier.SelectedIndex=i;
+            tier.Enabled=tierIds.Length>1;
+        }finally{tier.EndUpdate();refreshingTier=false;}};
+        Action loadTier=()=>populateTiers(Value(data,"tier","unknown"));loadTier();
         var mode=new ComboBox{Name="dateMode",DropDownStyle=ComboBoxStyle.DropDownList,Dock=DockStyle.Fill};mode.Items.AddRange(new object[]{Locale.T("Monthly estimate (purchase + one month)"),Locale.T("Manual renewal date"),Locale.T("Manual expiry date"),Locale.T("Business annual estimate")});mode.SelectedIndex=Value(data,"annualEstimate","")=="True"?3:Value(data,"monthlyEstimate","")=="True"||!data.ContainsKey("date")?0:Value(data,"kind","")=="expiry"?2:1;
         var purchase=DateInput("purchaseDate",Value(data,"purchaseDate",""));var next=DateInput("nextDate",Value(data,"date",""));
         foreach(var combo in new[]{plan,tier,mode})MeterTheme.SizeCombo(combo);
-        purchase.MinimumSize=next.MinimumSize=new Size(0,36);
         fields.Controls.Add(Field("Specific tier (manual, optional)",tier),0,0);fields.Controls.Add(Field("Date type",mode),1,0);fields.Controls.Add(Field("Purchase date",purchase),0,1);fields.Controls.Add(Field("Renewal / expiry",next),1,1);
         planRow.Controls[0].Margin=new Padding(0,0,12,0);fields.GetControlFromPosition(1,0).Margin=fields.GetControlFromPosition(1,1).Margin=new Padding(0);
         var note=MeterTheme.Label("Dates are yours to enter. Detection never changes purchase or renewal dates. Leave blank to hide dates.",9,MeterTheme.Muted);note.Dock=DockStyle.Top;note.Height=46;content.Controls.Add(note);note.BringToFront();
@@ -122,12 +144,11 @@ internal static class MeterPreferences {
         };
         content.Resize+=(s,e)=>arrange();body.ClientSizeChanged+=(s,e)=>arrange();form.Shown+=(s,e)=>arrange();arrange();
         foreach(var p in new[]{planRow,fields})p.Paint+=(s,e)=>{using(var pen=new Pen(MeterTheme.Line))e.Graphics.DrawLine(pen,0,0,p.Width,0);};
-        fields.Paint+=(s,e)=>{using(var pen=new Pen(MeterTheme.Line))e.Graphics.DrawLine(pen,0,fields.Height-1,fields.Width,fields.Height-1);};
         bool dirty=false,loading=false,planEdited=false,tierEdited=false;
         Action update=()=>{bool estimate=mode.SelectedIndex==0||mode.SelectedIndex==3;next.Enabled=!estimate;if(estimate){next.Checked=purchase.Checked;if(purchase.Checked)next.Value=mode.SelectedIndex==3?purchase.Value.AddYears(1):purchase.Value.AddMonths(1);next.CustomFormat=next.Checked?"yyyy-MM-dd":" ";}};
         Action change=()=>{if(!loading&&!Locale.IsTranslating)dirty=true;};
-        plan.SelectedIndexChanged+=(s,e)=>{if(Locale.IsTranslating||loading||plan.SelectedIndex<0)return;planEdited=true;source.Text=Locale.T("Manual record preserved");source.ForeColor=MeterTheme.Amber;change();};
-        tier.SelectedIndexChanged+=(s,e)=>{if(!Locale.IsTranslating&&!loading){planEdited=true;tierEdited=true;change();}};
+        plan.SelectedIndexChanged+=(s,e)=>{if(Locale.IsTranslating||loading||plan.SelectedIndex<0)return;string prior=tierIds[Math.Max(0,tier.SelectedIndex)];populateTiers(prior);planEdited=tierEdited=true;source.Text=Locale.T("Manual record preserved");source.ForeColor=MeterTheme.Amber;change();};
+        tier.SelectedIndexChanged+=(s,e)=>{if(!Locale.IsTranslating&&!loading&&!refreshingTier){planEdited=true;tierEdited=true;change();}};
         mode.SelectedIndexChanged+=(s,e)=>{if(!Locale.IsTranslating){update();change();}};purchase.ValueChanged+=(s,e)=>{update();change();};next.ValueChanged+=(s,e)=>change();enabled.CheckedChanged+=(s,e)=>change();update();dirty=false;
         Func<bool,bool> persist=show=>{
             FileStream lease=null;
@@ -137,7 +158,8 @@ internal static class MeterPreferences {
                 if(File.Exists(memberPath)&&new FileInfo(memberPath).Length>65536)throw new InvalidDataException(Locale.T("Subscription record is invalid. Restore a backup or check diagnostics."));
                 var member=File.Exists(memberPath)?Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(memberPath,Encoding.UTF8)):new Dictionary<string,object>();if(member==null)throw new InvalidDataException(Locale.T("Subscription record is invalid. Restore a backup or check diagnostics."));member["enabled"]=show;
                 if(planEdited||!member.ContainsKey("plan"))member["plan"]=ids[plan.SelectedIndex];
-                if(tierEdited||!member.ContainsKey("tier"))member["tier"]=tierIds[Math.Max(0,tier.SelectedIndex)];
+                var allowed=TiersFor(Value(member,"plan","other"));string selectedTier=tierIds[Math.Max(0,tier.SelectedIndex)];
+                if(tierEdited||!member.ContainsKey("tier")||Array.IndexOf(allowed,Value(member,"tier","unknown"))<0)member["tier"]=Array.IndexOf(allowed,selectedTier)>=0?selectedTier:"unknown";
                 member["planSource"]="manual";member["manualOverride"]=true;
                 if(purchase.Checked)member["purchaseDate"]=purchase.Value.ToString("yyyy-MM-dd");else member.Remove("purchaseDate");
                 member["kind"]=mode.SelectedIndex==2?"expiry":"renewal";member["monthlyEstimate"]=mode.SelectedIndex==0;member["annualEstimate"]=mode.SelectedIndex==3;member["estimated"]=mode.SelectedIndex==0||mode.SelectedIndex==3;

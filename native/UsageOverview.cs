@@ -16,6 +16,7 @@ internal sealed class UsageOverview : UserControl {
     readonly LinearAxis axis;
     readonly Panel details,meta,tail;
     readonly Panel canvas;
+    bool arranging;
     readonly string[] keys={"short","week","daily","weekly","lifetime","average","reset","resetCredits","credits","plan","renewal"};
     internal double TokenScale {get;private set;}
     internal UsageOverview(){
@@ -36,30 +37,73 @@ internal sealed class UsageOverview : UserControl {
             captions[i]=MeterTheme.Label("Not returned",8,MeterTheme.Muted);captions[i].Name="metricCaption"+i;captions[i].Dock=DockStyle.None;group.Controls.Add(captions[i]);
         }
         for(int i=0;i<4;i++){charts[i]=new LinearScale(i<2);charts[i].Name="linearScale"+i;groups[i==2?2:i==3?5:i].Controls.Add(charts[i]);}
+        tokenTitle.TextChanged+=(s,e)=>Arrange();source.TextChanged+=(s,e)=>Arrange();
         Resize+=(s,e)=>{Arrange();AutoScrollPosition=Point.Empty;};Load+=(s,e)=>AutoScrollPosition=Point.Empty;Arrange();
     }
     Label Label(string text,float size,Color color){var label=MeterTheme.Label(text,size,color);label.Dock=DockStyle.None;canvas.Controls.Add(label);return label;}
     new void Bounds(Control c,float x,float y,float w,float h,float s){c.SetBounds((int)(x*s),(int)(y*s),Math.Max(0,(int)(w*s)),Math.Max(0,(int)(h*s)));}
     void Arrange(){
-        if(groups[10]==null)return;
+        if(groups[10]==null||arranging)return;
+        arranging=true;
+        try{
         float s;using(var g=CreateGraphics())s=g.DpiX/96f;
-        AutoScrollMinSize=new Size(0,(int)Math.Ceiling(536*s));
-        canvas.Size=new Size(Math.Max(0,Width-SystemInformation.VerticalScrollBarWidth-4),(int)Math.Ceiling(536*s));
-        float w=canvas.Width/s,left=(w-36)*.465f,right=left+36,rw=w-right;
-        Bounds(quotaTitle,0,0,left,24,s);Bounds(tokenTitle,right,0,rw,24,s);Bounds(scope,right,28,rw,22,s);
-        int q=0;for(int i=0;i<2;i++)if(selected[i]){Bounds(groups[i],0,40+q*142,left,128,s);Bounds(names[i],0,0,left,22,s);Bounds(values[i],0,25,left,40,s);Bounds(charts[i],0,68,left,36,s);Bounds(captions[i],0,106,left,22,s);q++;}
-        int row=0;foreach(int i in new[]{2,5})if(selected[i]){Bounds(groups[i],right,68+row*76,rw,70,s);Bounds(names[i],0,0,130,42,s);Bounds(values[i],rw-84,0,84,34,s);values[i].TextAlign=ContentAlignment.MiddleRight;Bounds(charts[i==2?2:3],140,8,Math.Max(0,rw-234),20,s);Bounds(captions[i],0,44,rw,24,s);row++;}
-        Bounds(axis,right+140,220,Math.Max(0,rw-234),24,s);
-        Bounds(tail,right,254,rw,110,s);int n=0;foreach(int i in new[]{3,4})if(selected[i]){float width=rw/(selected[3]&&selected[4]?2:1);Bounds(groups[i],n++*width,18,width,90,s);Bounds(names[i],0,0,width,24,s);Bounds(values[i],0,26,width,36,s);Bounds(captions[i],0,64,width,24,s);}
-        Bounds(details,0,382,w,86,s);int count=0;for(int i=6;i<=8;i++)if(selected[i])count++;n=0;
-        for(int i=6;i<=8;i++)if(selected[i]){float width=(w-40)/Math.Max(1,count);Bounds(groups[i],20+n++*width,12,width,62,s);Bounds(names[i],0,0,width,24,s);Bounds(values[i],0,30,width,28,s);captions[i].Visible=false;}
-        Bounds(meta,0,482,w,42,s);float x=0;for(int i=9;i<=10;i++)if(selected[i]){Bounds(groups[i],x,8,210,28,s);Bounds(names[i],0,0,i==9?40:68,26,s);Bounds(values[i],i==9?44:72,0,138,26,s);captions[i].Visible=false;x+=210;}
-        Bounds(source,0,506,w,30,s);Bounds(empty,0,20,w,40,s);
+        // Compact whitespace first. Narrow rows put the chart below its label and value.
+        float w=Width/s,available=Height/s,room=Math.Max(0,Math.Min(1,(available-470)/74));
+        bool stack=w<690&&available>=660;
+        if(stack)room=Math.Max(0,Math.Min(1,(available-604)/110));
+        float gap=w<690?24:36,left=stack?w:(w-gap)*.465f,right=stack?0:left+gap,rw=stack?w:w-right;
+        bool compactTrack=rw<340;
+        float mainHeight=LayoutSections(left,right,rw,stack,compactTrack,room,s);
+        float y=mainHeight+12;int count=0;for(int i=6;i<=8;i++)if(selected[i])count++;
+        float detailHeight=60+26*room;Bounds(details,0,y,w,detailHeight,s);int n=0;
+        for(int i=6;i<=8;i++)if(selected[i]){float width=(w-32)/Math.Max(1,count);Bounds(groups[i],16+n++*width,8,width,detailHeight-12,s);Bounds(names[i],0,0,width,22,s);Bounds(values[i],0,24,width,28,s);captions[i].Visible=false;}
+        if(count>0)y+=detailHeight+8;
+        float metaY=y;Bounds(meta,0,metaY,w,34,s);float labelWidth=36;
+        using(var g=CreateGraphics())for(int i=9;i<=10;i++)if(selected[i])foreach(string text in Locale.Translations(i==9?"Plan":"Renewal"))labelWidth=Math.Max(labelWidth,(float)Math.Ceiling(TextRenderer.MeasureText(g,text,names[i].Font,new Size(Int32.MaxValue,Int32.MaxValue),TextFormatFlags.NoPrefix|TextFormatFlags.SingleLine).Width/s));
+        for(int i=9;i<=10;i++)if(selected[i]){
+            bool both=selected[9]&&selected[10];float split=stack?(w+gap)*.5f:right;
+            float x=i==9||!both?0:split,width=both?(i==9?split-gap:w-split):w;
+            Bounds(groups[i],x,4,width,28,s);Bounds(names[i],0,0,labelWidth,26,s);Bounds(values[i],labelWidth+12,0,Math.Max(0,width-labelWidth-12),26,s);captions[i].Visible=false;
+        }
+        if(selected[9]||selected[10])y+=42;
+        int sourceHeight=TextRenderer.MeasureText(source.Text,source.Font,new Size(Math.Max(1,(int)(w*s)),Int32.MaxValue),TextFormatFlags.WordBreak|TextFormatFlags.NoPrefix).Height;
+        float sh=Math.Max(24,sourceHeight/s);Bounds(source,0,y,w,sh,s);Bounds(empty,0,20,w,40,s);
         quotaTitle.Visible=selected[0]||selected[1];tokenTitle.Visible=scope.Visible=axis.Visible=selected[2]||selected[5];
         tail.Visible=selected[3]||selected[4];details.Visible=count>0;meta.Visible=selected[9]||selected[10];
         bool any=false;foreach(bool v in selected)any|=v;empty.Visible=!any;source.Visible=any;
         for(int i=0;i<groups.Length;i++)groups[i].Visible=selected[i];
-        PerformLayout();
+        int needed=(int)Math.Ceiling((any?y+sh:64)*s);
+        bool scroll=needed>Height+1;
+        AutoScroll=scroll;AutoScrollMinSize=scroll?new Size(0,needed):Size.Empty;
+        canvas.Size=new Size(Math.Max(0,Width-(scroll?SystemInformation.VerticalScrollBarWidth:0)),Math.Max(Height,needed));
+        canvas.Location=new Point(0,scroll?AutoScrollPosition.Y:0);
+        }finally{arranging=false;}
+    }
+    float LayoutSections(float left,float right,float rw,bool stack,bool compact,float room,float s){
+        Bounds(quotaTitle,0,0,left,24,s);int q=0;
+        float quotaWidth=stack&&(selected[0]&&selected[1])?(left-24)/2:left;
+        for(int i=0;i<2;i++)if(selected[i]){
+            Bounds(groups[i],stack?q*(quotaWidth+24):0,32+(stack?0:q*(126+16*room)),quotaWidth,118+10*room,s);
+            Bounds(names[i],0,0,quotaWidth,22,s);Bounds(values[i],0,24,quotaWidth,38,s);Bounds(charts[i],0,62,quotaWidth,34,s);Bounds(captions[i],0,98,quotaWidth,24,s);q++;
+        }
+        float qh=q==0?0:stack?154:32+q*(126+16*room);
+        float top=stack?qh+16:0;
+        float titleHeight=Math.Max(24,TextRenderer.MeasureText(tokenTitle.Text,tokenTitle.Font,new Size(Math.Max(1,(int)(rw*s)),Int32.MaxValue),TextFormatFlags.WordBreak|TextFormatFlags.NoPrefix).Height/s);
+        Bounds(tokenTitle,right,top,rw,titleHeight,s);Bounds(scope,right,top+titleHeight+4,rw,22,s);
+        int row=0;float rh=compact?72:58+18*room,rowsTop=top+titleHeight+30+14*room;
+        foreach(int i in new[]{2,5})if(selected[i]){
+            Bounds(groups[i],right,rowsTop+row*rh,rw,rh,s);
+            float label=compact?Math.Max(0,rw-88):Math.Min(130,rw*.27f),chartX=compact?0:label+12,chartWidth=compact?rw:rw-chartX-94;
+            Bounds(names[i],0,0,compact?rw-88:label,compact?38:42,s);Bounds(values[i],rw-84,0,84,34,s);values[i].TextAlign=ContentAlignment.MiddleRight;
+            Bounds(charts[i==2?2:3],chartX,compact?38:8,Math.Max(0,chartWidth),compact?14:20,s);Bounds(captions[i],0,compact?52:36+8*room,rw,22,s);row++;
+        }
+        float axisY=rowsTop+row*rh;float ax=compact?0:Math.Min(130,rw*.27f)+12;
+        Bounds(axis,right+ax,axisY,Math.Max(0,compact?rw:rw-ax-94),24,s);
+        float tailY=row>0?axisY+32:top+32;
+        Bounds(tail,right,tailY,rw,84+16*room,s);int n=0;
+        foreach(int i in new[]{3,4})if(selected[i]){float width=rw/(selected[3]&&selected[4]?2:1);Bounds(groups[i],n++*width,8,width,76+16*room,s);Bounds(names[i],0,0,width,22,s);Bounds(values[i],0,24,width,34,s);Bounds(captions[i],0,60,width,24,s);}
+        float th=tailY+(n>0?84+16*room:0);
+        return Math.Max(qh,th);
     }
     static double? Number(object value){if(value==null||value is bool||value is string)return null;try{double n=Convert.ToDouble(value);return Double.IsNaN(n)||Double.IsInfinity(n)||n<0?null:(double?)n;}catch{return null;}}
     static double? N(Dictionary<string,object> data,string key){object v;return data.TryGetValue(key,out v)?Number(v):null;}

@@ -3,14 +3,15 @@ import {createHash} from 'node:crypto';
 const repo='kefen/codex-quota-sidebar';
 const token=process.env.GITHUB_TOKEN,commit=process.env.GITHUB_SHA;
 if(!token||process.env.GITHUB_REPOSITORY!==repo||process.env.GITHUB_REF!=='refs/heads/main'||!/^[a-f0-9]{40}$/.test(commit||''))throw Error('Expected authorized main-branch workflow');
-const accepted=JSON.parse(await readFile('docs/releases/accepted-ui-fixes.json','utf8'));
+const windowsOnly=process.env.CQS_RELEASE_SCOPE==='windows-only';
+const accepted=JSON.parse(await readFile(windowsOnly?'docs/releases/accepted-windows-responsive.json':'docs/releases/accepted-ui-fixes.json','utf8'));
 const versions=JSON.parse(await readFile('versions.json','utf8'));
 const chrome=JSON.parse(await readFile('browser/manifest.json','utf8')).version;
-if(accepted.windows!=='0.13.1'||accepted.macos!=='0.5.1-alpha.1'||accepted.chrome!=='0.4.1'||accepted.publicReleaseAuthorized!==true||accepted.verificationRequired!==true)throw Error('Not the authorized release set');
+if(accepted.windows!==(windowsOnly?'0.13.4':'0.13.1')||accepted.macos!=='0.5.1-alpha.1'||accepted.chrome!=='0.4.1'||accepted.publicReleaseAuthorized!==true||accepted.verificationRequired!==true||windowsOnly&&accepted.windowsOnly!==true)throw Error('Not the authorized release set');
 if(versions.windows!==accepted.windows||versions.macos!==accepted.macos||chrome!==accepted.chrome)throw Error('Version mismatch');
 const source='Codex-Quota-Sidebar-source-windows-'+versions.windows+'-macos-'+versions.macos+'.zip';
 const macSource='Codex-Quota-Sidebar-macOS-'+versions.macos+'-source.zip';
-await writeFile('dist/'+macSource,await readFile('dist/'+source));
+if(!windowsOnly)await writeFile('dist/'+macSource,await readFile('dist/'+source));
 const common='Native readability and resizing fixes: complete localized actions, clearer text and DPI-aware icons, connection feedback and protected settings. Desktop manual update checks are in About; a header notice appears only for a verified newer release. Startup and periodic checks are polling, not a real-time push service. Valid up-to-date results remain distinct from network and verification failures. Plan detection can briefly open the official usage menu to read a strict quota-source label, then restore the menu it opened. Manual corrections, specific tiers and dates stay protected; unsupported labels remain unknown. Mac adds native calendar selection and immediate month/year renewal estimates. All eleven choices and three languages retained. Windows remains unsigned. Mac remains ad-hoc signed and unnotarized. Never disable system protections.';
 const sets=[
  {tag:'windows/v'+versions.windows,title:'Windows '+versions.windows+' / KEFEN',prerelease:false,files:['Codex-Quota-Sidebar-Windows-'+versions.windows+'-x64-Setup.exe',source],note:common+' Windows 10/11 x64. Unsigned installer; upgrade in the same folder to preserve settings. This is a follow-up to the user-accepted Windows baseline.'},
@@ -23,10 +24,12 @@ async function request(path,method='GET',data){
  if(!response.ok)throw Error('GitHub API '+response.status+' '+method+' '+path);
  return response.status===204?null:response.json();
 }
-const notes=JSON.parse(await readFile('docs/releases/notes-ui-fixes.json','utf8'));
+const notes=JSON.parse(await readFile(windowsOnly?'docs/releases/notes-windows-responsive.json':'docs/releases/notes-ui-fixes.json','utf8'));
 const localizedNotes=Object.entries({'English':'en','简体中文':'zh-CN','繁體中文':'zh-TW'}).map(([heading,locale])=>'## '+heading+'\n'+notes[locale].map((line,i)=>(i+1)+'. '+line).join('\n')).join('\n\n');
 const published=[];
 for(const set of sets){
+ if(windowsOnly&&!set.tag.startsWith('windows/'))continue;
+ if(windowsOnly)set.note='Windows-only responsive overview and accepted local fixes. Default layout fits the available screen without scrolling; narrow columns move chart tracks below labels, and tall narrow windows stack sections. Very small windows retain scrolling instead of clipping data. Includes updater argument quoting, permanent version display, immediate language refresh, aligned actions and dates, and family-compatible tiers. Windows 10/11 x64. Unsigned installer; install in the same folder to preserve settings. macOS and Chrome releases are unchanged. Never disable system protections.';
  const files=await Promise.all(set.files.map(async name=>{const bytes=await readFile('dist/'+name);return {name,bytes,digest:'sha256:'+createHash('sha256').update(bytes).digest('hex')};}));
  const sums=files.map(f=>f.digest.slice(7)+'  '+f.name).join('\n')+'\n';
  const sumName='SHA256SUMS-'+set.tag.replaceAll('/','-')+'.txt';

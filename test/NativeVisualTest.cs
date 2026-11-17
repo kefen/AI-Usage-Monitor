@@ -55,7 +55,7 @@ internal static class NativeVisualTest {
             Locale.Set("en");
             foreach(string section in new[]{"Sidebar content","Codex subscription record","Data and settings","Diagnostics","About project","Usage overview"}){
                 var buttons=window.Controls.Find(section,true);Assert(buttons.Length==1,"Missing navigation: "+section);
-                ((Button)buttons[0]).PerformClick();Application.DoEvents();
+                ((NavigationItem)buttons[0]).PerformClick();Application.DoEvents();
                 int topLevel=0;foreach(Form f in Application.OpenForms)if(f.TopLevel&&f.Visible)topLevel++;
                 Assert(topLevel==1,"Navigation opened a separate top-level window");
                 if(section=="Codex subscription record"||section=="Sidebar content"){
@@ -63,7 +63,7 @@ internal static class NativeVisualTest {
                     if(section=="Codex subscription record"){
                         var embedded=window.Controls.Find("plan",true)[0].FindForm();var guard=embedded.Tag;embedded.Tag=new Func<bool>(()=>false);Assert(!window.ResolveEdits(),"Update/quit must respect unsaved page guard");embedded.Tag=guard;
                         ((ComboBox)window.Controls.Find("plan",true)[0]).SelectedIndex=2;
-                        ((Button)buttons[0]).PerformClick();Application.DoEvents();
+                        ((NavigationItem)buttons[0]).PerformClick();Application.DoEvents();
                         Assert(((ComboBox)window.Controls.Find("plan",true)[0]).SelectedIndex==2,"Clicking current page discarded edits");
                     }
                     var save=(Button)window.Controls.Find(section=="Sidebar content"?"saveDisplay":"save",true)[0];save.PerformClick();Application.DoEvents();
@@ -76,7 +76,8 @@ internal static class NativeVisualTest {
                 foreach(string language in new[]{"zh-CN","zh-TW","en"}){Locale.Set(language);Capture(window,"page-"+section.Replace(" ","-")+"-"+language);}
             }
             ((Button)window.Controls.Find("openCodex",true)[0]).PerformClick();Assert(opens==1,"Open action not dispatched");
-            window.Feedback("Activation requested");window.UpdateState("mounted",new Dictionary<string,object>());Assert(window.Controls.Find("statusDetail",true)[0].Text=="Activation requested","Polling erased action feedback");
+            window.Feedback("Activation requested");Assert(window.Controls.Find("footerFeedback",true)[0].Text=="Activation requested","Operation feedback missing");
+            window.UpdateState("mounted",new Dictionary<string,object>());Assert(window.Controls.Find("statusDetail",true)[0].Text==Locale.T("Connected"),"Temporary action text replaced authoritative connection status");
             window.Scale(new SizeF(1.5f,1.5f));Capture(window,"connected-150");window.Finish();
         }
         int installs=0,launches=0;

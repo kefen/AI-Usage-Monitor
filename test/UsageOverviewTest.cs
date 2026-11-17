@@ -16,6 +16,10 @@ internal static class UsageOverviewTest {
             if(Locale.T(caption)!="Remaining 62% / Used 38%")throw new Exception("Dynamic quota caption retained previous language");
         }
         using(var view=new UsageOverview()){
+            var meta=view.Controls.Find("metric9",true)[0].Parent.Parent;
+            foreach(Control child in meta.Parent.Controls)if(child is Label&&child.Text.StartsWith("Usage: local CLI.")){
+                if(meta.Bounds.IntersectsWith(child.Bounds))throw new Exception("Plan/renewal row overlaps the source summary");
+            }
             double now=10000000;
             var data=new Dictionary<string,object>{{"generatedAt",now},{"quotaAt",now},{"usageAt",now},{"monthAverage",0},{"week",1200000},{"lifetime",0},{"daily",new Dictionary<string,object>{{"date","2026-11-14"},{"value",0}}},{"windows",new[]{new Dictionary<string,object>{{"minutes",300},{"remaining",75}}}}};
             view.UpdateSnapshot(data,true,now);

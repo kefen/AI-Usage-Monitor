@@ -1,0 +1,17 @@
+{
+  "en": [
+    "Fit the default overview to the available screen; reflow chart tracks and sections in narrow windows without hiding data.",
+    "Fix installed-folder update checks and keep the version visible; refresh translated navigation immediately.",
+    "Align footer actions, native date controls and plan metadata; offer only tiers compatible with the selected plan. Saved settings are retained."
+  ],
+  "zh-CN": [
+    "默认用量概览适配屏幕，无需滚动；窄窗口自动重排标尺与区块，不隐藏数据。",
+    "修复安装目录下检查更新失败，保留版本编号；切换语言后导航立即刷新。",
+    "规整底部操作、日期控件及套餐信息；具体档位随套餐联动，保留原有设置。"
+  ],
+  "zh-TW": [
+    "預設用量概覽適配螢幕，無需捲動；窄視窗自動重排標尺與區塊，不隱藏資料。",
+    "修復安裝目錄下檢查更新失敗，保留版本編號；切換語言後導覽立即重新整理。",
+    "規整底部操作、日期控制項及方案資訊；具體級別隨方案連動，保留原有設定。"
+  ]
+}
