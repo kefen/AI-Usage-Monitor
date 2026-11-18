@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Codex Quota by KEFEN",
+  "version": "0.5.2",
+  "description": "Your current web account's Codex / Work allowance at the bottom of the ChatGPT sidebar.",
+  "author": "KEFEN",
+  "permissions": ["storage","alarms"],
+  "options_page": "guide.html",
+  "action": { "default_title": "Codex usage / Show or hide", "default_icon": "icon-32.png" },
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [{
+    "matches": ["https://chatgpt.com/*"],
+    "js": ["source.js", "content.js"],
+    "run_at": "document_idle",
+    "all_frames": false
+  }],
+  "web_accessible_resources": [{"resources":["icon-32.png"],"matches":["https://chatgpt.com/*"]}],
+  "icons": {"32":"icon-32.png","128":"icon-128.png"},
+  "content_security_policy": {"extension_pages":"script-src 'self'; object-src 'none'; connect-src https://raw.githubusercontent.com"}
+}

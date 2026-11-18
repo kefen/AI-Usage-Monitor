@@ -1,0 +1,61 @@
+name: Publish standalone Chrome extension
+on:
+  push:
+    tags: ['chrome/v*']
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify version and run offline tests
+        run: |
+          version=$(jq -r .version browser-web/manifest.json)
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test "$GITHUB_REF_NAME" = "chrome/v$version"
+          test "$(jq -r .version browser-web/updates.json)" = "$version"
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          node --test browser-web/test/source.test.mjs browser-web/test/updates.test.mjs
+      - name: Build allowlisted ZIP and verify all entries
+        shell: pwsh
+        run: ./browser-web/Build-Test.ps1
+      - name: Publish and verify downloadable release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cd "dist/chrome-web-$VERSION"
+          zip="Codex-Quota-by-KEFEN-Chrome-$VERSION.zip"
+          sha256sum "$zip" > Release-SHA256.txt
+          gh release create "$GITHUB_REF_NAME" "$zip" Release-SHA256.txt --verify-tag --latest=false --title "Codex Quota by KEFEN · Chrome $VERSION" --notes-file "$GITHUB_WORKSPACE/browser-web/RELEASE.md"
+          mkdir downloaded
+          gh release download "$GITHUB_REF_NAME" --dir downloaded
+          cmp "$zip" "downloaded/$zip"
+          (cd downloaded && sha256sum --check Release-SHA256.txt)
+      - name: Retire only pre-baseline Chrome downloads (keep tags and desktop releases)
+        if: github.ref_name == 'chrome/v0.5.2'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" --slurp > "$RUNNER_TEMP/releases.json"
+          python3 - <<'PY'
+          import json, os, re, subprocess
+          releases = json.load(open(os.path.join(os.environ['RUNNER_TEMP'], 'releases.json')))
+          repo = os.environ['GITHUB_REPOSITORY']
+          for release in (r for page in releases for r in page):
+              tag = release['tag_name']
+              match = re.fullmatch(r'chrome/v(\d+)\.(\d+)\.(\d+)(?:[-.][\w.-]+)?', tag)
+              if match and tuple(map(int,match.groups())) < (0,5,2):
+                  if any(re.search(r'windows|macos|\.dmg$|\.exe$', a['name'], re.I) for a in release['assets']):
+                      raise RuntimeError('Unexpected desktop asset in '+tag)
+                  subprocess.run(['gh','api','--method','DELETE',f"repos/{repo}/releases/{int(release['id'])}"],check=True)
+                  print('Retired Chrome release:', tag)
+              elif tag != 'chrome/v0.5.2':
+                  for asset in release['assets']:
+                      m = re.fullmatch(r'[\w.-]*Chrome[-_](\d+)\.(\d+)\.(\d+)(?:[-.][\w.-]+)?\.zip(?:\.sha256)?', asset['name'], re.I)
+                      if m and tuple(map(int,m.groups())) < (0,5,2):
+                          subprocess.run(['gh','api','--method','DELETE',f"repos/{repo}/releases/assets/{int(asset['id'])}"],check=True)
+                          print('Retired Chrome asset:',tag,asset['name'])
+          PY

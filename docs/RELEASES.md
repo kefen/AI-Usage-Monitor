@@ -1,5 +1,13 @@
 # Release Record
 
+## Standalone Chrome baseline: 0.5.2
+
+[Codex Quota by KEFEN for Chrome](https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.5.2)
+is the first public version of the standalone web extension. Bottom sidebar card,
+visible-page refresh and daily GitHub version notification. No native host or historical
+Token source. Earlier Chrome entries below document the retired companion, not current downloads.
+Desktop builds are unchanged.
+
 ## Approved V3: 2026-11-17
 
 Published and verified: [release workflow](https://github.com/kefen/codex-quota-sidebar/actions/runs/44020418555).

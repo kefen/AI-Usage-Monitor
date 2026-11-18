@@ -56,13 +56,13 @@ none is currently shipped. Windows 7/8 and 32-bit x86 are not supported.
 ## Screenshots
 
 **Current versions:** Windows **0.13.4**, macOS **0.5.1-alpha.1**
-(Apple Silicon and Intel), Chrome **0.4.1**.
+(Apple Silicon and Intel), Chrome **0.5.2**.
 
 The V3 desktop overview uses quota rulers and a shared-scale comparison of daily
 tokens with the monthly daily average, followed by weekly and lifetime totals.
 All eleven sidebar display choices are shared with the overview; unchecked items
 are hidden and empty groups collapse. Selected items with missing data retain
-their position. The browser uses quota bars and a roomier Token table.
+their position. The standalone browser card uses the current web account's visible shared allowance, not the desktop Token source.
 Zero is a real value; missing
 data says **Not returned**, expired data says **Data expired**, and disconnected
 desktop views say **Not connected**. Weekly calculations are unchanged.
@@ -98,8 +98,8 @@ full Codex application. Native window chrome depends on Windows settings.
 Generated Codex-style demonstration using the actual sidebar component and
 synthetic data. Not a capture of the live Codex application or a real account.
 
-### Chrome companion
-![Chrome side panel](docs/screenshots/chrome-panel.png)
+### Codex Quota by KEFEN for Chrome
+![Chrome web card, English with synthetic usage data](docs/screenshots/chrome-web-052.png)
 
 ### macOS experimental companion
 ![Native macOS usage overview](docs/screenshots/mac-settings.png)
@@ -115,7 +115,7 @@ not evidence of live-account connection acceptance.
 | --- | --- | --- |
 | Windows 10/11 x64 | 0.13.4 | Responsive V3 overview; unsigned installer |
 | macOS Apple Silicon / Intel | 0.5.1-alpha.1 | V3 experimental DMGs; not notarized; prior Apple Silicon connection user-confirmed, Intel account testing pending |
-| Chrome MV3 | 0.4.1 | V3 companion extension; requires the local desktop monitor and native host |
+| Chrome MV3 | 0.5.2 | Codex Quota by KEFEN; standalone bottom-of-sidebar web extension |
 
 The Windows 0.12.3 interface was accepted by the user on 2026-11-16; 0.12.6 adds
 the requested statistics and read-only balance/reset indicators. A prior
@@ -129,7 +129,7 @@ does not make an ARM-only official client compatible with Intel.
 ## Downloads And Instructions
 
 - [Windows installer and checksums](https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.13.4)
-- [Chrome extension ZIP](https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.4.1)
+- [Chrome extension ZIP](https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.5.2)
 - [macOS experimental installers, both architectures](https://github.com/kefen/codex-quota-sidebar/releases/tag/macos/v0.5.1-alpha.1)
 - **[Step-by-step illustrated user guide](docs/USER-GUIDE.md)**
 - [Release and acceptance record](docs/RELEASES.md)
@@ -139,9 +139,7 @@ ZIP, to install Windows or Chrome. Only Windows is promoted to stable; Mac and
 browser remain explicitly experimental. Mac's limited user confirmation does not
 establish compatibility with every client version or Intel device.
 
-**Browser upgrade:** the native-host name is now `org.kefen.codex_quota_sidebar`.
-Update both desktop and extension, and register again. Follow the
-[browser migration steps](browser/README.md#upgrading-from-earlier-versions).
+**Browser setup:** extract the Chrome ZIP and load its folder at `chrome://extensions`. Disable the legacy native-host companion. [Installation and data guide](browser-web/README.md).
 
 ## Features
 
@@ -207,10 +205,11 @@ externally modified files are retained.
 
 ## Chrome Companion
 
-See [browser setup](browser/README.md) for native-host registration. This uses
-Chrome's side panel, not a browser extension inside Codex desktop. It reads
-sanitized local snapshots, not website cookies, and has no cross-device sync.
-The desktop monitor must be running.
+**Codex Quota by KEFEN 0.5.2** is the first public standalone web release. Expand ChatGPT's left sidebar: the compact Mac-style quota ruler is at the bottom. Read the current account's weekly allowance, plan, credits, available resets and reset time where provided. Select **Read full usage** to bring back a confirmed snapshot. Historical Token totals are not available from the verified web page.
+
+The extension observes changes already rendered by ChatGPT; it does not periodically refresh the site or hit a usage API. A daily public GitHub version check shows a toolbar badge and a link when a newer build exists. GitHub ZIPs must be replaced and reloaded manually.
+
+中文版：无需桌面助手。刷新 ChatGPT 后展开左栏；底部卡片跟随网页可见读数变化。“读取完整用量”可带回同账号的确认读数。版本检测不上传用量。
 
 ## Security And Privacy
 

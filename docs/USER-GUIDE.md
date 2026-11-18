@@ -3,8 +3,7 @@
 ## Reading the Overview
 
 Desktop V3 uses quota rulers and a shared-scale daily/monthly-average Token
-comparison, then weekly and lifetime totals. Chrome uses the same values in a
-compact table. The eleven display selections are shared with the sidebar;
+comparison, then weekly and lifetime totals. Chrome uses the web account instead (see section 8). The eleven desktop display selections are shared with the sidebar;
 unchecked fields disappear and empty groups collapse. Selected missing fields
 remain visible. **0** means a returned
 zero, **Not returned** means the source supplied no usable value, **Data expired**
@@ -106,7 +105,7 @@ Windows 0.13.4 fits the default overview to the screen. Narrow columns move char
 tracks below their labels; tall narrow windows stack sections. All selected data
 stays available. On exceptionally small windows, scrolling remains a fallback
 instead of clipping data. macOS and Chrome packages are unchanged in this release.
-Chrome uses the separate `Chrome-0.4.1.zip`. Mac has experimental architecture-specific DMGs (see below).
+For Chrome, use the standalone ZIP linked below. Mac has experimental architecture-specific DMGs (see below).
 The unsigned Windows executable may trigger an unknown-publisher warning.
 Verify its origin; never disable security software to get around a detection.
 
@@ -294,20 +293,12 @@ not added together. Reset count is not a recharge-card count.
 
 ## 8. Browser Companion
 
-1. Keep the Windows desktop monitor running and connected.
-2. Extract the Chrome ZIP into a permanent folder.
-3. Open `chrome://extensions`, enable Developer mode, then **Load unpacked**.
-4. Select that folder and copy the extension ID.
-5. From the desktop tool's installed directory, run the registration command
-   in [browser setup](../browser/README.md), using that exact ID.
-6. Click the extension toolbar button to open Chrome's side panel.
+1. Download the [Chrome release ZIP](https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.5.2) and extract it to a permanent folder.
+2. In `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select the folder containing manifest.json.
+3. Sign in to ChatGPT, reload existing tabs, then expand its sidebar. **Codex Quota by KEFEN** is at the bottom. No desktop helper or registration is needed.
+4. For reset counts, choose **Read full usage**, verify the account and return the readings. For upgrades, follow the release link, replace the files and reload the extension and webpage.
 
-![Chrome side panel](screenshots/chrome-panel.png)
-
-This reads local snapshots, not your browser's ChatGPT session or cookies.
-Changing the unpacked folder may change the extension ID and require registration
-again. The host now uses `org.kefen.codex_quota_sidebar`; upgrade the desktop and
-extension together and follow [migration steps](../browser/README.md#upgrading-from-earlier-versions).
+![Chrome web sidebar card](screenshots/chrome-web-052.png)
 
 ## Troubleshooting
 
@@ -320,8 +311,8 @@ extension together and follow [migration steps](../browser/README.md#upgrading-f
 | Missing or stale Token values | Check the data date, account and hourly source refresh |
 | Renewal date missing | Enable a valid subscription record as well as its sidebar visibility |
 | Sidebar absent | Confirm Codex navigation is visible; reconnect; export diagnostics |
-| Browser reports missing host | Register the exact extension ID under the same user |
-| Browser data stale | Start the desktop monitor and confirm it is connected |
+| Browser reports missing host | Disable the retired native-host extension and install the standalone web release |
+| Browser data stale | Open full usage in the web card and confirm the current web account |
 
 Do not post raw logs, credentials, chat screenshots or private paths in public
 issues. Prefer the built-in diagnostic export. Update compatibility can change
