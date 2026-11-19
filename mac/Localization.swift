@@ -26,7 +26,7 @@ enum CqsLocale {
     static func apply(_ view: NSView) {
         if let field = view as? NSTextField, !field.isEditable { field.stringValue = t(field.stringValue) }
         if let popup = view as? NSPopUpButton { if popup.identifier?.rawValue != "language" { for item in popup.itemArray { item.title = t(item.title) } } }
-        else if let button = view as? NSButton { button.title = t(button.title) }
+        else if let button = view as? NSButton, button.identifier?.rawValue != "update-notice" { button.title = t(button.title) }
         for child in view.subviews { apply(child) }
     }
 }

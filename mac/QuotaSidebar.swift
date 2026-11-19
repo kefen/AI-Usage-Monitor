@@ -283,16 +283,19 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         headerGap.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         header.setVisibilityPriority(.mustHold, for: icon); header.setVisibilityPriority(.mustHold, for: words)
         updateButton = button("Check for updates", #selector(checkUpdates))
-        updateNotice = NSButton(title: "", target: self, action: #selector(checkUpdates))
-        updateNotice.image = NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: nil)?.withSymbolConfiguration(.init(pointSize: 18, weight: .semibold))
+        let downloadIcon = NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: nil) ?? NSImage(named: NSImage.networkName) ?? NSImage()
+        updateNotice = NSButton(image: downloadIcon.withSymbolConfiguration(.init(pointSize: 18, weight: .semibold)) ?? downloadIcon, target: self, action: #selector(checkUpdates))
+        updateNotice.title = ""; updateNotice.alternateTitle = ""
+        updateNotice.identifier = NSUserInterfaceItemIdentifier("update-notice")
         updateNotice.bezelStyle = .regularSquare; updateNotice.isBordered = false; updateNotice.imagePosition = .imageOnly
         updateNotice.contentTintColor = .controlAccentColor
         updateNotice.wantsLayer = true; updateNotice.layer?.cornerRadius = 6
         updateNotice.layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.10).cgColor
         updateNotice.setAccessibilityLabel(CqsLocale.t("Update available")); updateNotice.toolTip = CqsLocale.t("Update available")
-        updateNotice.isHidden = true; header.addArrangedSubview(updateNotice)
+        header.addArrangedSubview(updateNotice)
         updateNotice.widthAnchor.constraint(equalToConstant: 36).isActive = true
         updateNotice.heightAnchor.constraint(equalToConstant: 36).isActive = true
+        updateNotice.isHidden = true
         updateProgress.style = .bar
         updateProgress.controlSize = .small
         updateProgress.minValue = 0; updateProgress.maxValue = 100
@@ -438,7 +441,9 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         }
         do {
             let output = URL(fileURLWithPath: CommandLine.arguments.last!); try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
-            precondition(updateNotice.isHidden && updateNotice.title.isEmpty && updateNotice.image != nil && updateNotice.imagePosition == .imageOnly, "Update notice must be icon-only and hidden by default")
+            precondition(updateNotice.isHidden || updateNotice.superview == nil, "Update notice must be hidden by default")
+            precondition(updateNotice.title.isEmpty, "Update notice has an unexpected title: \(updateNotice.title)")
+            precondition(updateNotice.image != nil && updateNotice.imagePosition == .imageOnly, "Update notice is missing its image-only presentation")
             updateNotice.isHidden = false
             for key in ["Credits", "Quota remaining", "Plan and dates", "Monthly daily average", "Display choices"] {
                 guard let translations = CqsLocale.catalog[key], translations.count == 2 else { preconditionFailure("Missing canonical locale key: \(key)") }

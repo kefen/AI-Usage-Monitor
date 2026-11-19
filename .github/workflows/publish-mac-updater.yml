@@ -2,7 +2,7 @@ name: Publish macOS updater improvements
 on:
   push:
     branches: [main]
-    paths: ['.github/workflows/publish-mac-updater.yml']
+    paths: ['.github/workflows/publish-mac-updater.yml', 'docs/releases/notes-mac-updater.json']
   workflow_dispatch:
 permissions:
   contents: read
