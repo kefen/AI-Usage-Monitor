@@ -39,6 +39,12 @@ test('overview tier refines matching menu family; conflicts stay unknown',()=>{
  assert.equal(parse({overview,menu:['Usage source: Your Plus plan']}).plan,null);
  assert.equal(parse({overview}).resets,0);
 });
+test('monthly tokens require an explicit current-month total from the current page',()=>{
+ assert.equal(parse({overview:{monthly:['Tokens used this month: 12,345']}}).monthly,12345);
+ assert.equal(parse({menu:['本月消耗 Token：0']}).monthly,0);
+ assert.equal(parse({menu:['This month tokens: 10'],overview:{monthly:['This month tokens: 11']}}).monthly,null);
+ assert.equal(parse({menu:['Monthly daily average: 200','This month tokens: 20%','Lifetime tokens: 400','This month tokens: 5M']}).monthly,null);
+});
 test('all snapshots expire and blocked account contexts reveal no previous data',()=>{
  const x=parse({description:'Weekly usage: 30% left'},1000);
  assert.equal(visible(x,61000).week,null);

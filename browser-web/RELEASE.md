@@ -1,6 +1,6 @@
 # Codex Quota by KEFEN
 
-First public standalone Chrome release, version 0.5.2. Windows and macOS desktop builds are unchanged.
+Chrome 0.5.3 adds a Monthly tokens display choice. Only an explicit current-month Token count from the current web account is shown. Unsupported accounts stay unavailable; no local CLI data or estimated counts are substituted.
 
 1. A collapsible Mac-style quota ruler at the bottom of the ChatGPT sidebar.
 2. Weekly allowance, plan, credits and reset details from visible official web surfaces. No local helper. Token history is not inferred.

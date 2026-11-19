@@ -1,5 +1,5 @@
 (() => {
-  if (window.__localCodexMeter?.version === '0.13.4') return;
+  if (window.__localCodexMeter?.version === '0.13.5') return;
   if (window.__localCodexMeter?.controllerId === 'local-codex-sidebar-meter-v1') window.__localCodexMeter.dispose();
   else if (window.__localCodexMeter) return;
   const id = 'local-codex-sidebar-meter';
@@ -59,7 +59,7 @@
     '启动时读取，之后每 60 分钟刷新':['Read at startup, then every 60 minutes','啟動時讀取，之後每 60 分鐘更新'],
     '本机 CLI 账户额度':['Local CLI account quota','本機 CLI 帳戶額度'],'下次':['Next','下次'],'天':['day','天'],
     '5h余':['5h','5h餘'],'周余':['Week','週餘'],'额度':['Credits','額度'],'重置':['Reset','重設'],'续费':['Renew','續費'],'到期':['Expiry','到期'],
-    '今日':['Today','今日'],'昨日':['Yest.','昨日'],'最近':['Latest','最近'],'日均':['Avg','日均'],'本周':['Week','本週'],'累计':['Total','累計'],
+    '今日':['Today','今日'],'昨日':['Yest.','昨日'],'最近':['Latest','最近'],'日均':['Avg','日均'],'本周':['Week','本週'],'本月':['Month','本月'],'累计':['Total','累計'],
     '待刷新':['Pending','待更新'],'已同步':['Synced','已同步'],'可能过期':['May be stale','可能過期'],'数据已过期':['Data expired','資料已過期'],'读取失败':['Read failed','讀取失敗'],
     '北京时间':['Asia/Shanghai','北京時間'],'剩余':['Remaining','剩餘'],'已用':['Used','已用'],'后重置':['until reset','後重設'],'重置时间未返回':['Reset time unavailable','未回傳重設時間'],
     '等待服务端刷新':['Waiting for server','等待伺服器更新'],'服务端未返回重置时间':['No reset time returned','伺服器未回傳重設時間'],
@@ -185,14 +185,14 @@
     const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
     const utcDate=localDay(new Date()),previousDate=localDay(yesterday);
     const dailyLabel=daily?.date===utcDate?'\u4eca\u65e5':daily?.date===previousDate?'\u6628\u65e5':'\u6700\u8fd1';
-    const metrics=[['average','\u65e5\u5747',average],['week','\u672c\u5468',week],['lifetime','\u7d2f\u8ba1',{value:usage.lifetime,complete:true}]];
+    const metrics=[['average','\u65e5\u5747',average],['week','\u672c\u5468',week],['monthly','\u672c\u6708',month],['lifetime','\u7d2f\u8ba1',{value:usage.lifetime,complete:true}]];
     if(usageValid && daily && /^\d{4}-\d{2}-\d{2}$/.test(daily.date) && Number.isSafeInteger(daily.value) && daily.value>=0)metrics.unshift(['daily',dailyLabel,{...daily,start:daily.date,end:daily.date,complete:true}]);
     else hints.push('\u6682\u65e0\u53ef\u7528\u6bcf\u65e5 Token \u6570\u636e\uff0c\u5df2\u9690\u85cf\u65e5\u7528\u91cf');
     for(const [key,label,metric] of metrics) {
       if(!visible(key==='week'?'weekly':key))continue;
       const dayKey=stamp=>new Date(stamp).toISOString().slice(0,10);
       const monday=stamp=>{const d=new Date(dayKey(stamp));d.setUTCDate(d.getUTCDate()-(d.getUTCDay()+6)%7);return dayKey(d);};
-      const samePeriod=usageValid && (key==='average'?dayKey(usage.fetchedAt).slice(0,7)===dayKey(Date.now()).slice(0,7):key==='week'?monday(usage.fetchedAt)===monday(Date.now()):true);
+      const samePeriod=usageValid && (key==='average'||key==='monthly'?month?.start===dayKey(Date.now()).slice(0,7)+'-01':key==='week'?monday(usage.fetchedAt)===monday(Date.now()):true);
       const value=samePeriod?metric?.value:null, partial=value!==null&&value!==undefined&&metric?.complete===false;
       const block=text('div','','usage-metric');block.dataset.metric=key;
       const detail=[`${label}: ${exact(value)} Token${key==='average'?' / \u5929':''}`];
@@ -308,7 +308,7 @@
     delete window.__localCodexMeter;
   }
   window.__localCodexMeter = {
-    version:'0.13.4',
+    version:'0.13.5',
     controllerId:'local-codex-sidebar-meter-v1',
     receive(value) { state = value; heartbeat = Date.now(); render(); mount(); },
     dispose,

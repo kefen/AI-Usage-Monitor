@@ -1,5 +1,9 @@
 # Changelog
 
+## Monthly Tokens: Windows 0.13.5 / macOS 0.5.2-alpha.1 / Chrome 0.5.3
+- Windows and macOS show the current UTC calendar month's sum of returned daily Token records in the sidebar and overview. Partial coverage, missing data and zero are distinct; monthly average remains separate.
+- Chrome shows the total only if the official usage page provides an explicitly labeled current-month Token count for the signed-in account. It does not use desktop data.
+
 ## Windows 0.13.4 - 2026-11-17
 - Windows-only public release; macOS 0.5.1-alpha.1 and Chrome 0.4.1 remain unchanged.
 - Fit the default window to its screen working area. Compact whitespace and reflow narrow chart rows; stack sections in tall narrow windows. Retain scroll fallback only when the available viewport genuinely cannot fit readable content.

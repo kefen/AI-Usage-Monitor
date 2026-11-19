@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   if(location.origin!=='https://chatgpt.com'||window!==window.top||!globalThis.CQSWebSource)return;
-  const M=globalThis.CQSWebSource,id='cqs-web-usage-preview',keys=['week','plan','credits','resets','reset'];
+  const M=globalThis.CQSWebSource,id='cqs-web-usage-preview',keys=['week','plan','credits','resets','reset','monthly'];
   const text={
     title:['Codex Quota by KEFEN','Codex Quota by KEFEN','Codex Quota by KEFEN'],shared:['Codex / Work shared allowance','Codex / Work 共享额度','Codex / Work 共用額度'],
     week:['Weekly remaining','本周剩余','本週剩餘'],credits:['Credits','额度','額度'],resets:['Available resets','可用重置次数','可用重設次數'],reset:['Reset time','重置时间','重設時間'],plan:['Plan','套餐','方案'],
@@ -20,6 +20,7 @@
   let cells={},blocked=false,busy=false,editing=false,attempted=false,lastPath=location.href,timer,rendered='',stopped=false;
   let pending=null,returnRoute=false,updateVersion='',expiry;
   text.update=['Update available','发现新版','發現新版'];
+  text.monthly=['Monthly tokens','本月 Token','本月 Token'];
   const overviewURL='https://chatgpt.com/settings/usage?tab=overview';
   text.bring=['Same account: bring readings back','确认同账号，带回读数','確認同帳號，帶回讀數'];
   text.retryFull=['Return to the chat and open full usage again.','请回到原聊天页，再点「读取完整用量」。','請回到原聊天頁，再點「讀取完整用量」。'];
@@ -35,7 +36,7 @@
     const input=M.collect(document,location.pathname,location.search),x=M.parse(input);
     for(const key of keys){
       if(x[key]!==null)cells[key]={value:x[key],at:x.at};
-      else if(key==='week'&&input.description)delete cells[key];
+      else if(key==='week'&&input.description||key==='monthly'&&(input.overview||input.menu.length)&&!cells[key]?.confirmed)delete cells[key];
     }
     armExpiry();
     render();
@@ -107,8 +108,8 @@
     const grid=E('dl',undefined,'metrics');
     for(const key of keys.filter(k=>choices[k])){
       const row=E('div',undefined,'metric '+key);row.dataset.metric=key;
-      const missing= cells[key] ? t('expired') : ['credits','reset','resets'].includes(key)?t('missing'):t('notReturned');
-      row.append(E('dt',t(key)),E('dd',values[key]===null?(key==='week'?'--':missing):key==='week'?values[key]+'%':String(values[key])));
+      const missing= cells[key] ? t('expired') : key==='monthly'?t('unsupported'):['credits','reset','resets'].includes(key)?t('missing'):t('notReturned');
+      row.append(E('dt',t(key)),E('dd',values[key]===null?(key==='week'?'--':missing):key==='week'?values[key]+'%':key==='monthly'?values[key].toLocaleString(language):String(values[key])));
       if(key==='week'){
         const progress=E('div',undefined,'track');progress.setAttribute('role','progressbar');progress.setAttribute('aria-label',t('week'));progress.setAttribute('aria-valuemin','0');progress.setAttribute('aria-valuemax','100');
         if(values[key]!==null){progress.setAttribute('aria-valuenow',String(values[key]));const fill=E('i');fill.style.width=values[key]+'%';progress.append(fill);}else progress.setAttribute('aria-valuetext',t('missing'));row.append(progress);

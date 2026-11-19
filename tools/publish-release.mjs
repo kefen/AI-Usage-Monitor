@@ -4,10 +4,11 @@ const repo='kefen/codex-quota-sidebar';
 const token=process.env.GITHUB_TOKEN,commit=process.env.GITHUB_SHA;
 if(!token||process.env.GITHUB_REPOSITORY!==repo||process.env.GITHUB_REF!=='refs/heads/main'||!/^[a-f0-9]{40}$/.test(commit||''))throw Error('Expected authorized main-branch workflow');
 const windowsOnly=process.env.CQS_RELEASE_SCOPE==='windows-only';
-const accepted=JSON.parse(await readFile(windowsOnly?'docs/releases/accepted-windows-responsive.json':'docs/releases/accepted-ui-fixes.json','utf8'));
+const monthly=process.env.CQS_RELEASE_SCOPE==='monthly-tokens';
+const accepted=JSON.parse(await readFile(monthly?'docs/releases/accepted-monthly-tokens.json':windowsOnly?'docs/releases/accepted-windows-responsive.json':'docs/releases/accepted-ui-fixes.json','utf8'));
 const versions=JSON.parse(await readFile('versions.json','utf8'));
-const chrome=JSON.parse(await readFile('browser/manifest.json','utf8')).version;
-if(accepted.windows!==(windowsOnly?'0.13.4':'0.13.1')||accepted.macos!=='0.5.1-alpha.1'||accepted.chrome!=='0.4.1'||accepted.publicReleaseAuthorized!==true||accepted.verificationRequired!==true||windowsOnly&&accepted.windowsOnly!==true)throw Error('Not the authorized release set');
+const chrome=JSON.parse(await readFile(monthly?'browser-web/manifest.json':'browser/manifest.json','utf8')).version;
+if(accepted.windows!==(monthly?'0.13.5':windowsOnly?'0.13.4':'0.13.1')||accepted.macos!==(monthly?'0.5.2-alpha.1':'0.5.1-alpha.1')||accepted.chrome!==(monthly?'0.5.3':'0.4.1')||accepted.publicReleaseAuthorized!==true||accepted.verificationRequired!==true||windowsOnly&&accepted.windowsOnly!==true)throw Error('Not the authorized release set');
 if(versions.windows!==accepted.windows||versions.macos!==accepted.macos||chrome!==accepted.chrome)throw Error('Version mismatch');
 const source='Codex-Quota-Sidebar-source-windows-'+versions.windows+'-macos-'+versions.macos+'.zip';
 const macSource='Codex-Quota-Sidebar-macOS-'+versions.macos+'-source.zip';
@@ -24,7 +25,17 @@ async function request(path,method='GET',data){
  if(!response.ok)throw Error('GitHub API '+response.status+' '+method+' '+path);
  return response.status===204?null:response.json();
 }
-const notes=JSON.parse(await readFile(windowsOnly?'docs/releases/notes-windows-responsive.json':'docs/releases/notes-ui-fixes.json','utf8'));
+if(monthly){
+ const [win,web,mac]=sets;
+ win.note='Windows 10/11 x64. Unsigned installer; upgrade in place to retain settings.';
+ mac.note='Apple Silicon: arm64. Intel: x86_64. macOS 13.5+. Ad-hoc signed, not notarized. Replace the app in Applications; do not turn off Gatekeeper.';
+ web.title='Codex Quota by KEFEN / Chrome '+chrome;
+ web.prerelease=false;
+ web.files=['Codex-Quota-by-KEFEN-Chrome-'+chrome+'.zip'];
+ web.note=await readFile('browser-web/RELEASE.md','utf8');
+ for(const set of sets)for(const file of set.files)await readFile('dist/'+file);
+}
+const notes=JSON.parse(await readFile(monthly?'docs/releases/notes-monthly-tokens.json':windowsOnly?'docs/releases/notes-windows-responsive.json':'docs/releases/notes-ui-fixes.json','utf8'));
 const localizedNotes=Object.entries({'English':'en','简体中文':'zh-CN','繁體中文':'zh-TW'}).map(([heading,locale])=>'## '+heading+'\n'+notes[locale].map((line,i)=>(i+1)+'. '+line).join('\n')).join('\n\n');
 const published=[];
 for(const set of sets){
@@ -46,7 +57,7 @@ for(const set of sets){
    if(!upload.ok)throw Error('Asset upload '+upload.status+' '+file.name);
    const asset=await upload.json();if(asset.digest!==file.digest)throw Error('Uploaded digest mismatch '+file.name);
  }
- if(release.draft)release=await request('/releases/'+release.id,'PATCH',{draft:false});
+ if(release.draft)release=await request('/releases/'+release.id,'PATCH',monthly?{draft:false,make_latest:set.tag.startsWith('windows/')?'true':'false'}:{draft:false});
  published.push({tag:set.tag,id:release.id,files:files.map(f=>({name:f.name,digest:f.digest}))});
  console.log('Verified published '+release.html_url);
 }

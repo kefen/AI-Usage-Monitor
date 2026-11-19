@@ -495,7 +495,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
                 stage = "mounted"; errorText = ""; page = ""; showStatus(); tick(); window.contentView!.layoutSubtreeIfNeeded()
                 assertV3Geometry()
                 rows[1].stringValue = CqsLocale.t("Synced"); rows[2].stringValue = CqsLocale.t("Synced"); rows[3].stringValue = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .short)
-                precondition(overviewValues.count == 11 && overviewTracks.count == 4)
+                precondition(overviewValues.count == MetricPresentation.keys.count && overviewTracks.count == 4)
                 precondition(abs(overviewValues["weekly"]!.convert(overviewValues["weekly"]!.bounds, to: window.contentView).minY - overviewValues["lifetime"]!.convert(overviewValues["lifetime"]!.bounds, to: window.contentView).minY) < 1)
                 precondition(!metricFields[2].stringValue.contains("\n") && !metricCaptions[2].stringValue.isEmpty)
                 precondition(metricFields[4].stringValue == "3.01B" && metricCaptions[2].font!.pointSize < metricFields[2].font!.pointSize)
@@ -824,7 +824,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             let note = label("", size: 11, muted: true); tokens.addArrangedSubview(note); dailyNote = note
         }
         let tail = NSStackView(); tail.distribution = .fillEqually; tail.spacing = 20
-        for (key, name) in [("weekly", "Weekly tokens"), ("lifetime", "Lifetime tokens")] where has(key) { tail.addArrangedSubview(metric(key, name)) }
+        for (key, name) in [("weekly", "Weekly tokens"), ("monthly", "Monthly tokens"), ("lifetime", "Lifetime tokens")] where has(key) { tail.addArrangedSubview(metric(key, name)) }
         if !tail.arrangedSubviews.isEmpty { let line = separator(); tokens.addArrangedSubview(line); line.widthAnchor.constraint(equalTo: tokens.widthAnchor).isActive = true; tokens.addArrangedSubview(tail); tail.widthAnchor.constraint(equalTo: tokens.widthAnchor).isActive = true }
         if !tokens.arrangedSubviews.isEmpty { charts.addArrangedSubview(tokens) }
         if !charts.arrangedSubviews.isEmpty {
@@ -993,7 +993,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         let toolbarGap = NSView(); toolbarGap.setContentHuggingPriority(.defaultLow, for: .horizontal); toolbarGap.setContentCompressionResistancePriority(.defaultLow, for: .horizontal); toolbar.addArrangedSubview(toolbarGap)
         toolbar.addArrangedSubview(button("Select all", #selector(selectAll))); toolbar.addArrangedSubview(button("Clear selection", #selector(selectNone))); body.addArrangedSubview(toolbar)
         toolbar.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true; toolbar.heightAnchor.constraint(equalToConstant: 52).isActive = true; body.setCustomSpacing(30, after: toolbar)
-        let groups: [(String, [(String, String)])] = [("Plan and dates", [("plan", "Plan badge"), ("renewal", "Renewal date")]), ("Quota and resets", [("short", "5-hour remaining"), ("week", "Weekly remaining"), ("reset", "Quota reset date"), ("resetCredits", "Reset count"), ("credits", "Credits")]), ("Token usage", [("daily", "Daily tokens"), ("average", "Monthly daily average"), ("weekly", "Weekly tokens"), ("lifetime", "Lifetime tokens")])]
+        let groups: [(String, [(String, String)])] = [("Plan and dates", [("plan", "Plan badge"), ("renewal", "Renewal date")]), ("Quota and resets", [("short", "5-hour remaining"), ("week", "Weekly remaining"), ("reset", "Quota reset date"), ("resetCredits", "Reset count"), ("credits", "Credits")]), ("Token usage", [("daily", "Daily tokens"), ("average", "Monthly daily average"), ("weekly", "Weekly tokens"), ("monthly", "Monthly tokens"), ("lifetime", "Lifetime tokens")])]
         for (name, items) in groups {
             let group = column(spacing: 0); let groupTitle = label(name, size: 14); group.addArrangedSubview(groupTitle); group.setCustomSpacing(14, after: groupTitle); stack.addArrangedSubview(group)
             for (key, title) in items {
@@ -1014,7 +1014,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         do { var value = try readForSave("display.json"); for (key, check) in displayChecks { value[key] = check.state == .on }; try write("display.json", value); saved() }
         catch { alert(error.localizedDescription) }
     }
-    func updateSelectionCount() { selectionCount.stringValue = CqsLocale.t("Selected") + " \(displayChecks.filter { $0.1.state == .on }.count) / 11" }
+    func updateSelectionCount() { selectionCount.stringValue = CqsLocale.t("Selected") + " \(displayChecks.filter { $0.1.state == .on }.count) / \(MetricPresentation.keys.count)" }
     @objc func selectionChanged() { markDirty(); updateSelectionCount() }
     @objc func selectAll() { displayChecks.forEach { $0.1.state = .on }; selectionChanged() }
     @objc func selectNone() { displayChecks.forEach { $0.1.state = .off }; selectionChanged() }

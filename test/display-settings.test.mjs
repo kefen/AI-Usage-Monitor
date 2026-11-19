@@ -22,7 +22,8 @@ for(const file of ['display.json','membership.json'])test(file+' changes notify 
   }finally{if(close)close();await rm(root,{recursive:true,force:true});}
 });
 test('display preferences whitelist keys and preserve explicit false',()=>{
-  assert.equal(Object.keys(normalizeDisplay({secret:true})).length,11);
+  assert.equal(Object.keys(normalizeDisplay({secret:true})).length,12);
+  assert.equal(normalizeDisplay({monthly:false}).monthly,false);
   assert.equal(normalizeDisplay({credits:false,resetCredits:false}).resetCredits,false);
   assert.equal(normalizeDisplay({week:false}).week,false);
   assert.ok(Object.values(normalizeDisplay({})).every(Boolean));

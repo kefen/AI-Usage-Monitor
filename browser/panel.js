@@ -24,7 +24,7 @@ const strings={
  'Release notes':['更新说明','更新說明']
 };
 const t=key=>locale==='en'?key:((strings[key]||globalThis.CQS_STRINGS?.[key])?.[locale==='zh-TW'?1:0]||key);
-const keys=['plan','short','week','reset','renewal','daily','average','weekly','lifetime','credits','resetCredits'];
+const keys=['plan','short','week','reset','renewal','daily','average','weekly','monthly','lifetime','credits','resetCredits'];
 const labels={plan:'Plan badge',renewal:'Renewal date',short:'5-hour remaining',week:'Weekly remaining',reset:'Quota reset date',resetCredits:'Reset count',credits:'Credits',daily:'Yesterday tokens',average:'Monthly daily average',weekly:'Weekly tokens',lifetime:'Lifetime tokens'};
 let data=null,metadata={},offline=false,busy=false,lastRefresh=0,updateState=null;
 const node=(tag,text,className)=>{const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(className)el.className=className;return el;};
@@ -50,7 +50,7 @@ function render(){
  const windows=quota&&Array.isArray(data.windows)?data.windows:[];
  const windowFor=minutes=>{const matches=windows.filter(w=>w.minutes===minutes);return matches.length===1?matches[0]:null;};
  $('#metrics').replaceChildren();
- const selected=keys.filter(shown);$('#selection').textContent=t('Uses desktop display choices')+' · '+selected.length+' / 11';
+ const selected=keys.filter(shown);$('#selection').textContent=t('Uses desktop display choices')+' · '+selected.length+' / '+keys.length;
  if(!selected.length){const el=node('div',t('No metrics selected'),'empty-selection');el.id='empty-selection';$('#metrics').append(el);}
  if(['short','week','reset','resetCredits','credits'].some(shown)){
   const group=section('Quota and resets'),pair=node('div',undefined,'quota-pair');
@@ -67,11 +67,11 @@ function render(){
   for(const [key,value] of [['reset',dateTime(windowFor(10080)?.resetsAt)],['resetCredits',quota&&validCount(data.resetCredits)?data.resetCredits.toLocaleString(locale):null],['credits',balance]])if(shown(key))details.append(datum(key,value,reason(true)));
   if(details.children.length)group.append(details);
  }
- if(['daily','average','weekly','lifetime'].some(shown)){
+ if(['daily','average','weekly','monthly','lifetime'].some(shown)){
   const group=section('Token usage'),table=node('table',undefined,'usage-table'),head=node('thead'),tr=node('tr'),body=node('tbody');
   for(const label of ['Metric','Usage','Status']){const th=node('th',t(label));th.scope='col';tr.append(th);}head.append(tr);table.append(head,body);
-  for(const [key,n] of [['daily',data?.daily?.value],['average',data?.monthAverage],['weekly',data?.week],['lifetime',data?.lifetime]])if(shown(key)){
-   const value=usage?tokens(n):null,row=node('tr');row.dataset.metric=key;row.append(node('td',t(key==='daily'?dailyLabel():labels[key])),node('td',value??'--','table-value'),node('td',value===null?reason(false):t('Synced'),value===null?'':'available'));
+  for(const [key,n] of [['daily',data?.daily?.value],['average',data?.monthAverage],['weekly',data?.week],['monthly',data?.monthTotal],['lifetime',data?.lifetime]])if(shown(key)){
+   const value=usage?tokens(n):null,row=node('tr');row.dataset.metric=key;row.append(node('td',t(key==='daily'?dailyLabel():key==='monthly'?'Monthly tokens':labels[key])),node('td',value??'--','table-value'),node('td',value===null?reason(false):t(key==='monthly'&&data.monthPartial?'Partial data':'Synced'),value===null?'':'available'));
    if(key==='daily'&&data?.daily?.date){row.title=data.daily.date;if(dailyLabel()==='Daily tokens')row.firstChild.append(node('small',data.daily.date,'data-date'));}body.append(row);
   }group.append(table);
  }

@@ -99,9 +99,9 @@ Windows UI using test fixtures, not real account data.
 
 Open [Releases](https://github.com/kefen/codex-quota-sidebar/releases).
 For Windows 10/11 x64, download the asset ending in
-`Windows-0.13.4-x64-Setup.exe`, plus its SHA256 file if verifying integrity.
+`Windows-0.13.5-x64-Setup.exe`, plus its SHA256 file if verifying integrity.
 
-Windows 0.13.4 fits the default overview to the screen. Narrow columns move chart
+The Windows overview fits the available screen. Narrow columns move chart
 tracks below their labels; tall narrow windows stack sections. All selected data
 stays available. On exceptionally small windows, scrolling remains a fallback
 instead of clipping data. macOS and Chrome packages are unchanged in this release.
@@ -200,7 +200,7 @@ only when space is severely constrained.
 
 ## macOS Experimental Installation
 
-**Current version: 0.5.1-alpha.1.** Download `arm64` for Apple Silicon (M-series)
+**Current version: 0.5.2-alpha.1.** Download `arm64` for Apple Silicon (M-series)
 or `x86_64` for Intel. The companion requires macOS 13.5+ and a compatible official
 client. It is not Developer ID signed or notarized. The user confirmed live
 connection on Apple Silicon; Intel account testing remains pending.
@@ -293,7 +293,7 @@ not added together. Reset count is not a recharge-card count.
 
 ## 8. Browser Companion
 
-1. Download the [Chrome release ZIP](https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.5.2) and extract it to a permanent folder.
+1. Download the [Chrome release ZIP](https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.5.3) and extract it to a permanent folder.
 2. In `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select the folder containing manifest.json.
 3. Sign in to ChatGPT, reload existing tabs, then expand its sidebar. **Codex Quota by KEFEN** is at the bottom. No desktop helper or registration is needed.
 4. For reset counts, choose **Read full usage**, verify the account and return the readings. For upgrades, follow the release link, replace the files and reload the extension and webpage.

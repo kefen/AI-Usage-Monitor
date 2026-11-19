@@ -132,7 +132,7 @@ if (args[0] === 'usage') {
           const mounted=await paint();
           await report(mounted ? (state.error ? 'mounted-quota-unavailable' : 'mounted') : 'sidebar-missing', {
             sidebarMode,sidebarReason,targetCount:targets.length,mountedCount:mounted,quotaAvailable:!state.error && state.buckets.length>0,
-            usageAvailable:!usage.error && (usage.lifetime!==null || usage.week?.value!==null),nextUsageAt:nextUsage,usageReadAt:usage.fetchedAt
+            usageAvailable:!usage.error && (usage.lifetime!=null || usage.week?.value!=null || usage.month?.value!=null),nextUsageAt:nextUsage,usageReadAt:usage.fetchedAt
           });
           if (Date.now() >= nextStatus) {
             console.log(mounted ? 'Sidebar panel attached.' : 'Waiting for a recognized expanded sidebar; no floating fallback is used.');

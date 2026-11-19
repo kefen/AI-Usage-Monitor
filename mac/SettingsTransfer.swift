@@ -9,7 +9,7 @@ enum SettingsTransfer {
         func boolean(_ value: Any) -> Bool { guard let n = value as? NSNumber else { return false }; return CFGetTypeID(n) == CFBooleanGetTypeID() }
         if let value = root["language.json"] { guard let lang = value as? String, ["en", "zh-CN", "zh-TW"].contains(lang) else { throw invalid() } }
         if let value = root["display.json"] {
-            let keys = Set(["plan", "short", "week", "reset", "renewal", "daily", "average", "weekly", "lifetime", "credits", "resetCredits"])
+            let keys = Set(["plan", "short", "week", "reset", "renewal", "daily", "average", "weekly", "lifetime", "credits", "resetCredits", "monthly"])
             guard let display = value as? [String: Any], Set(display.keys).isSubset(of: keys), display.values.allSatisfy(boolean) else { throw invalid() }
         }
         if let value = root["membership.json"] {

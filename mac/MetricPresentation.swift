@@ -34,7 +34,7 @@ enum MetricPresentation {
               let code = record["code"] as? String else { return nil }
         return updateFailureCode(["error": code])
     }
-    static let keys = ["plan", "renewal", "short", "week", "reset", "resetCredits", "credits", "daily", "average", "weekly", "lifetime"]
+    static let keys = ["plan", "renewal", "short", "week", "reset", "resetCredits", "credits", "daily", "average", "weekly", "monthly", "lifetime"]
     static func recordDate(_ text: String?) -> Date? {
         let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "yyyy-MM-dd"; f.isLenient = false
         guard let text = text, let date = f.date(from: text), f.string(from: date) == text else { return nil }
@@ -65,6 +65,15 @@ enum MetricPresentation {
     static func overview(_ snapshot: [String: Any], display: [String: Any], member: [String: Any], connected: Bool, now: Double) -> [String: MetricDatum] {
         let base = values(snapshot, connected: connected, now: now)
         var result = Dictionary(uniqueKeysWithValues: zip(["short", "week", "daily", "weekly", "lifetime", "average"], base))
+        func fresh(_ key: String, _ age: Double) -> Bool { number(snapshot[key]).map { now >= $0 && now - $0 < age } == true }
+        let monthTotal = number(snapshot["monthTotal"]).map(count) ?? "--"
+        if connected && fresh("generatedAt", 90000) && fresh("usageAt", 5400000) && monthTotal != "--" {
+            result["monthly"] = MetricDatum(value: monthTotal, caption: snapshot["monthPartial"] as? Bool == true ? "Partial data" : "")
+        } else {
+            let expired = number(snapshot["usageAt"]) != nil && !fresh("usageAt", 5400000)
+            let reason = base[5].caption
+            result["monthly"] = MetricDatum(caption: !connected ? "Not connected" : expired || reason == "Data expired" ? "Data expired" : "Not returned")
+        }
         let missing = base[0].caption.isEmpty ? "Not returned" : base[0].caption
         for key in ["reset", "resetCredits", "credits"] { result[key] = MetricDatum(caption: missing) }
         let freshQuota = connected && number(snapshot["generatedAt"]).map { now >= $0 && now - $0 < 90000 } == true && number(snapshot["quotaAt"]).map { now >= $0 && now - $0 < 180000 } == true

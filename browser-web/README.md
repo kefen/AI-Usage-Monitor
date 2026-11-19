@@ -1,4 +1,6 @@
-# Codex Quota by KEFEN 0.5.2
+# Codex Quota by KEFEN 0.5.3
+
+**Monthly tokens** shows an explicit current-month count only when the signed-in ChatGPT usage page provides it. Otherwise the panel shows that the page does not provide the value. The extension does not read desktop CLI data or estimate a count from quota percentages.
 
 GitHub 网页插件首发版。打开随包的 `guide.html` 查看完整中英文说明。
 

@@ -8,32 +8,32 @@ using System.Web.Script.Serialization;
 using System.Windows.Forms;
 
 internal sealed class UsageOverview : UserControl {
-    readonly Label[] values=new Label[11],captions=new Label[11],names=new Label[11];
-    readonly Panel[] groups=new Panel[11];
-    readonly bool[] selected=new bool[11];
+    readonly Label[] values=new Label[12],captions=new Label[12],names=new Label[12];
+    readonly Panel[] groups=new Panel[12];
+    readonly bool[] selected=new bool[12];
     readonly LinearScale[] charts=new LinearScale[4];
     readonly Label quotaTitle,tokenTitle,scope,source,empty;
     readonly LinearAxis axis;
     readonly Panel details,meta,tail;
     readonly Panel canvas;
     bool arranging;
-    readonly string[] keys={"short","week","daily","weekly","lifetime","average","reset","resetCredits","credits","plan","renewal"};
+    readonly string[] keys={"short","week","daily","weekly","lifetime","average","reset","resetCredits","credits","plan","renewal","monthly"};
     internal double TokenScale {get;private set;}
     internal UsageOverview(){
         Name="usageOverview";Dock=DockStyle.Fill;Height=560;AutoScroll=true;BackColor=MeterTheme.Surface;
         canvas=new Panel();Controls.Add(canvas);
-        string[] labels={"5-hour remaining","Weekly remaining","Daily tokens","Weekly tokens","Lifetime tokens","Monthly daily average","Quota reset date","Reset count","Credits","Plan","Renewal"};
+        string[] labels={"5-hour remaining","Weekly remaining","Daily tokens","Weekly tokens","Lifetime tokens","Monthly daily average","Quota reset date","Reset count","Credits","Plan","Renewal","Monthly tokens"};
         quotaTitle=Label("Quota remaining",10,MeterTheme.Ink);tokenTitle=Label("Yesterday vs monthly daily average",10,MeterTheme.Ink);
         scope=Label("Shared Token scale",8,MeterTheme.Muted);axis=new LinearAxis();canvas.Controls.Add(axis);
         source=Label("Usage: local CLI. Plan: desktop detection or manual record.",9,MeterTheme.Muted);
         empty=Label("No metrics selected.",10,MeterTheme.Muted);empty.Visible=false;
         details=new Panel{BackColor=Color.FromArgb(247,248,250)};meta=new Panel();tail=new Panel();canvas.Controls.Add(details);canvas.Controls.Add(meta);canvas.Controls.Add(tail);
         foreach(var panel in new[]{meta,tail})panel.Paint+=(s,e)=>{var p=(Panel)s;using(var pen=new Pen(MeterTheme.Line))e.Graphics.DrawLine(pen,0,0,p.Width,0);};
-        for(int i=0;i<11;i++){
+        for(int i=0;i<keys.Length;i++){
             selected[i]=true;var group=groups[i]=new Panel{Name="group-"+keys[i]};
-            (i>=6&&i<=8?details:i>=9?meta:i==3||i==4?tail:(Control)canvas).Controls.Add(group);
+            (i>=6&&i<=8?details:i==9||i==10?meta:i==3||i==4||i==11?tail:(Control)canvas).Controls.Add(group);
             names[i]=MeterTheme.Label(labels[i],9,MeterTheme.Muted);names[i].Dock=DockStyle.None;group.Controls.Add(names[i]);
-            values[i]=MeterTheme.Label("--",i<2?20:i==3||i==4?18:i>=9?9:i>=6?12:11,MeterTheme.Ink);values[i].Name="metric"+i;values[i].Dock=DockStyle.None;group.Controls.Add(values[i]);
+            values[i]=MeterTheme.Label("--",i<2?20:i==3||i==4||i==11?18:i>=9?9:i>=6?12:11,MeterTheme.Ink);values[i].Name="metric"+i;values[i].Dock=DockStyle.None;group.Controls.Add(values[i]);
             captions[i]=MeterTheme.Label("Not returned",8,MeterTheme.Muted);captions[i].Name="metricCaption"+i;captions[i].Dock=DockStyle.None;group.Controls.Add(captions[i]);
         }
         for(int i=0;i<4;i++){charts[i]=new LinearScale(i<2);charts[i].Name="linearScale"+i;groups[i==2?2:i==3?5:i].Controls.Add(charts[i]);}
@@ -69,7 +69,7 @@ internal sealed class UsageOverview : UserControl {
         int sourceHeight=TextRenderer.MeasureText(source.Text,source.Font,new Size(Math.Max(1,(int)(w*s)),Int32.MaxValue),TextFormatFlags.WordBreak|TextFormatFlags.NoPrefix).Height;
         float sh=Math.Max(24,sourceHeight/s);Bounds(source,0,y,w,sh,s);Bounds(empty,0,20,w,40,s);
         quotaTitle.Visible=selected[0]||selected[1];tokenTitle.Visible=scope.Visible=axis.Visible=selected[2]||selected[5];
-        tail.Visible=selected[3]||selected[4];details.Visible=count>0;meta.Visible=selected[9]||selected[10];
+        tail.Visible=selected[3]||selected[4]||selected[11];details.Visible=count>0;meta.Visible=selected[9]||selected[10];
         bool any=false;foreach(bool v in selected)any|=v;empty.Visible=!any;source.Visible=any;
         for(int i=0;i<groups.Length;i++)groups[i].Visible=selected[i];
         int needed=(int)Math.Ceiling((any?y+sh:64)*s);
@@ -101,8 +101,12 @@ internal sealed class UsageOverview : UserControl {
         Bounds(axis,right+ax,axisY,Math.Max(0,compact?rw:rw-ax-94),24,s);
         float tailY=row>0?axisY+32:top+32;
         Bounds(tail,right,tailY,rw,84+16*room,s);int n=0;
-        foreach(int i in new[]{3,4})if(selected[i]){float width=rw/(selected[3]&&selected[4]?2:1);Bounds(groups[i],n++*width,8,width,76+16*room,s);Bounds(names[i],0,0,width,22,s);Bounds(values[i],0,24,width,34,s);Bounds(captions[i],0,60,width,24,s);}
-        float th=tailY+(n>0?84+16*room:0);
+        int columns=(selected[3]?1:0)+(selected[11]?1:0)+(selected[4]?1:0);
+        bool wrap=columns==3&&rw<330;
+        float rowHeight=84+16*room;
+        Bounds(tail,right,tailY,rw,rowHeight*(wrap?2:1),s);
+        foreach(int i in new[]{3,11,4})if(selected[i]){float width=rw/(wrap?2:columns);Bounds(groups[i],(wrap?n%2:n)*width,6+(wrap?n/2:0)*rowHeight,width,rowHeight-6,s);n++;Bounds(names[i],0,0,width-4,23,s);Bounds(values[i],0,23,width-4,31,s);Bounds(captions[i],0,54,width-4,24,s);}
+        float th=tailY+(n>0?rowHeight*(wrap?2:1):0);
         return Math.Max(qh,th);
     }
     static double? Number(object value){if(value==null||value is bool||value is string)return null;try{double n=Convert.ToDouble(value);return Double.IsNaN(n)||Double.IsInfinity(n)||n<0?null:(double?)n;}catch{return null;}}
@@ -113,7 +117,7 @@ internal sealed class UsageOverview : UserControl {
     void Set(int index,string value,string caption){values[index].Text=value;values[index].ForeColor=value=="--"?MeterTheme.Muted:MeterTheme.Ink;captions[index].Text=Locale.T(caption);groups[index].AccessibleName=Locale.T(names[index].Text)+": "+value+" "+Locale.T(caption);}
     internal void UpdateSnapshot(Dictionary<string,object> data,bool connected,double now){
         string state=!connected?"Not connected":!N(data,"generatedAt").HasValue||Fresh(data,"generatedAt",now,90000)?"Not returned":"Data expired";
-        for(int i=0;i<11;i++)Set(i,"--",state);foreach(var chart in charts)chart.Amount=null;
+        for(int i=0;i<keys.Length;i++)Set(i,"--",state);foreach(var chart in charts)chart.Amount=null;
         object visible;var map=data.TryGetValue("visible",out visible)?visible as Dictionary<string,object>:null;
         for(int i=0;i<keys.Length;i++){object v;selected[i]=map==null||!map.TryGetValue(keys[i],out v)||!(v is bool)||(bool)v;}
         TokenScale=0;axis.Maximum=null;
@@ -124,12 +128,14 @@ internal sealed class UsageOverview : UserControl {
             }else if(N(data,"quotaAt").HasValue){Set(0,"--","Data expired");Set(1,"--","Data expired");}
             if(Fresh(data,"usageAt",now,5400000)){
                 foreach(var item in new[]{new KeyValuePair<int,string>(3,"week"),new KeyValuePair<int,string>(4,"lifetime"),new KeyValuePair<int,string>(5,"monthAverage")}){string value=Count(Integer(N(data,item.Value)));Set(item.Key,value,value=="--"?"Not returned":item.Key==3?"Monday to now":item.Key==4?"Account lifetime":"");}
+                string month=Count(Integer(N(data,"monthTotal")));object partial;
+                Set(11,month,month=="--"?"Not returned":data.TryGetValue("monthPartial",out partial)&&true.Equals(partial)?"Partial data":"");
                 double? dailyValue=null;object daily;if(data.TryGetValue("daily",out daily)&&daily is Dictionary<string,object>){var d=(Dictionary<string,object>)daily;object label;DateTime day;if(d.TryGetValue("date",out label)&&DateTime.TryParseExact(Convert.ToString(label),"yyyy-MM-dd",CultureInfo.InvariantCulture,DateTimeStyles.None,out day)){dailyValue=Integer(N(d,"value"));string value=Count(dailyValue);var local=new DateTime(1970,1,1,0,0,0,DateTimeKind.Utc).AddMilliseconds(now).ToLocalTime().Date;string caption=day.Date==local.AddDays(-1)?"Yesterday":day.Date==local?"Today":Locale.T("Data date")+": "+day.ToString("yyyy-MM-dd");names[2].Text=Locale.T(caption);Set(2,value,value=="--"?"Not returned":"");}}
                 double? average=Integer(N(data,"monthAverage"));double a=dailyValue.GetValueOrDefault(),b=average.GetValueOrDefault();
                 TokenScale=SharedMaximum(Math.Max(selected[2]?a:0,selected[5]?b:0));
                 charts[2].Amount=!dailyValue.HasValue?null:(double?)(TokenScale==0?0:a/TokenScale);charts[3].Amount=!average.HasValue?null:(double?)(TokenScale==0?0:b/TokenScale);
                 axis.Maximum=dailyValue.HasValue||average.HasValue?(double?)TokenScale:null;
-            }else if(N(data,"usageAt").HasValue)for(int i=2;i<6;i++)Set(i,"--","Data expired");
+            }else if(N(data,"usageAt").HasValue)foreach(int i in new[]{2,3,4,5,11})Set(i,"--","Data expired");
             object v;if(data.TryGetValue("planBadge",out v)&&v is string&&!String.IsNullOrWhiteSpace((string)v))Set(9,(string)v,"");
             if(data.TryGetValue("renewalDate",out v)&&v is string&&!String.IsNullOrWhiteSpace((string)v))Set(10,(string)v,"");
         }

@@ -27,7 +27,8 @@ import Foundation
             "daily": ["date": "2026-11-17", "value": 202650000], "monthAverage": 125350000,
             "week": 0, "lifetime": 3010000000, "creditBalance": "0", "resetCredits": 0]
         let all = MetricPresentation.overview(snapshot, display: [:], member: [:], connected: true, now: now)
-        precondition(all.count == 11)
+        precondition(all.count == 12)
+        precondition(all["monthly"]?.value == "--")
         let future = now + 3600000
         precondition(MetricPresentation.resetMilliseconds(future / 1000) == future)
         precondition(MetricPresentation.resetMilliseconds(future) == future)
@@ -69,6 +70,6 @@ import Foundation
         precondition(disconnected["short"]?.caption == "Not connected" && disconnected["credits"]?.value == "--")
         let expired = MetricPresentation.overview(snapshot, display: [:], member: [:], connected: true, now: now + 90001)
         precondition(expired["resetCredits"]?.caption == "Data expired")
-        print("PASS: V3 all eleven, choices, zeros, blank dates and common plot scale")
+        print("PASS: V3 all twelve, choices, zeros, blank dates and common plot scale")
     }
 }

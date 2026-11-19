@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Codex Quota by KEFEN",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Your current web account's Codex / Work allowance at the bottom of the ChatGPT sidebar.",
   "author": "KEFEN",
   "permissions": ["storage","alarms"],

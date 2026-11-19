@@ -4,10 +4,10 @@ import {mkdtemp,mkdir,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 
-test('bridge projects only eleven shared choices and safe plan metadata, even when stale',()=>{
+test('bridge projects only twelve shared choices and safe plan metadata, even when stale',()=>{
  const now=Date.now(),input={schema:1,generatedAt:now,visible:{short:false,plan:true,secret:'SECRET'},planBadge:'Pro',renewalDate:'2026-12-13',planSource:'manual',secret:'SECRET'};
  const result=safeSnapshot(input,now);
- assert.equal(result.visible.short,false);assert.equal(Object.keys(result.visible).length,11);
+ assert.equal(result.visible.short,false);assert.equal(Object.keys(result.visible).length,12);
  assert.equal(result.planBadge,'Pro');assert.equal(result.renewalDate,'2026-12-13');assert.equal(result.planSource,'manual');
  assert.ok(!JSON.stringify(result).includes('SECRET'));
  assert.equal(safeSnapshot({...input,generatedAt:0},now).visible.short,false);

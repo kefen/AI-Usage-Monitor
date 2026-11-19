@@ -1,0 +1,5 @@
+{
+  "en": ["Desktop adds a current UTC calendar-month Token total, separate from the monthly daily average.", "Partial daily records are labeled; missing values are not treated as zero.", "Chrome only displays a total explicitly provided for the signed-in web account; otherwise it shows that the page does not provide it."],
+  "zh-CN": ["桌面端新增本月 Token 合计，按 UTC 自然月统计，与本月日均分开显示。", "每日记录不全时标记为部分数据，缺失不当作零。", "Chrome 仅展示当前网页账户明确提供的月度总数；页面未提供时不估算。"],
+  "zh-TW": ["桌面版新增本月 Token 合計，依 UTC 自然月統計，與本月日均分開顯示。", "每日紀錄不全時標示為部分資料，缺漏不當作零。", "Chrome 僅顯示目前網頁帳戶明確提供的月度總數；頁面未提供時不估算。"]
+}

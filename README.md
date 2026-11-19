@@ -55,8 +55,8 @@ none is currently shipped. Windows 7/8 and 32-bit x86 are not supported.
 
 ## Screenshots
 
-**Current versions:** Windows **0.13.4**, macOS **0.5.1-alpha.1**
-(Apple Silicon and Intel), Chrome **0.5.2**.
+**Current versions:** Windows **0.13.5**, macOS **0.5.2-alpha.1**
+(Apple Silicon and Intel), Chrome **0.5.3**.
 
 The V3 desktop overview uses quota rulers and a shared-scale comparison of daily
 tokens with the monthly daily average, followed by weekly and lifetime totals.
@@ -113,9 +113,9 @@ not evidence of live-account connection acceptance.
 
 | Platform | Version | Availability |
 | --- | --- | --- |
-| Windows 10/11 x64 | 0.13.4 | Responsive V3 overview; unsigned installer |
-| macOS Apple Silicon / Intel | 0.5.1-alpha.1 | V3 experimental DMGs; not notarized; prior Apple Silicon connection user-confirmed, Intel account testing pending |
-| Chrome MV3 | 0.5.2 | Codex Quota by KEFEN; standalone bottom-of-sidebar web extension |
+| Windows 10/11 x64 | 0.13.5 | Monthly Token total in the overview and sidebar; unsigned installer |
+| macOS Apple Silicon / Intel | 0.5.2-alpha.1 | Monthly Token total; experimental DMGs, not notarized |
+| Chrome MV3 | 0.5.3 | Monthly Token total when explicitly shown by the signed-in account's usage page |
 
 The Windows 0.12.3 interface was accepted by the user on 2026-11-16; 0.12.6 adds
 the requested statistics and read-only balance/reset indicators. A prior
@@ -128,9 +128,9 @@ does not make an ARM-only official client compatible with Intel.
 
 ## Downloads And Instructions
 
-- [Windows installer and checksums](https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.13.4)
-- [Chrome extension ZIP](https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.5.2)
-- [macOS experimental installers, both architectures](https://github.com/kefen/codex-quota-sidebar/releases/tag/macos/v0.5.1-alpha.1)
+- [Windows installer and checksums](https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.13.5)
+- [Chrome extension ZIP](https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.5.3)
+- [macOS experimental installers, both architectures](https://github.com/kefen/codex-quota-sidebar/releases/tag/macos/v0.5.2-alpha.1)
 - **[Step-by-step illustrated user guide](docs/USER-GUIDE.md)**
 - [Release and acceptance record](docs/RELEASES.md)
 
@@ -205,7 +205,7 @@ externally modified files are retained.
 
 ## Chrome Companion
 
-**Codex Quota by KEFEN 0.5.2** is the first public standalone web release. Expand ChatGPT's left sidebar: the compact Mac-style quota ruler is at the bottom. Read the current account's weekly allowance, plan, credits, available resets and reset time where provided. Select **Read full usage** to bring back a confirmed snapshot. Historical Token totals are not available from the verified web page.
+**Codex Quota by KEFEN 0.5.3.** Expand ChatGPT's left sidebar: the compact Mac-style quota ruler is at the bottom. Read the current account's weekly allowance, plan, credits, available resets and reset time where provided. Select **Read full usage** to bring back a confirmed snapshot. Monthly Tokens appear only if the official page explicitly provides the current month's total; the extension does not substitute local desktop data. On desktop, Monthly Tokens sum the returned daily records for the current UTC calendar month; incomplete coverage is marked as partial and is not treated as zero.
 
 The extension observes changes already rendered by ChatGPT; it does not periodically refresh the site or hit a usage API. A daily public GitHub version check shows a toolbar badge and a link when a newer build exists. GitHub ZIPs must be replaced and reloaded manually.
 

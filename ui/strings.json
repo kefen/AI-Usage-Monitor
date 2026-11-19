@@ -627,6 +627,8 @@
     "本周 Token",
     "本週 Token"
   ],
+  "Monthly tokens": ["本月 Token", "本月 Token"],
+  "Partial data": ["部分数据", "部分資料"],
   "Lifetime tokens": [
     "累计 Token",
     "累計 Token"

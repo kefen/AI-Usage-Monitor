@@ -12,7 +12,7 @@ async function setup(page,language){
  await page.goto('https://chatgpt.com/');
  await page.evaluate(({language,icon})=>{
    globalThis.savedPrefs=[];
-   globalThis.chrome={runtime:{id:'test-extension',getURL:()=>icon,getManifest:()=>({version:'0.5.2'}),onMessage:{addListener(){}}},storage:{local:{get:async()=>({cqsWebPreferences:{language}}),set:async obj=>{savedPrefs.push(obj);}}}};
+   globalThis.chrome={runtime:{id:'test-extension',getURL:()=>icon,getManifest:()=>({version:'0.5.3'}),onMessage:{addListener(){}}},storage:{local:{get:async()=>({cqsWebPreferences:{language}}),set:async obj=>{savedPrefs.push(obj);}}}};
    document.getElementById('usage-trigger').addEventListener('click',()=>{
     const trigger=document.getElementById('usage-trigger'),open=trigger.getAttribute('aria-expanded')==='true';trigger.setAttribute('aria-expanded',String(!open));
     document.getElementById('portal').innerHTML=open?'':'<div id="usage-menu" role="menu" aria-labelledby="usage-trigger"><div>Usage source: Your Pro plan</div><div role="menuitem">Weekly limit 30% left</div><div><div>额度</div><div>额度：<span>163.9</span></div></div></div>';
@@ -27,6 +27,7 @@ try{
   const page=await browser.newPage({viewport:{width,height:800},locale:language});await setup(page,language);
   const host=page.locator('#cqs-web-usage-preview');
   assert.equal(await host.locator('[data-metric=week] dd').innerText(),'30%');
+  assert.equal(await host.locator('[data-metric=monthly] dd').innerText(),{en:'Not provided by this page','zh-CN':'此网页未提供','zh-TW':'此網頁未提供'}[language]);
   assert.equal(await host.locator('.history .hint').innerText(),{en:'Not provided by this page','zh-CN':'此网页未提供','zh-TW':'此網頁未提供'}[language]);
   assert.equal(await page.locator('[role=menu]').count(),0,'own usage probe must restore the menu');
   assert.equal(await host.evaluate(el=>el.parentElement.className),'secondary');
@@ -50,14 +51,15 @@ try{
  }
  // Current settings overview is a separate strict source; historical analytics is not.
  const page=await browser.newPage();await setup(page,'en');
- const overview=`<div><h1>Usage</h1><div>ChatGPT Pro 100</div><div><div>Weekly limit</div><span>Resets in 3 days</span><div><progress max="100" value="30" aria-label="Remaining usage"></progress></div></div><div id="usage-limit-resets" role="group"></div><div role="tablist"><button role="tab">Available 3</button></div><div>Credits 163 credits</div></div>`;
+ const overview=`<div><h1>Usage</h1><div>ChatGPT Pro 100</div><div><div>Weekly limit</div><span>Resets in 3 days</span><div><progress max="100" value="30" aria-label="Remaining usage"></progress></div></div><div id="usage-limit-resets" role="group"></div><div role="tablist"><button role="tab">Available 3</button></div><div>Credits 163 credits</div><div>Tokens used this month: 123,456</div></div>`;
  await page.evaluate(html=>{document.querySelector('main').innerHTML=html;history.pushState({},'', '/settings/usage?tab=overview');},overview);
  const collected=await page.evaluate(()=>CQSWebSource.parse(CQSWebSource.collect(document,location.pathname,location.search)));
  assert.equal(collected.plan,'Pro 100');assert.equal(collected.resets,3);assert.equal(collected.reset,'Resets in 3 days');
  assert.equal(await page.evaluate(()=>CQSWebSource.parse(CQSWebSource.collect(document,'/settings/usage','?tab=analytics')).resets),null);
  await page.evaluate(()=>window.dispatchEvent(new PopStateEvent('popstate')));
  await page.locator('[data-metric=resets] dd').filter({hasText:'3'}).waitFor();
- await page.locator('#cqs-web-usage-preview').screenshot({path:new URL('../../docs/screenshots/chrome-web-052.png',import.meta.url).pathname.replace(/^\/([A-Za-z]:)/,'$1')});
+ assert.equal(await page.locator('[data-metric=monthly] dd').innerText(),'123,456');
+ await page.locator('#cqs-web-usage-preview').screenshot({path:new URL('../../verification/browser-web/monthly-usage-en.png',import.meta.url).pathname.replace(/^\/([A-Za-z]:)/,'$1')});
  await page.evaluate(()=>{document.querySelector('progress').value=37;document.querySelector('#usage-trigger').setAttribute('aria-description','Weekly usage: 37% left');});
  await page.locator('[data-metric=week] dd').filter({hasText:'37%'}).waitFor({timeout:2000});
  await page.close();
