@@ -200,7 +200,7 @@ only when space is severely constrained.
 
 ## macOS Experimental Installation
 
-**Current version: 0.5.2-alpha.1.** Download `arm64` for Apple Silicon (M-series)
+**Current version: 0.5.3-alpha.1.** Download `arm64` for Apple Silicon (M-series)
 or `x86_64` for Intel. The companion requires macOS 13.5+ and a compatible official
 client. It is not Developer ID signed or notarized. The user confirmed live
 connection on Apple Silicon; Intel account testing remains pending.
