@@ -100,12 +100,12 @@ internal sealed class UsageOverview : UserControl {
         float axisY=rowsTop+row*rh;float ax=compact?0:Math.Min(130,rw*.27f)+12;
         Bounds(axis,right+ax,axisY,Math.Max(0,compact?rw:rw-ax-94),24,s);
         float tailY=row>0?axisY+32:top+32;
-        Bounds(tail,right,tailY,rw,84+16*room,s);int n=0;
+        int n=0;
         int columns=(selected[3]?1:0)+(selected[11]?1:0)+(selected[4]?1:0);
         bool wrap=columns==3&&rw<330;
         float rowHeight=84+16*room;
         Bounds(tail,right,tailY,rw,rowHeight*(wrap?2:1),s);
-        foreach(int i in new[]{3,11,4})if(selected[i]){float width=rw/(wrap?2:columns);Bounds(groups[i],(wrap?n%2:n)*width,6+(wrap?n/2:0)*rowHeight,width,rowHeight-6,s);n++;Bounds(names[i],0,0,width-4,23,s);Bounds(values[i],0,23,width-4,31,s);Bounds(captions[i],0,54,width-4,24,s);}
+        foreach(int i in new[]{3,11,4})if(selected[i]){float width=rw/(wrap?2:columns);Bounds(groups[i],(wrap?n%2:n)*width,6+(wrap?n/2:0)*rowHeight,width,rowHeight-6,s);n++;Bounds(names[i],0,0,width-4,22,s);Bounds(values[i],0,22,width-4,36,s);Bounds(captions[i],0,58,width-4,20,s);}
         float th=tailY+(n>0?rowHeight*(wrap?2:1):0);
         return Math.Max(qh,th);
     }

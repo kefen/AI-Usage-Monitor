@@ -509,11 +509,12 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
                 connectedView.cacheDisplay(in: connectedView.bounds, to: emptyBitmap)
                 try emptyBitmap.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("empty-fixture-" + language + ".png"))
                 updateMetrics(false); precondition(metricCaptions[2].stringValue == CqsLocale.t("Not connected") && metricFields[2].stringValue == "--")
-                for (name, choices) in [("all-eleven", [:]), ("none", Dictionary(uniqueKeysWithValues: MetricPresentation.keys.map { ($0, false) })), ("tokens-only", Dictionary(uniqueKeysWithValues: MetricPresentation.keys.map { ($0, ["daily", "average", "weekly", "lifetime"].contains($0)) }))] as [(String, [String: Bool])] {
+                let tokenChoices = ["daily", "average", "weekly", "monthly", "lifetime"]
+                for (name, choices) in [("all-twelve", [:]), ("none", Dictionary(uniqueKeysWithValues: MetricPresentation.keys.map { ($0, false) })), ("tokens-only", Dictionary(uniqueKeysWithValues: MetricPresentation.keys.map { ($0, tokenChoices.contains($0)) }))] as [(String, [String: Bool])] {
                     try write("display.json", choices); page = ""; showStatus(); updateMetrics(true)
                     window.contentView!.layoutSubtreeIfNeeded()
                     assertV3Geometry()
-                    precondition(overviewValues.count == (name == "none" ? 0 : name == "tokens-only" ? 4 : 11))
+                    precondition(overviewValues.count == (name == "none" ? 0 : name == "tokens-only" ? tokenChoices.count : MetricPresentation.keys.count))
                     let bitmap = connectedView.bitmapImageRepForCachingDisplay(in: connectedView.bounds)!; connectedView.cacheDisplay(in: connectedView.bounds, to: bitmap)
                     try bitmap.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("choices-" + name + "-" + language + ".png"))
                 }

@@ -3,5 +3,6 @@
   "macos": "0.5.2-alpha.1",
   "chrome": "0.5.3",
   "publicReleaseAuthorized": true,
-  "verificationRequired": true
+  "verificationRequired": true,
+  "candidateRevision": 2
 }
