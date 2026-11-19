@@ -1,0 +1,66 @@
+name: Publish macOS updater improvements
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/publish-mac-updater.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: publish-mac-updater
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {arch: arm64, runner: macos-15}
+          - {arch: x86_64, runner: macos-15-intel}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24.16.0'
+      - run: node --test test/*.test.mjs
+      - run: bash mac/Build.command ${{ matrix.arch }}
+      - run: node test/mac-update-integration.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mac-updater-${{ matrix.arch }}
+          path: dist/*unsigned-test.dmg
+          if-no-files-found: error
+  publish:
+    if: github.repository == 'kefen/codex-quota-sidebar' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: mac-updater-*
+          path: dist
+          merge-multiple: true
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./versions.json').macos")
+          test "$version" = 0.5.3-alpha.1
+          tag="macos/v$version"
+          a="Codex-Quota-Sidebar-macOS-$version-arm64-unsigned-test.dmg"
+          b="Codex-Quota-Sidebar-macOS-$version-x86_64-unsigned-test.dmg"
+          sums="SHA256SUMS-macos-v$version.txt"
+          (cd dist; sha256sum "$a" "$b" > "$sums")
+          jq -r 'to_entries[] | "## " + .key, (.value[] | "- " + .), ""' docs/releases/notes-mac-updater.json > "$RUNNER_TEMP/notes.md"
+          gh release create "$tag" --target "$GITHUB_SHA" --title "macOS $version" --draft --prerelease --latest=false --notes-file "$RUNNER_TEMP/notes.md" "dist/$a" "dist/$b" "dist/$sums"
+          assets=$(gh release view "$tag" --json assets --jq '.assets | length')
+          test "$assets" = 3
+          gh release edit "$tag" --draft=false

@@ -1,5 +1,6 @@
 import {readFile,writeFile,mkdir,mkdtemp,copyFile,rename,lstat,chmod,realpath,unlink} from 'node:fs/promises';
 import {createHash,verify,randomUUID} from 'node:crypto';
+import {writeFileSync} from 'node:fs';
 import {join,resolve,dirname,basename} from 'node:path';
 import {tmpdir,homedir,arch} from 'node:os';
 import {spawn,spawnSync} from 'node:child_process';
@@ -30,21 +31,38 @@ export function verifyFeed(envelope,key,now=Date.now()){
  const bytes=Buffer.from(envelope.payload,'base64');if(!verify(null,bytes,key,Buffer.from(envelope.signature,'base64')))throw Error('Update signature rejected');
  const data=JSON.parse(bytes);if(data.schema!==1||!Number.isSafeInteger(data.expiresAt)||data.expiresAt<now||!data.releases)throw Error('Update feed expired or invalid');return data;
 }
-export async function updateBytes(url,limit,asset=false,fetcher=fetch,delay=ms=>new Promise(r=>setTimeout(r,ms))){
+export async function updateBytes(url,limit,asset=false,fetcher=fetch,delay=ms=>new Promise(r=>setTimeout(r,ms)),progress,{idleMs=25000,totalMs=300000}={}){
+ if(!asset||!progress)return requestBytes(url,limit,asset,fetcher,delay);
+ const deadline=AbortSignal.timeout(totalMs);
+ for(let attempt=1;attempt<=2;attempt++){
+  const stall=new AbortController();let timer;
+  const onBytes=size=>{clearTimeout(timer);timer=setTimeout(()=>stall.abort(),idleMs);progress(size,attempt);};
+  try{onBytes(0);return await requestBytes(url,limit,true,fetcher,delay,AbortSignal.any([deadline,stall.signal]),onBytes);}
+  catch(error){if(error.message!=='E_UPDATE_NETWORK'||attempt===2||deadline.aborted)throw error;}
+  finally{clearTimeout(timer);}
+  await delay(500);
+ }
+}
+async function requestBytes(url,limit,asset,fetcher,delay,signal,onBytes){
  let current=url;
  for(let i=0;i<6;i++){
   const u=new URL(current);if(u.protocol!=='https:'||!(u.hostname==='raw.githubusercontent.com'||asset&&['github.com','release-assets.githubusercontent.com','objects.githubusercontent.com'].includes(u.hostname)))throw Error('Untrusted redirect');
   let r;
   for(let attempt=0;attempt<(asset?1:2);attempt++){
    try{
-    r=await fetcher(current,{redirect:'manual',signal:AbortSignal.timeout(asset?120000:8000),headers:{'User-Agent':'Codex-Quota-Sidebar-Updater'}});
+    r=await fetcher(current,{redirect:'manual',signal:signal??AbortSignal.timeout(asset?120000:8000),headers:{'User-Agent':'Codex-Quota-Sidebar-Updater'}});
     if(r.status===429||r.status>=500)throw Error('E_UPDATE_NETWORK');
     break;
    }catch{if(asset||attempt===1)throw Error('E_UPDATE_NETWORK');await delay(250);}
   }
   if([301,302,303,307,308].includes(r.status)){current=new URL(r.headers.get('location'),current).href;continue;}
   if(!r.ok)throw Error('Update network error '+r.status);if(Number(r.headers.get('content-length'))>limit)throw Error('Update too large');
-  const chunks=[];let size=0;for await(const c of r.body){size+=c.length;if(size>limit)throw Error('Update too large');chunks.push(c);}return Buffer.concat(chunks);
+  const chunks=[];let size=0;
+  try{for await(const c of r.body){size+=c.length;if(size>limit)break;chunks.push(c);onBytes?.(size);}}
+  catch{throw Error('E_UPDATE_NETWORK');}
+  if(size>limit)throw Error('Update too large');
+  if(onBytes&&size!==limit)throw Error('E_UPDATE_NETWORK');
+  return Buffer.concat(chunks);
  }throw Error('Too many redirects');
 }
 const bytes=updateBytes;
@@ -130,7 +148,17 @@ async function main(){
  const file=join(cache,process.platform==='win32'?'update.exe':'update.dmg');
  if(available&&['download','prepare'].includes(command)){
   let content;try{content=await readFile(file);}catch{}
-  if(!content||content.length!==asset.size||createHash('sha256').update(content).digest('hex')!==asset.sha256){content=await bytes(asset.url,asset.size,true);if(content.length!==asset.size||createHash('sha256').update(content).digest('hex')!==asset.sha256)throw Error('Update checksum rejected');await writeFile(file+'.part',content);await rename(file+'.part',file);}
+  if(!content||content.length!==asset.size||createHash('sha256').update(content).digest('hex')!==asset.sha256){
+   let lastProgress=0;
+   const progress=process.platform==='darwin'&&command==='download'?(received,attempt)=>{
+    if(received!==0&&received!==asset.size&&Date.now()-lastProgress<250)return;
+    lastProgress=Date.now();
+    try{writeFileSync(join(cache,'download-progress.json'),JSON.stringify({received,total:asset.size,attempt,updatedAt:lastProgress}),{flag:'w',mode:0o600});}catch{}
+   }:undefined;
+   content=await bytes(asset.url,asset.size,true,undefined,undefined,progress);
+   if(content.length!==asset.size||createHash('sha256').update(content).digest('hex')!==asset.sha256)throw Error('Update checksum rejected');
+   await writeFile(file+'.part',content);await rename(file+'.part',file);
+  }
   state.ready=true;
   if(command==='prepare'){
    const id=randomUUID(),transactionPath=join(cache,'transaction.json'),backupFolder=join(cache,'settings-'+id);

@@ -136,6 +136,9 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     var connectionFrame = 0
     var planFailure = ""
     var updateNotice: NSButton!
+    let updateProgress = NSProgressIndicator()
+    let updateProgressText = NSTextField(labelWithString: "")
+    var updateProgressTimer: Timer?
     var updateAvailable = false
     var availableVersion = ""
     var headline = NSTextField(labelWithString: CqsLocale.t("Connecting"))
@@ -280,12 +283,21 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         headerGap.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         header.setVisibilityPriority(.mustHold, for: icon); header.setVisibilityPriority(.mustHold, for: words)
         updateButton = button("Check for updates", #selector(checkUpdates))
-        updateNotice = NSButton(image: NSImage(systemSymbolName: "bell.badge", accessibilityDescription: CqsLocale.t("Update available")) ?? NSImage(), target: self, action: #selector(checkUpdates))
-        updateNotice.bezelStyle = .texturedRounded; updateNotice.imagePosition = .imageOnly
+        updateNotice = NSButton(title: "", target: self, action: #selector(checkUpdates))
+        updateNotice.image = NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: nil)?.withSymbolConfiguration(.init(pointSize: 18, weight: .semibold))
+        updateNotice.bezelStyle = .regularSquare; updateNotice.isBordered = false; updateNotice.imagePosition = .imageOnly
+        updateNotice.contentTintColor = .controlAccentColor
+        updateNotice.wantsLayer = true; updateNotice.layer?.cornerRadius = 6
+        updateNotice.layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.10).cgColor
         updateNotice.setAccessibilityLabel(CqsLocale.t("Update available")); updateNotice.toolTip = CqsLocale.t("Update available")
         updateNotice.isHidden = true; header.addArrangedSubview(updateNotice)
         updateNotice.widthAnchor.constraint(equalToConstant: 36).isActive = true
         updateNotice.heightAnchor.constraint(equalToConstant: 36).isActive = true
+        updateProgress.style = .bar
+        updateProgress.controlSize = .small
+        updateProgress.minValue = 0; updateProgress.maxValue = 100
+        updateProgress.widthAnchor.constraint(equalToConstant: 180).isActive = true
+        updateProgress.isHidden = true; updateProgressText.isHidden = true
         languagePicker.identifier = NSUserInterfaceItemIdentifier("language")
         languagePicker.font = .systemFont(ofSize: 13, weight: .regular); languagePicker.isBordered = false; languagePicker.leadingSymbol = "character.bubble"
         languagePicker.heightAnchor.constraint(equalToConstant: 36).isActive = true
@@ -426,6 +438,8 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         }
         do {
             let output = URL(fileURLWithPath: CommandLine.arguments.last!); try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
+            precondition(updateNotice.isHidden && updateNotice.title.isEmpty && updateNotice.image != nil && updateNotice.imagePosition == .imageOnly, "Update notice must be icon-only and hidden by default")
+            updateNotice.isHidden = false
             for key in ["Credits", "Quota remaining", "Plan and dates", "Monthly daily average", "Display choices"] {
                 guard let translations = CqsLocale.catalog[key], translations.count == 2 else { preconditionFailure("Missing canonical locale key: \(key)") }
                 for (index, language) in ["zh-CN", "zh-TW"].enumerated() {
@@ -445,6 +459,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
                     window.contentView!.layoutSubtreeIfNeeded(); lifecycle("smoke page \(page) display begin")
                     window.displayIfNeeded()
                     assertV3Geometry()
+                    precondition(updateNotice.title.isEmpty && !updateNotice.isHiddenOrHasHiddenAncestor && updateNotice.bounds.width == 36, "Update icon clipped after localization")
                     fputs("UI smoke: laid out \(page)\n", stderr)
                     precondition(abs(body.frame.minY - body.superview!.bounds.minY) < 2, "Page content is not top aligned")
                     if page == "subscription" { plan.selectItem(at: 2); enabled.state = .on; updateFields(); save(); precondition(!dirty && page == "subscription" && saveButton?.isEnabled == false) }
@@ -1096,7 +1111,8 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         paragraph("Author: KEFEN / License: MIT")
         body.addArrangedSubview(button("Visit GitHub project", #selector(openGitHub)))
         body.addArrangedSubview(button("Show application in Finder", #selector(revealApplication)))
-        body.addArrangedSubview(updateButton); present()
+        body.addArrangedSubview(updateButton)
+        body.addArrangedSubview(updateProgress); body.addArrangedSubview(updateProgressText); present()
     }
     @objc func skip() { enabled.state = .off; save() }
     @objc func save() {
@@ -1320,6 +1336,27 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         } catch { alert(error.localizedDescription) }
     }
     @objc func checkUpdates() { runUpdate("check") }
+    func showDownloadProgress(since: Double) {
+        updateProgress.isHidden = false; updateProgressText.isHidden = false
+        let state = read("updates/download-progress.json")
+        guard let updated = state["updatedAt"] as? Double, updated >= since,
+              let received = state["received"] as? Double, let total = state["total"] as? Double,
+              total > 0, received >= 0, received <= total else {
+            if !updateProgress.isIndeterminate { updateProgress.isIndeterminate = true }
+            updateProgress.startAnimation(nil)
+            updateProgressText.stringValue = CqsLocale.t("Connecting to update server...")
+            return
+        }
+        let percent = Int(received / total * 100)
+        updateProgress.stopAnimation(nil); updateProgress.isIndeterminate = false
+        updateProgress.doubleValue = Double(percent)
+        updateProgressText.stringValue = percent == 100 ? CqsLocale.t("Verifying update...") :
+            ((state["attempt"] as? Int == 2 ? CqsLocale.t("Retrying download") : CqsLocale.t("Downloading update")) + " \(percent)%")
+    }
+    func endDownloadProgress() {
+        updateProgressTimer?.invalidate(); updateProgressTimer = nil
+        updateProgress.stopAnimation(nil); updateProgress.isHidden = true; updateProgressText.isHidden = true
+    }
     func updateFailureMessage(_ code: String?) -> String {
         guard let code = code, let english = MetricPresentation.updateFailureReasons[code] else { return CqsLocale.t("Update check failed. Please try again later.") }
         let localized = CqsLocale.t(code)
@@ -1334,6 +1371,11 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         let output = Pipe(); process.standardOutput = output; process.standardError = FileHandle.nullDevice
         updateButton.isEnabled = false; updateNotice.isEnabled = false; updateButton.title = CqsLocale.t(operation == "download" ? "Downloading update..." : "Checking for updates...")
         updateProcess = process
+        if operation == "download" {
+            showDownloadProgress(since: operationStarted)
+            let timer = Timer(timeInterval: 0.35, repeats: true) { [weak self] _ in self?.showDownloadProgress(since: operationStarted) }
+            RunLoop.main.add(timer, forMode: .common); updateProgressTimer = timer
+        }
         if operation == "prepare" {
             let sheet = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 320, height: 96), styleMask: [.titled], backing: .buffered, defer: false)
             sheet.title = CqsLocale.t("Preparing update...")
@@ -1346,6 +1388,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             DispatchQueue.main.async {
                 guard let self = self else { return }; self.updateProcess = nil; self.updateButton.isEnabled = true; self.updateNotice.isEnabled = true; self.updateButton.title = CqsLocale.t("Check for updates")
                 self.endUpdatePreparation()
+                self.endDownloadProgress()
                 let parsed = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
                 if child.terminationStatus != 0 || parsed == nil || parsed?["error"] != nil {
                     let code = MetricPresentation.updateFailureCode(parsed) ?? MetricPresentation.persistedUpdateFailureCode(self.read("updates/last-error.json"), since: operationStarted)
@@ -1374,7 +1417,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
                 if dialog.runModal() == .alertSecondButtonReturn { self.runUpdate(ready ? "prepare" : "download") }
             }
         }
-        do { try process.run() } catch { endUpdatePreparation(); updateProcess = nil; updateButton.isEnabled = true; updateNotice.isEnabled = true; updateButton.title = CqsLocale.t("Check for updates"); if operation != "auto" { alert(updateFailureMessage("E_UPDATE_CONFIGURATION")) } }
+        do { try process.run() } catch { endUpdatePreparation(); endDownloadProgress(); updateProcess = nil; updateButton.isEnabled = true; updateNotice.isEnabled = true; updateButton.title = CqsLocale.t("Check for updates"); if operation != "auto" { alert(updateFailureMessage("E_UPDATE_CONFIGURATION")) } }
     }
     func endUpdatePreparation() { if let sheet = updatePreparationSheet { window.endSheet(sheet); sheet.orderOut(nil); updatePreparationSheet = nil } }
     func resolvePendingEdits() -> Bool {

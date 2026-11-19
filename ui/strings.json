@@ -195,6 +195,10 @@
     "正在下载更新…",
     "正在下載更新…"
   ],
+  "Downloading update": ["正在下载更新", "正在下載更新"],
+  "Connecting to update server...": ["正在连接更新服务器…", "正在連線至更新伺服器…"],
+  "Retrying download": ["正在重新下载", "正在重新下載"],
+  "Verifying update...": ["正在校验更新…", "正在驗證更新…"],
   "Update available": [
     "有新版本",
     "有新版本"

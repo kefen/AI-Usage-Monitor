@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {generateKeyPairSync,sign} from 'node:crypto';
-import {verifyFeed,newer,validateAsset,wholeCredits} from '../src/update.mjs';
+import {verifyFeed,newer,validateAsset,wholeCredits,updateBytes} from '../src/update.mjs';
 test('signed feed rejects tampering, expired metadata and invalid signatures',()=>{
  const {publicKey,privateKey}=generateKeyPairSync('ed25519');
  const payload=Buffer.from(JSON.stringify({schema:1,expiresAt:Date.now()+60000,releases:{}}));
@@ -9,6 +9,29 @@ test('signed feed rejects tampering, expired metadata and invalid signatures',()
  assert.equal(verifyFeed(envelope,publicKey).schema,1);
  assert.throws(()=>verifyFeed({...envelope,payload:Buffer.from('{}').toString('base64')},publicKey));
  assert.throws(()=>verifyFeed(envelope,publicKey,Date.now()+70000));
+});
+
+test('Mac download retries an interrupted body and reports progress for each attempt',async()=>{
+ const seen=[];let calls=0;
+ const result=await updateBytes('https://github.com/kefen/codex-quota-sidebar/releases/download/mac/test.dmg',4,true,async()=>{
+  const attempt=++calls;
+  return {ok:true,status:200,headers:new Headers(),body:(async function*(){yield Buffer.from('ab');if(attempt===1)throw Error('Disconnected');yield Buffer.from('cd');})()};
+ },async()=>{},(received,attempt)=>seen.push([received,attempt]));
+ assert.equal(result.toString(),'abcd');
+ assert.deepEqual(seen,[[0,1],[2,1],[0,2],[2,2],[4,2]]);
+});
+
+test('Mac download times out on stalled body and does not retry oversized data',async()=>{
+ const url='https://github.com/kefen/codex-quota-sidebar/releases/download/mac/test.dmg';
+ let calls=0;
+ await assert.rejects(updateBytes(url,4,true,async(_,options)=>{
+  calls++;
+  return {ok:true,status:200,headers:new Headers(),body:(async function*(){yield Buffer.from('a');await new Promise((_,reject)=>options.signal.addEventListener('abort',()=>reject(options.signal.reason),{once:true}));})()};
+ },async()=>{},()=>{},{idleMs:15,totalMs:500}),/E_UPDATE_NETWORK/);
+ assert.equal(calls,2);
+ calls=0;
+ await assert.rejects(updateBytes(url,4,true,async()=>{calls++;return {ok:true,status:200,headers:new Headers(),body:[Buffer.from('abcde')]};},async()=>{},()=>{}),/too large/);
+ assert.equal(calls,1);
 });
 test('version comparisons and assets fail closed',()=>{
  assert.equal(newer('1.2.5','1.2.4'),true);assert.equal(newer('1.4.7-alpha.1','1.4.6-alpha.1'),true);

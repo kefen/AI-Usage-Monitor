@@ -1,0 +1,5 @@
+{
+  "en": ["Replace the clipped update reminder with an icon-only download button.", "Show actual download progress and retry once after an interrupted or stalled connection.", "Package signature and integrity checks, settings preservation, and restart-to-install are unchanged."],
+  "zh-CN": ["修复更新提醒按钮截断文字，改用纯下载图标。", "显示真实下载进度，连接中断或停滞时自动重试一次。", "保留更新签名与完整性校验、用户设置和重启安装流程。"],
+  "zh-TW": ["修正更新提醒按鈕截斷文字，改用純下載圖示。", "顯示實際下載進度，連線中斷或停滯時自動重試一次。", "保留更新簽章與完整性驗證、使用者設定及重新啟動安裝流程。"]
+}

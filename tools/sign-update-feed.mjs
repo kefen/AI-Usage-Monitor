@@ -11,7 +11,7 @@ const publicKey=await readFile('src/update-public-key.pem','utf8');
 const baseline=windowsOnly||macOnly?verifyFeed(JSON.parse(await readFile('docs/updates/latest.json','utf8')),publicKey):null;
 if(windowsOnly&&(baseline.chrome!==chrome||baseline.releases['macos-arm64']?.version!==versions.macos||baseline.releases['macos-x64']?.version!==versions.macos))throw Error('Unchanged platform versions differ from verified baseline');
 const releases=baseline?{...baseline.releases}:{};
-const notesByLocale=JSON.parse(await readFile(macOnly?'docs/releases/notes-monthly-tokens.json':windowsOnly?'docs/releases/notes-windows-responsive.json':'docs/releases/notes-ui-fixes.json','utf8'));
+const notesByLocale=JSON.parse(await readFile(macOnly?(versions.macos==='0.5.2-alpha.1'?'docs/releases/notes-monthly-tokens.json':'docs/releases/notes-mac-updater.json'):windowsOnly?'docs/releases/notes-windows-responsive.json':'docs/releases/notes-ui-fixes.json','utf8'));
 const notes=notesByLocale.en.map((line,i)=>(i+1)+'. '+line).join('\n');
 for(const [target,version,name,tag] of [
  ['windows-x64',versions.windows,'Codex-Quota-Sidebar-Windows-'+versions.windows+'-x64-Setup.exe','windows/v'+versions.windows],
