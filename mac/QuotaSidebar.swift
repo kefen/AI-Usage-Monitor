@@ -1,15 +1,6 @@
 import AppKit
 import Darwin
 
-private let panelFill = NSColor(name: nil) { appearance in
-    appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? NSColor(calibratedWhite: 0.20, alpha: 1) : NSColor(srgbRed: 0.92, green: 0.93, blue: 0.95, alpha: 1)
-}
-private let actionTint = NSColor(name: nil) { appearance in
-    appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? NSColor(srgbRed: 0.17, green: 0.25, blue: 0.39, alpha: 1) : NSColor(srgbRed: 0.89, green: 0.93, blue: 0.99, alpha: 1)
-}
-private let actionInk = NSColor(name: nil) { appearance in
-    appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? NSColor(srgbRed: 0.74, green: 0.83, blue: 1, alpha: 1) : NSColor(srgbRed: 0.11, green: 0.30, blue: 0.66, alpha: 1)
-}
 private let fills = NSMapTable<NSView, NSColor>.weakToStrongObjects()
 private func fill(_ view: NSView, _ color: NSColor) {
     fills.setObject(color, forKey: view)
@@ -77,37 +68,6 @@ private func drawSymbol(_ image: NSImage, in rect: NSRect, color: NSColor) {
     tinted.draw(in: rect)
 }
 
-final class FlatPopUpButton: NSPopUpButton {
-    var leadingSymbol: String? { didSet { invalidateIntrinsicContentSize(); needsDisplay = true } }
-    override var intrinsicContentSize: NSSize {
-        let text = selectedItem?.title ?? ""
-        let width = (text as NSString).size(withAttributes: [.font: font ?? NSFont.systemFont(ofSize: 13)]).width
-        return NSSize(width: max(80, ceil(width) + (leadingSymbol == nil ? 36 : 52)), height: 36)
-    }
-    override func draw(_ dirtyRect: NSRect) {
-        let frame = bounds.insetBy(dx: 0.5, dy: 0.5)
-        let border = NSBezierPath(roundedRect: frame, xRadius: 4, yRadius: 4)
-        NSColor.controlBackgroundColor.setFill(); border.fill()
-        NSColor.separatorColor.setStroke(); border.stroke()
-        let color = isEnabled ? NSColor.labelColor : NSColor.disabledControlTextColor
-        var left: CGFloat = 12
-        if let symbol = leadingSymbol, let image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil) {
-            drawSymbol(image, in: NSRect(x: 10, y: (bounds.height - 16) / 2, width: 16, height: 16), color: .secondaryLabelColor)
-            left = 30
-        }
-        let paragraph = NSMutableParagraphStyle(); paragraph.lineBreakMode = .byTruncatingTail
-        let attributes: [NSAttributedString.Key: Any] = [.font: font ?? NSFont.systemFont(ofSize: 13), .foregroundColor: color, .paragraphStyle: paragraph]
-        let text = selectedItem?.title ?? ""
-        let height = (text as NSString).size(withAttributes: attributes).height
-        (text as NSString).draw(in: NSRect(x: left, y: (bounds.height - height) / 2, width: max(0, bounds.width - left - 22), height: height), withAttributes: attributes)
-        if let arrow = NSImage(systemSymbolName: "chevron.down", accessibilityDescription: nil) {
-            drawSymbol(arrow, in: NSRect(x: bounds.width - 18, y: (bounds.height - 10) / 2, width: 10, height: 10), color: color)
-        }
-        if window?.firstResponder === self {
-            NSColor.keyboardFocusIndicatorColor.setStroke(); border.lineWidth = 2; border.stroke()
-        }
-    }
-}
 
 final class FlatButton: NSButton {
     override var intrinsicContentSize: NSSize {
@@ -154,7 +114,6 @@ final class QuotaTrack: NSView {
             NSRect(x: 0, y: y, width: x, height: plot ? 2 : bounds.height).fill()
             if plot { NSBezierPath(ovalIn: NSRect(x: min(bounds.width - 12, max(0, x - 6)), y: (bounds.height - 12) / 2, width: 12, height: 12)).fill() }
         }
-        if !plot { NSColor.controlBackgroundColor.setFill(); for i in 1..<10 { NSRect(x: bounds.width * CGFloat(i) / 10 - 2, y: 0, width: 4, height: bounds.height).fill() } }
     }
 }
 
@@ -202,9 +161,6 @@ final class MonthTrendView: NSView {
     }
     override func draw(_ dirtyRect: NSRect) {
         let line = NSColor.separatorColor
-        let back = NSColor.controlBackgroundColor
-        back.setFill(); bounds.fill()
-        line.setStroke(); NSBezierPath(rect: bounds.insetBy(dx:0.5,dy:0.5)).stroke()
         let bottom: CGFloat = 24, top = max(bottom+1,bounds.height-15)
         let maxValue = max(1,MetricPresentation.plotMaximum(days.indices.compactMap { value($0) }))
         let text: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: NSColor.secondaryLabelColor]
@@ -283,7 +239,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         headline.isHidden = next != "overview"
         for (key, control) in navigationButtons {
             fill(control, key == next ? NSColor.controlAccentColor.withAlphaComponent(0.16) : .clear)
-            control.contentTintColor = key == next ? green : .secondaryLabelColor
+            control.contentTintColor = key == next ? .controlAccentColor : .labelColor
         }
         clear(); return true
     }
@@ -291,9 +247,9 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     func saved() {
         dirty = false
         guard let control = saveButton else { return }
-        control.title = CqsLocale.t("Saved successfully"); fill(control, panelFill); control.layer?.borderWidth = 1; control.contentTintColor = .labelColor; control.isEnabled = false
+        control.title = CqsLocale.t("Saved successfully"); control.isEnabled = false
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) { [weak control] in
-            guard let control = control else { return }; control.title = CqsLocale.t("Save"); fill(control, actionTint); control.layer?.borderWidth = 1; control.contentTintColor = actionInk; control.isEnabled = true
+            guard let control = control else { return }; control.title = CqsLocale.t("Save"); control.isEnabled = true
         }
     }
     var metricFields: [NSTextField] = []
@@ -316,9 +272,15 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     let planSourceField = NSTextField(labelWithString: "")
     let planSummary = NSTextField(labelWithString: "")
     private let initialSize = NSSize(width: 1184, height: 594)
-    let tier = FlatPopUpButton()
+    let tier = NSPopUpButton(frame: .zero, pullsDown: false)
     let selectionCount = NSTextField(labelWithString: "")
-    let languagePicker = FlatPopUpButton()
+    let selectionMeter: NSProgressIndicator = {
+        let meter = NSProgressIndicator()
+        meter.style = .bar; meter.isIndeterminate = false; meter.controlSize = .small
+        meter.widthAnchor.constraint(equalToConstant: 90).isActive = true
+        return meter
+    }()
+    let languagePicker = NSPopUpButton(frame: .zero, pullsDown: false)
     var retry: NSButton!
     var updateButton: NSButton!
     var updateProcess: Process?
@@ -342,11 +304,11 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     var startedAt = Date.distantFuture
     var errorText = ""
     let enabled = NSButton(checkboxWithTitle: CqsLocale.t("Show Codex renewal date"), target: nil, action: nil)
-    let plan = FlatPopUpButton()
+    let plan = NSPopUpButton(frame: .zero, pullsDown: false)
     let purchase = OptionalDatePicker()
-    let mode = FlatPopUpButton()
+    let mode = NSPopUpButton(frame: .zero, pullsDown: false)
     let next = OptionalDatePicker()
-    let green = NSColor(calibratedRed: 0.157, green: 0.392, blue: 0.843, alpha: 1)
+    let brandBlue = NSColor(calibratedRed: 0.157, green: 0.392, blue: 0.843, alpha: 1)
     func read(_ name: String) -> [String: Any] {
         guard let data = try? Data(contentsOf: runtime.appendingPathComponent(name)),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return [:] }
@@ -382,16 +344,16 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         window.collectionBehavior = [.fullScreenPrimary]
         window.title = "AI Quota Board"; window.delegate = self; window.center(); window.isReleasedWhenClosed = false
         applyAppearance()
-        window.backgroundColor = .windowBackgroundColor
+        window.backgroundColor = .controlBackgroundColor
         window.contentView!.wantsLayer = true
-        fill(window.contentView!, .windowBackgroundColor)
+        fill(window.contentView!, .controlBackgroundColor)
         let container = NSStackView(); container.orientation = .vertical; container.alignment = .leading; container.spacing = 0
         container.edgeInsets = NSEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
         container.translatesAutoresizingMaskIntoConstraints = false
         window.contentView!.addSubview(container)
         NSLayoutConstraint.activate([container.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor), container.trailingAnchor.constraint(equalTo: window.contentView!.trailingAnchor), container.topAnchor.constraint(equalTo: window.contentView!.topAnchor), container.bottomAnchor.constraint(equalTo: window.contentView!.bottomAnchor)])
         let header = NSStackView(); header.spacing = 16; header.distribution = .fill; header.alignment = .centerY
-        header.heightAnchor.constraint(equalToConstant: 68).isActive = true
+        header.heightAnchor.constraint(equalToConstant: 62).isActive = true
         let pageInset: CGFloat = 25
         header.edgeInsets = NSEdgeInsets(top: 12, left: pageInset, bottom: 12, right: pageInset)
         let icon = NSButton(image: NSImage(contentsOf: root.appendingPathComponent("assets/cqs-128.png")) ?? NSImage(), target: self, action: #selector(openGitHub))
@@ -405,7 +367,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         words.addArrangedSubview(title); words.addArrangedSubview(version)
         let brand = NSStackView(views: [icon, words]); brand.alignment = .centerY; brand.spacing = 8
         brand.heightAnchor.constraint(equalToConstant: 53).isActive = true
-        toolbarTitle.font = .systemFont(ofSize: 23, weight: .semibold)
+        toolbarTitle.font = .systemFont(ofSize: 21, weight: .semibold)
         toolbarTitle.lineBreakMode = .byTruncatingTail
         headline.font = .systemFont(ofSize: 12, weight: .regular)
         headline.lineBreakMode = .byTruncatingTail
@@ -433,8 +395,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         updateProgress.widthAnchor.constraint(equalToConstant: 180).isActive = true
         updateProgress.isHidden = true; updateProgressText.isHidden = true
         languagePicker.identifier = NSUserInterfaceItemIdentifier("language")
-        languagePicker.font = .systemFont(ofSize: 13, weight: .regular); languagePicker.isBordered = false; languagePicker.leadingSymbol = "character.bubble"
-        languagePicker.heightAnchor.constraint(equalToConstant: 36).isActive = true
+        languagePicker.font = .systemFont(ofSize: 13); languagePicker.setAccessibilityLabel(CqsLocale.t("Language"))
         languagePicker.setContentHuggingPriority(.required, for: .horizontal)
         languagePicker.setContentCompressionResistancePriority(.required, for: .horizontal)
         languagePicker.addItems(withTitles: [CqsLocale.t("System"), "English", "简体中文", "繁體中文"])
@@ -456,12 +417,13 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         navigation.addArrangedSubview(brand); navigation.setCustomSpacing(15, after: brand)
         for (key, label, action) in [("overview", "Usage overview", #selector(showStatus)), ("display", "Display choices", #selector(showDisplay)), ("subscription", "Plan and dates", #selector(showSettings)), ("data", "Data and settings", #selector(showData)), ("help", "Diagnostics", #selector(showHelp)), ("about", "About project", #selector(showAbout))] {
             if key == "about" { let space = NSView(); navigation.addArrangedSubview(space); space.setContentHuggingPriority(.defaultLow, for: .vertical) }
-            let control = button(label, action); control.alignment = .left
+            let control = FlatButton(title: CqsLocale.t(label), target: self, action: action)
+            control.isBordered = false; control.wantsLayer = true; control.layer?.cornerRadius = 6; control.alignment = .left
             control.font = .systemFont(ofSize: 14, weight: .medium)
             for constraint in control.constraints where constraint.firstAttribute == .width { constraint.isActive = false }
             control.layer?.borderWidth = 0; control.layer?.backgroundColor = NSColor.clear.cgColor
             control.widthAnchor.constraint(equalToConstant: 156).isActive = true
-            setIcon(control, ["overview": "square.grid.2x2", "display": "sidebar.left", "subscription": "checkmark.seal", "data": "slider.horizontal.3", "help": "lifepreserver", "about": "info.circle"][key]!)
+            setIcon(control, ["overview": "chart.xyaxis.line", "display": "sidebar.left", "subscription": "calendar", "data": "slider.horizontal.3", "help": "lifepreserver", "about": "info.circle"][key]!)
             navigationButtons.append((key, control)); navigation.addArrangedSubview(control)
         }
         navigation.widthAnchor.constraint(equalToConstant: 176).isActive = true
@@ -499,21 +461,28 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             body.bottomAnchor.constraint(lessThanOrEqualTo: pageDocument.bottomAnchor)
         ])
         body.edgeInsets = NSEdgeInsets(top: 19, left: 0, bottom: 16, right: 0)
-        let footer = NSStackView(); footer.spacing = 8
-        footer.edgeInsets = NSEdgeInsets(top: 8, left: 17, bottom: 8, right: 17)
-        footer.heightAnchor.constraint(equalToConstant: 53).isActive = true
         let build = NSTextField(labelWithString: "macOS " + (Bootstrap.releaseVersion ?? "--")); build.textColor = .secondaryLabelColor; build.font = .systemFont(ofSize: 11)
-        footer.addArrangedSubview(build)
-        let gap = NSView(); footer.addArrangedSubview(gap); gap.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        retry = button("Reconnect", #selector(reconnect))
-        let quit = button("Exit software", #selector(stop)); quit.layer?.borderWidth = 0; fill(quit, .clear); quit.contentTintColor = .secondaryLabelColor; setIcon(quit, "power")
-        setIcon(retry, "arrow.clockwise")
+        let quit = button("Exit software", #selector(stop)); setIcon(quit, "power")
+        quit.isBordered = false; quit.contentTintColor = .secondaryLabelColor
+        quit.toolTip = CqsLocale.t("Exit software"); quit.setAccessibilityLabel(quit.toolTip)
+        quit.keyEquivalent = "q"; quit.keyEquivalentModifierMask = .command
+        retry = button("Reconnect", #selector(reconnect)); setIcon(retry, "arrow.clockwise")
+        retry.toolTip = CqsLocale.t("Reconnect"); retry.setAccessibilityLabel(retry.toolTip)
+        retry.keyEquivalent = "r"; retry.keyEquivalentModifierMask = .command
         let open = button("Open Codex", #selector(openCodex), primary: true); setIcon(open, "arrow.up.right")
         open.identifier = NSUserInterfaceItemIdentifier("open-codex")
-        footer.addArrangedSubview(quit); footer.addArrangedSubview(retry); footer.addArrangedSubview(open)
-        let footerLine = NSBox(); footerLine.boxType = .separator; footerLine.heightAnchor.constraint(equalToConstant: 1).isActive = true; container.addArrangedSubview(footerLine); footerLine.widthAnchor.constraint(equalTo: container.widthAnchor).isActive = true
-        container.addArrangedSubview(footer); footer.widthAnchor.constraint(equalTo: container.widthAnchor).isActive = true
-        footer.identifier = NSUserInterfaceItemIdentifier("window-footer")
+        let commands = NSStackView(views: [quit, retry, open]); commands.spacing = 10; commands.alignment = .centerY
+        commands.identifier = NSUserInterfaceItemIdentifier("window-commands")
+        let boundary = separator()
+        let spacer = NSView()
+        let footer = NSStackView(views: [build, spacer, commands])
+        footer.distribution = .fill; footer.alignment = .centerY
+        footer.edgeInsets = NSEdgeInsets(top: 8, left: 16, bottom: 8, right: pageInset)
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        footer.setVisibilityPriority(.mustHold, for: commands)
+        container.addArrangedSubview(boundary); container.addArrangedSubview(footer)
+        NSLayoutConstraint.activate([boundary.widthAnchor.constraint(equalTo: container.widthAnchor),
+            footer.widthAnchor.constraint(equalTo: container.widthAnchor), footer.heightAnchor.constraint(equalToConstant: 54)])
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let image = NSImage(contentsOf: root.appendingPathComponent("assets/tray-template.png")) { image.isTemplate = true; image.size = NSSize(width: 18, height: 18); statusItem.button?.image = image }
         statusItem.button?.toolTip = "AI Quota Board"
@@ -556,17 +525,19 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         button.imagePosition = .imageLeading; button.toolTip = button.title
     }
     func button(_ title: String, _ action: Selector, primary: Bool = false) -> NSButton {
+        if title != "Open Codex" {
+            let control = NSButton(title: CqsLocale.t(title), target: self, action: action)
+            control.bezelStyle = .rounded; control.font = .systemFont(ofSize: 13)
+            if primary || ["Detect plan", "Select none", "Select all", "Reconnect"].contains(title) { control.contentTintColor = .controlAccentColor }
+            return control
+        }
         let result = FlatButton(title: CqsLocale.t(title), target: self, action: action)
         result.isBordered = false; result.font = .systemFont(ofSize: 14, weight: .regular)
         result.alignment = .center
         result.wantsLayer = true; result.layer?.cornerRadius = 4
-        result.layer?.borderWidth = primary ? 0 : 1
-        result.layer?.borderColor = NSColor(calibratedWhite: 0.85, alpha: 1).cgColor
-        let soft = ["Reconnect","Save","Detect plan","Select none","Select all"].contains(title)
-        fill(result, soft ? actionTint : primary ? green : panelFill)
-        result.contentTintColor = soft ? actionInk : primary ? .white : .labelColor
+        fill(result, brandBlue); result.contentTintColor = .white
         result.heightAnchor.constraint(equalToConstant: 36).isActive = true
-        result.widthAnchor.constraint(greaterThanOrEqualToConstant: max(title == "Save" ? 64 : 80, result.intrinsicContentSize.width)).isActive = true
+        result.widthAnchor.constraint(greaterThanOrEqualToConstant: 80).isActive = true
         return result
     }
     func checkInstallLocation() -> Bool {
@@ -639,7 +610,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
                         if let last = body.arrangedSubviews.last {
                             let target = last.convert(last.bounds, to: pageDocument)
                             pageDocument.scrollToVisible(target)
-                            precondition(pageScroll.contentView.documentVisibleRect.intersects(target), "Last page action must be reachable without hiding the footer")
+                            precondition(pageScroll.contentView.documentVisibleRect.intersects(target), "Last page action must be reachable below the header")
                             pageScroll.contentView.scroll(to: .zero)
                         }
                         if size.width == 1440 && window.contentView!.bounds.height >= 999 {
@@ -767,10 +738,18 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         require(window.styleMask.contains(.resizable) && window.contentMinSize.width == 820)
         let titleRect = toolbarTitle.superview!.convert(toolbarTitle.alignmentRect(forFrame: toolbarTitle.frame), to: content)
         require(abs(titleRect.minX - body.convert(body.bounds, to: content).minX) <= 1, "Title and body must share the leading edge")
-        if page == "data" { require(abs(languagePicker.bounds.height - 36) < 1 && languagePicker.bounds.width >= languagePicker.intrinsicContentSize.width - 1 && languagePicker.bounds.width < 220, "Language popup should tightly fit its icon, label and chevron") }
-        if let footer = find("window-footer", in: content) {
-            let f = footer.convert(footer.bounds, to: content), viewport = pageScroll.convert(pageScroll.bounds, to: content)
-            require(content.bounds.contains(f) && viewport.minY >= f.maxY - 1, "Footer must stay visible outside scroll content")
+        if page == "data" { require(languagePicker.isBordered && languagePicker.bounds.width >= languagePicker.intrinsicContentSize.width - 1 && languagePicker.bounds.width < 220, "Language popup must fit its native label and menu indicator") }
+        guard let commands = find("window-commands", in: content) else { require(false, "Missing window commands"); return }
+        let commandRect = commands.convert(commands.bounds, to: content)
+        let viewportRect = pageScroll.convert(pageScroll.bounds, to: content)
+        require(content.bounds.contains(commandRect) && commandRect.maxY <= viewportRect.minY + 1 &&
+            abs(commandRect.maxX - viewportRect.maxX) < 2, "Window commands must stay below the page and align with its trailing edge")
+        if let rowCount = ["data": 5, "help": 5, "authorization": 4, "about": 3][page] {
+            let edges = body.arrangedSubviews.compactMap { child -> CGFloat? in
+                guard child.identifier?.rawValue == "preference-row", let row = child as? NSStackView, let control = row.arrangedSubviews.last else { return nil }
+                return control.superview!.convert(control.alignmentRect(forFrame: control.frame), to: body).maxX
+            }
+            require(edges.count == rowCount && edges.max()! - edges.min()! < 2, "Page actions must share the trailing edge")
         }
         require(abs(pageDocument.bounds.width - pageScroll.contentView.bounds.width) < 2, "No horizontal scrolling: document=\(pageDocument.bounds), viewport=\(pageScroll.contentView.bounds), body=\(body.frame)")
         require(pageDocument.bounds.height + 1 >= body.frame.maxY, "Document must include the entire page")
@@ -812,7 +791,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         if page == "subscription" {
             let planColumn = plan.superview!.convert(plan.alignmentRect(forFrame: plan.frame), to: body)
             require(planColumn.width > 200 && planColumn.minX >= -1 && planColumn.maxX <= body.bounds.width + 1, "Plan popup must fit available width: column=\(planColumn), body=\(body.bounds)")
-            for control in [plan, tier, mode] { require(abs(control.bounds.height - 36) < 1, "Plan/date popups must be 36px high") }
+            for control in [plan, tier, mode] { require(control.isBordered && control.bounds.height >= control.intrinsicContentSize.height - 1, "Native popup must not be clipped") }
             for control in [purchase, next] { require(abs(control.bounds.height - 36) < 1 && control.bounds.width >= 260, "Native date pickers must fit adaptive form tracks") }
             if body.bounds.width >= 640 {
                 func rect(_ view: NSView) -> NSRect { view.convert(view.bounds, to: body) }
@@ -945,12 +924,13 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         heading("Usage overview")
         detail.font = .systemFont(ofSize: 13, weight: .regular); detail.textColor = .secondaryLabelColor
         detail.maximumNumberOfLines = 0
+        if runtimeIssue || stage == "failed" { body.addArrangedSubview(detail) }
         if runtimeIssue { authorizationButtons() }
         if errorText.trimmingCharacters(in: .whitespacesAndNewlines) == "E_RESTART_REQUIRED" {
             restartButton = button("Save work, restart and connect", #selector(confirmRestart), primary: true)
             body.addArrangedSubview(restartButton!)
         }
-        body.spacing = stage.hasPrefix("mounted") && !runtimeIssue && errorText.isEmpty ? 20 : 8
+        body.spacing = stage.hasPrefix("mounted") && !runtimeIssue && errorText.isEmpty ? 16 : 10
         let statusLines = NSStackView(); statusLines.orientation = .horizontal; statusLines.alignment = .top; statusLines.distribution = .fillEqually; statusLines.spacing = 16
         for title in ["Client","Quota data","Token data","Last sync"] {
             let cell = NSStackView(); cell.orientation = .vertical; cell.alignment = .leading; cell.spacing = 4
@@ -963,13 +943,13 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         overviewSignature = MetricPresentation.keys.map { display[$0] as? Bool == false ? "0" : "1" }.joined() + (stage.hasPrefix("mounted") ? "mounted" : "waiting")
         func has(_ key: String) -> Bool { display[key] as? Bool != false }
         let charts = NSStackView(); charts.orientation = .horizontal; charts.alignment = .top; charts.spacing = 38; charts.distribution = .fill; charts.identifier = NSUserInterfaceItemIdentifier("overview-charts")
-        let quotas = column(spacing: 4), tokens = column(spacing: 10)
+        let quotas = column(spacing: 8), tokens = column(spacing: 10)
         charts.spacing = 22
         quotas.identifier = NSUserInterfaceItemIdentifier("quota-column")
         tokens.identifier = NSUserInterfaceItemIdentifier("token-column")
         quotas.edgeInsets = NSEdgeInsets(top: 12, left: 12, bottom: 12, right: 12)
         quotas.wantsLayer = true
-        fill(quotas, panelFill)
+        fill(quotas, NSColor.labelColor.withAlphaComponent(0.045))
         quotas.layer?.cornerRadius = 7
         let utc = NSStackView()
         do {
@@ -978,7 +958,6 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             let gap = NSView(); gap.setContentHuggingPriority(.defaultLow, for: .horizontal)
             utc.addArrangedSubview(stamp); utc.addArrangedSubview(gap); utc.addArrangedSubview(label("UTC", size: 12, muted: true))
             body.addArrangedSubview(utc); utc.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true
-            let line = separator(); body.addArrangedSubview(line); line.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true
         }
         let plot = MonthTrendView()
         plot.identifier = NSUserInterfaceItemIdentifier("monthly-trend")
@@ -987,29 +966,30 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         monthTrend?.cumulative = !has("daily") && has("monthly")
         if has("daily") || has("monthly") {
             let trendTitle = NSStackView(); trendTitle.alignment = .centerY; trendTitle.spacing = 5
-            trendTitle.addArrangedSubview(label("Usage trend", size: 15))
+            let chartHeading = label("Usage trend", size: 17); chartHeading.font = .systemFont(ofSize: 17, weight: .semibold)
+            trendTitle.addArrangedSubview(chartHeading)
             let gap = NSView(); gap.setContentHuggingPriority(.defaultLow, for: .horizontal)
             trendTitle.addArrangedSubview(gap)
             let modes = NSSegmentedControl(labels: [CqsLocale.t("Daily"), CqsLocale.t("Cumulative")], trackingMode: .selectOne, target: self, action: #selector(changeTrend(_:)))
             modes.setEnabled(has("daily"), forSegment: 0); modes.setEnabled(has("monthly"), forSegment: 1)
-            modes.segmentStyle = .rounded; modes.selectedSegmentBezelColor = actionTint
+            modes.segmentStyle = .rounded
             modes.selectedSegment = plot.cumulative ? 1 : 0
             trendTitle.addArrangedSubview(modes); tokens.addArrangedSubview(trendTitle)
             trendTitle.widthAnchor.constraint(equalTo: tokens.widthAnchor).isActive = true
             tokens.addArrangedSubview(plot); plot.heightAnchor.constraint(equalToConstant: 198).isActive = true
             plot.widthAnchor.constraint(equalTo: tokens.widthAnchor).isActive = true
             let reading = label("No usage records", size: 12, muted: true)
-            reading.wantsLayer = true; fill(reading, NSColor.controlAccentColor.withAlphaComponent(0.12))
+            reading.font = .monospacedDigitSystemFont(ofSize: 12, weight: .regular)
             tokens.addArrangedSubview(reading)
             reading.widthAnchor.constraint(equalTo: tokens.widthAnchor).isActive = true
-            reading.heightAnchor.constraint(equalToConstant: 30).isActive = true
             plot.changed = { [weak plot, weak reading] in reading?.stringValue = plot?.reading ?? "" }
         }
         func row(_ key: String, _ name: String, emphasis: Bool = false) -> NSStackView {
-            let row = NSStackView(); row.spacing = 6; row.alignment = .centerY
+            let row = NSStackView(); row.spacing = 8; row.alignment = .centerY; row.distribution = .fill
             let nameField = label(name, size: 12, muted: !emphasis)
             nameField.setContentHuggingPriority(.defaultLow, for: .horizontal)
             let value = label("--", size: emphasis ? 18 : 13); value.alignment = .right
+            value.font = .monospacedDigitSystemFont(ofSize: emphasis ? 22 : 13, weight: emphasis ? .semibold : .medium)
             value.setContentCompressionResistancePriority(.required, for: .horizontal)
             row.addArrangedSubview(nameField)
             if ["weekly", "lifetime"].contains(key) {
@@ -1058,7 +1038,6 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             }
             for (key,name) in tokenKeys where has(key) {
                 let field = row(key,name,emphasis:key=="monthly")
-                if key == "monthly" { field.wantsLayer = true;fill(field, NSColor.controlAccentColor.withAlphaComponent(0.14));field.layer?.cornerRadius = 5;field.edgeInsets = NSEdgeInsets(top:6,left:6,bottom:6,right:6) }
                 quotas.addArrangedSubview(field);field.widthAnchor.constraint(equalTo:quotas.widthAnchor,constant:-24).isActive = true
             }
             if resetKeys.contains(where: { has($0.0) }) { let line = separator();quotas.addArrangedSubview(line);line.widthAnchor.constraint(equalTo:quotas.widthAnchor,constant:-24).isActive = true }
@@ -1070,7 +1049,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         if !quotas.arrangedSubviews.isEmpty { charts.addArrangedSubview(quotas) }
         if !charts.arrangedSubviews.isEmpty {
             body.addArrangedSubview(charts); charts.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true
-            responsive(charts, threshold: 700, ratio: 0.70)
+            responsive(charts, threshold: 700, ratio: 0.64)
         }
         let meta = NSStackView(); meta.spacing = 26
         for (key, name) in [("plan", "Plan"), ("renewal", "Renewal date")] where has(key) {
@@ -1079,7 +1058,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         if !meta.arrangedSubviews.isEmpty { let line = separator(); body.addArrangedSubview(line); line.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true; body.addArrangedSubview(meta) }
         if overviewValues.isEmpty { paragraph("No metrics selected."); body.addArrangedSubview(button("Display choices", #selector(showDisplay))) }
         let source = label("Usage: local CLI. Plan: desktop detection or manual record.", size: 12, muted: true); source.identifier = NSUserInterfaceItemIdentifier("source-status"); source.lineBreakMode = .byTruncatingTail; body.addArrangedSubview(source); source.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true
-        body.addArrangedSubview(detail)
+        if detail.superview == nil { body.addArrangedSubview(detail) }
         // Cross-view constraints require a common ancestor before activation.
         precondition(detail.isDescendant(of: body), "Overview detail must be attached before width activation")
         detail.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true
@@ -1116,7 +1095,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         mode.removeAllItems(); mode.addItems(withTitles: [CqsLocale.t("Monthly estimate"), CqsLocale.t("Set renewal date"), CqsLocale.t("Set expiry date")]); mode.selectItem(at: member["monthlyEstimate"] as? Bool == true ? 0 : member["kind"] as? String == "expiry" ? 2 : 1); mode.target = self; mode.action = #selector(updateFields)
         mode.addItem(withTitle: CqsLocale.t("Business annual estimate")); if member["annualEstimate"] as? Bool == true { mode.selectItem(at: 3) }
         let form = column(spacing: 12)
-        body.addArrangedSubview(form); form.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true
+        appendReadingColumn(form)
         func full(_ view: NSView) {
             form.addArrangedSubview(view); view.widthAnchor.constraint(equalTo: form.widthAnchor).isActive = true
         }
@@ -1124,17 +1103,21 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             let row = NSStackView(views: [left, right]); row.spacing = 18
             full(row); responsive(row, threshold: 640, wideAlignment: wideAlignment)
         }
-        let summary = NSStackView(); summary.spacing = 12; summary.alignment = .centerY
+        let summary = NSStackView(); summary.spacing = 12; summary.alignment = .centerY; summary.distribution = .fill
         planSummary.font = .systemFont(ofSize: 18, weight: .medium)
         planSummary.lineBreakMode = .byTruncatingTail
-        summary.addArrangedSubview(planSummary)
+        let identity = column(spacing: 3)
+        identity.addArrangedSubview(planSummary); identity.addArrangedSubview(planSourceField)
+        planSourceField.widthAnchor.constraint(equalTo: identity.widthAnchor).isActive = true
+        summary.addArrangedSubview(identity)
         let detect = button("Detect plan", #selector(detectPlan)); detectPlanButton = detect; detect.isEnabled = planProcess == nil
         detect.setContentHuggingPriority(.required, for: .horizontal)
         planSourceField.font = .systemFont(ofSize: 13); planSourceField.textColor = .secondaryLabelColor
         planSourceField.usesSingleLineMode = false; planSourceField.lineBreakMode = .byWordWrapping; planSourceField.cell?.wraps = true
         planSourceField.setContentHuggingPriority(.defaultLow, for: .horizontal)
         planSourceField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        summary.addArrangedSubview(planSourceField); summary.addArrangedSubview(detect); full(summary)
+        identity.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        summary.addArrangedSubview(detect); full(summary)
         let note = NSTextField(wrappingLabelWithString: CqsLocale.t("Only record your existing Codex subscription. No sign-up or purchase for this tool."))
         note.font = .systemFont(ofSize: 13); note.textColor = .secondaryLabelColor; full(note)
         full(separator())
@@ -1158,14 +1141,20 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         }
         next.isEnabled = !estimated
         let family = plan.titleOfSelectedItem ?? ""
-        planSummary.stringValue = tier.isEnabled && tier.indexOfSelectedItem > 0 ? family + "  /  " + (tier.titleOfSelectedItem ?? "") : family
+        if tier.isEnabled, tier.indexOfSelectedItem > 0, let option = tier.titleOfSelectedItem {
+            planSummary.stringValue = option.hasPrefix(family + " ") ? option : family + " / " + option
+        } else { planSummary.stringValue = family }
         planSourceField.stringValue = planProcess != nil ? CqsLocale.t("Detecting plan. The official Codex usage panel may open briefly.") : planFailure.isEmpty ? CqsLocale.t(planSource == "desktop" ? "Desktop detection" : "Manual record (locked)") : planFailureMessage()
     }
     func formField(_ title: String, _ control: NSView) -> NSStackView {
-        let field = column(spacing: 8); field.addArrangedSubview(label(title, size: 13)); field.addArrangedSubview(control)
-        control.widthAnchor.constraint(equalTo: field.widthAnchor).isActive = true
+        let field = column(spacing: 5), slot = NSView()
+        field.addArrangedSubview(label(title, size: 13)); field.addArrangedSubview(slot)
+        slot.addSubview(control); control.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([slot.widthAnchor.constraint(equalTo: field.widthAnchor), slot.heightAnchor.constraint(equalToConstant: 36),
+            control.leadingAnchor.constraint(equalTo: slot.leadingAnchor), control.trailingAnchor.constraint(equalTo: slot.trailingAnchor),
+            control.centerYAnchor.constraint(equalTo: slot.centerYAnchor)])
         control.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        if let popup = control as? NSPopUpButton { popup.font = .systemFont(ofSize: 14, weight: .regular); popup.isBordered = false; popup.heightAnchor.constraint(equalToConstant: 36).isActive = true }
+        if let popup = control as? NSPopUpButton { popup.font = .systemFont(ofSize: 14); popup.bezelStyle = .rounded; popup.setAccessibilityLabel(CqsLocale.t(title)) }
         return field
     }
     private let planFamilies = ["free", "go", "plus", "pro", "business", "enterprise", "edu", "other"]
@@ -1252,19 +1241,22 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         heading("Display choices")
         let toolbar = NSStackView(); toolbar.spacing = 12; toolbar.distribution = .fill; toolbar.alignment = .centerY
         toolbar.addArrangedSubview(selectionCount)
+        toolbar.addArrangedSubview(selectionMeter)
         let toolbarGap = NSView(); toolbarGap.setContentHuggingPriority(.defaultLow, for: .horizontal); toolbarGap.setContentCompressionResistancePriority(.defaultLow, for: .horizontal); toolbar.addArrangedSubview(toolbarGap)
         body.addArrangedSubview(toolbar)
-        toolbar.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true; toolbar.heightAnchor.constraint(equalToConstant: 52).isActive = true; body.setCustomSpacing(30, after: toolbar)
+        selectionCount.font = .monospacedDigitSystemFont(ofSize: 14, weight: .medium)
+        toolbar.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true; body.setCustomSpacing(18, after: toolbar)
         let groups: [(String, [(String, String)])] = [("Plan and dates", [("plan", "Plan badge"), ("renewal", "Renewal date")]), ("Quota and resets", [("short", "5-hour remaining"), ("week", "Weekly remaining"), ("reset", "Quota reset date"), ("resetCredits", "Reset count"), ("credits", "Credits")]), ("Token usage", [("daily", "Daily tokens"), ("average", "Monthly daily average"), ("weekly", "Weekly tokens"), ("monthly", "Monthly tokens"), ("lifetime", "Lifetime tokens")])]
         for (name, items) in groups {
-            let group = column(spacing: 0); let groupTitle = label(name, size: 14); group.addArrangedSubview(groupTitle); group.setCustomSpacing(14, after: groupTitle); stack.addArrangedSubview(group)
+            let group = column(spacing: 0); let groupTitle = label(name, size: 14); groupTitle.font = .systemFont(ofSize: 14, weight: .semibold)
+            group.addArrangedSubview(groupTitle); group.setCustomSpacing(8, after: groupTitle); stack.addArrangedSubview(group)
             for (key, title) in items {
                 let check = NSButton(checkboxWithTitle: CqsLocale.t(title), target: self, action: #selector(selectionChanged)); check.font = .systemFont(ofSize: 13, weight: .regular)
-                check.heightAnchor.constraint(equalToConstant: 38).isActive = true
+                check.heightAnchor.constraint(equalToConstant: 29).isActive = true
                 check.state = values[key] as? Bool == false ? .off : .on; displayChecks.append((key, check)); group.addArrangedSubview(check)
             }
         }
-        body.addArrangedSubview(stack); stack.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true
+        appendReadingColumn(stack)
         responsive(stack, threshold: 700)
         let bulk = button("Select none", #selector(toggleDisplayGroup)); bulkButton = bulk
         body.addArrangedSubview(bulk); updateSelectionCount()
@@ -1277,6 +1269,8 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     }
     func updateSelectionCount() {
         let count = displayChecks.filter { $0.1.state == .on }.count
+        selectionMeter.maxValue = Double(displayChecks.count); selectionMeter.doubleValue = Double(count)
+        selectionMeter.setAccessibilityLabel(CqsLocale.t("Display choices"))
         selectionCount.stringValue = CqsLocale.t("Selected") + " \(count) / \(displayChecks.count)"
         bulkButton?.title = CqsLocale.t(count == displayChecks.count ? "Select none" : "Select all")
     }
@@ -1292,6 +1286,16 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     func heading(_ text: String) {
         toolbarTitle.stringValue = CqsLocale.t(text)
     }
+    private func appendReadingColumn(_ view: NSView) {
+        body.addArrangedSubview(view)
+        view.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true
+    }
+    private func sectionRule(_ title: String) {
+        let field = label(title, size: 14); field.font = .systemFont(ofSize: 14, weight: .semibold)
+        let rule = separator(), row = NSStackView(views: [field, rule])
+        row.alignment = .centerY; row.spacing = 12; row.distribution = .fill
+        field.setContentHuggingPriority(.required, for: .horizontal); appendReadingColumn(row)
+    }
     private func setting(_ title: String, _ control: NSView, detail: String? = nil) {
         let label = NSTextField(wrappingLabelWithString: CqsLocale.t(title))
         label.font = .systemFont(ofSize: 13, weight: detail == nil ? .regular : .medium)
@@ -1303,17 +1307,24 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         }
         copy.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         control.setContentHuggingPriority(.required, for: .horizontal)
-        let row = NSStackView(views: [copy, control]); row.alignment = .centerY; row.spacing = 20
-        body.addArrangedSubview(row); row.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true
+        let row = NSStackView(views: [copy, control]); row.alignment = .centerY; row.spacing = 20; row.distribution = .fill
+        row.identifier = NSUserInterfaceItemIdentifier("preference-row")
+        copy.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        label.widthAnchor.constraint(equalTo: copy.widthAnchor).isActive = true
+        control.setContentCompressionResistancePriority(.required, for: .horizontal)
+        row.edgeInsets = NSEdgeInsets(top: 5, left: 0, bottom: 5, right: 0)
+        appendReadingColumn(row)
     }
     @objc func showHelp() {
         guard beginPage("help") else { return }; showingSettings = true; heading("Diagnostics")
         if let issue = updateRecoveryMessage() { paragraph(issue) }
+        sectionRule("Connection status")
         setting("Connection status", button("Reconnect", #selector(reconnect)), detail: "Check that Codex can chat. If the sidebar is hidden, enlarge the window before reconnecting.")
-        setting("Diagnostic report", button("Export sanitized diagnostics", #selector(exportDiagnostics)), detail: "Includes version, system, connection state and error codes; excludes keys, chats, accounts and paths.")
-        setting("Issue feedback", button("Submit feedback on GitHub", #selector(openIssues)), detail: "Review the report and hide personal details in screenshots before attaching them to an issue.")
         setting("Permissions", button("Open Privacy & Security", #selector(openSecuritySettings)))
         setting("Installation and approval guide", button("Installation and approval guide", #selector(openInstallGuide)))
+        sectionRule("Diagnostic report")
+        setting("Export sanitized diagnostics", button("Export sanitized diagnostics", #selector(exportDiagnostics)), detail: "Includes version, system, connection state and error codes; excludes keys, chats, accounts and paths.")
+        setting("Issue feedback", button("Submit feedback on GitHub", #selector(openIssues)), detail: "Review the report and hide personal details in screenshots before attaching them to an issue.")
         paragraph("If Codex is already running, reconnect first. When a restart is required, save work and approve it in Usage overview. You can cancel or quit Codex manually instead.")
         paragraph("No automatic uploads. You choose what to submit. A GitHub account is required to post an issue."); present()
     }
@@ -1337,7 +1348,8 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         ] {
             setting(action, button(action, selector), detail: detail)
         }
-        let divider = NSBox(); divider.boxType = .separator; body.addArrangedSubview(divider); divider.widthAnchor.constraint(equalTo: body.widthAnchor).isActive = true
+        let divider = separator(); body.addArrangedSubview(divider)
+        if let lastRow = body.arrangedSubviews.dropLast().last { divider.widthAnchor.constraint(equalTo: lastRow.widthAnchor).isActive = true }
         languagePicker.item(at: 0)?.title = CqsLocale.t("System")
         languagePicker.selectItem(at: CqsLocale.modes.firstIndex(of: CqsLocale.mode) ?? 0)
         setting("Language", languagePicker); setting("Appearance", picker); present()
@@ -1385,14 +1397,23 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     }
     @objc func openIssues() { NSWorkspace.shared.open(URL(string: "https://github.com/kefen/codex-quota-sidebar/issues/new")!) }
     @objc func showAbout() {
-        guard beginPage("about") else { return }; showingSettings = true; heading("About project"); paragraph("AI Quota Board"); paragraph("by KEFEN")
+        guard beginPage("about") else { return }; showingSettings = true; heading("About project")
+        let name = label("AI Quota Board", size: 21); name.font = .systemFont(ofSize: 21, weight: .semibold)
+        let identity = column(spacing: 3); identity.addArrangedSubview(name); identity.addArrangedSubview(label("by KEFEN", size: 13, muted: true))
+        let logo = NSButton(image: NSApp.applicationIconImage, target: self, action: #selector(openGitHub))
+        logo.isBordered = false; logo.imageScaling = .scaleProportionallyDown; logo.imagePosition = .imageOnly
+        logo.toolTip = CqsLocale.t("Visit GitHub project"); logo.setAccessibilityLabel(logo.toolTip)
+        NSLayoutConstraint.activate([logo.widthAnchor.constraint(equalToConstant: 52), logo.heightAnchor.constraint(equalToConstant: 52)])
+        let masthead = NSStackView(views: [logo, identity]); masthead.spacing = 12; masthead.alignment = .centerY
+        body.addArrangedSubview(masthead)
         paragraph("Local, read-only quota and Token indicators in the Codex sidebar. Choose the metrics you need; official controls always have priority.")
         paragraph("Unofficial software. Not affiliated with or endorsed by OpenAI.")
         paragraph("Author: KEFEN / License: MIT")
-        let links = NSStackView(views: [updateButton, button("Visit GitHub project", #selector(openGitHub))])
-        links.spacing = 10; body.addArrangedSubview(links)
-        body.addArrangedSubview(button("Show application in Finder", #selector(revealApplication)))
-        body.addArrangedSubview(updateProgress); body.addArrangedSubview(updateProgressText); present()
+        appendReadingColumn(separator())
+        setting("macOS " + (Bootstrap.releaseVersion ?? "--"), updateButton)
+        body.addArrangedSubview(updateProgress); body.addArrangedSubview(updateProgressText)
+        setting("GitHub", button("Visit GitHub project", #selector(openGitHub)))
+        setting("Finder", button("Show application in Finder", #selector(revealApplication))); present()
     }
     @objc func skip() { enabled.state = .off; save() }
     @objc func save() {
@@ -1452,13 +1473,12 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         guard beginPage("authorization") else { return }; showingSettings = true
         heading("Before connecting on Mac")
         paragraph("This experimental app is not notarized. The app and its Node runtime may require separate approval.")
-        paragraph("1. Verify the download source and checksum. You may stop and wait for a notarized version.")
-        paragraph("2. After a system warning, review the exact item in System Settings > Privacy & Security. If available, choose Open Anyway only if you trust it.")
-        paragraph("3. Return here and check the runtime again. Do not disable system protections or grant unrelated permissions.")
-        authorizationButtons()
+        setting("Installation and approval guide", button("Installation and approval guide", #selector(openInstallGuide)), detail: "1. Verify the download source and checksum. You may stop and wait for a notarized version.")
+        setting("Permissions", button("Open Privacy & Security", #selector(openSecuritySettings)), detail: "2. After a system warning, review the exact item in System Settings > Privacy & Security. If available, choose Open Anyway only if you trust it.")
         runtimeAction = button("Check runtime and connect", #selector(start), primary: true)
-        let next = NSStackView(views: [runtimeAction!, button("Display choices", #selector(showInstallChoices))])
-        next.spacing = 12; body.addArrangedSubview(next); responsive(next, threshold: 540); present()
+        setting("Connection status", runtimeAction!, detail: "3. Return here and check the runtime again. Do not disable system protections or grant unrelated permissions.")
+        appendReadingColumn(separator())
+        setting("Sidebar items", button("Display choices", #selector(showInstallChoices))); present()
     }
     @objc func showInstallChoices() {
         showDisplay()
@@ -1517,7 +1537,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         let mounted = stage.hasPrefix("mounted")
         if mounted && !autoPlanAttempted { autoPlanAttempted = true; runPlanDetection("auto") }
         headline.stringValue = runtimeIssue ? CqsLocale.t("Runtime unavailable") : stage == "checking" ? CqsLocale.t("Checking runtime") : mounted ? CqsLocale.t("Connected") : stage == "failed" ? CqsLocale.t("Connection incomplete") : stage == "stopped" ? CqsLocale.t("Stopped") : CqsLocale.t("Connecting")
-        headline.textColor = mounted ? green : .labelColor
+        headline.textColor = mounted ? .systemTeal : .labelColor
         let code = errorText.trimmingCharacters(in: .whitespacesAndNewlines)
         restartButton?.isHidden = stage != "failed" || code != "E_RESTART_REQUIRED"
         let connectionErrors = [
