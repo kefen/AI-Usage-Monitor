@@ -12,7 +12,8 @@ const baseline=windowsOnly||macOnly?verifyFeed(JSON.parse(await readFile('docs/u
 if(windowsOnly&&(baseline.chrome!==chrome||baseline.releases['macos-arm64']?.version!==versions.macos||baseline.releases['macos-x64']?.version!==versions.macos))throw Error('Unchanged platform versions differ from verified baseline');
 const releases=baseline?{...baseline.releases}:{};
 const notesFile=macOnly?(versions.macos==='0.5.2-alpha.1'?'notes-monthly-tokens':'notes-mac-updater'):
- windowsOnly?(versions.windows==='0.13.5'?'notes-monthly-tokens':'notes-windows-responsive'):'notes-ui-fixes';
+ windowsOnly?(versions.windows==='0.13.5'?'notes-monthly-tokens':'notes-windows-responsive'):
+ versions.windows==='0.13.6'&&versions.macos==='0.5.4-alpha.4'?'notes-usage-monitor':'notes-ui-fixes';
 const notesByLocale=JSON.parse(await readFile('docs/releases/'+notesFile+'.json','utf8'));
 const notes=notesByLocale.en.map((line,i)=>(i+1)+'. '+line).join('\n');
 for(const [target,version,name,tag] of [

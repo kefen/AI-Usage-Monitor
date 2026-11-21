@@ -19,6 +19,8 @@ An unofficial quota and token usage companion for Codex desktop, with a separate
 
 从旧名称升级，请从上表手动下载一次。Windows 选择原安装目录；Mac 先退出旧版，再将新应用拖入“应用程序”；Chrome 在原扩展目录替换文件并重新加载。
 
+本次安装包已在 GitHub Releases 提供 SHA-256。桌面应用内的签名更新清单暂未切换到本版；请以上表为准。
+
 ## 界面 Screenshots
 
 以下为运行界面的示例数据，不代表真实账户额度。
