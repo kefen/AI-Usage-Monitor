@@ -21,7 +21,7 @@ An unofficial quota and token usage companion for Codex desktop, with a separate
 
 以下为运行界面的示例数据，不代表真实账户额度。
 
-**Windows · 用量概览**：右侧可见剩余额度；没有每日明细时，图区显示「暂无用量记录」，不会编造走势。
+**Windows · 用量概览**：左侧可切换每日与累计消耗，右侧同时显示 5 小时和本周剩余额度。
 
 ![Windows 用量概览](docs/screenshots/board-windows.png)
 
