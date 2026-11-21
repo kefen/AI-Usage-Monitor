@@ -9,7 +9,7 @@ $extension=Join-Path $folder 'extension'
 New-Item -ItemType Directory -Path $extension -Force | Out-Null
 $names=@('manifest.json','source.js','content.js','background.js','icon-32.png','icon-128.png','guide.html','guide.js','README.md')
 foreach($name in $names){Copy-Item -LiteralPath (Join-Path $source $name) -Destination (Join-Path $extension $name) -Force}
-$zip=Join-Path $folder "AI-Quota-Board-Chrome-$version.zip"
+$zip=Join-Path $folder "AI-Usage-Monitor-Chrome-$version.zip"
 Compress-Archive -LiteralPath @($names | ForEach-Object {Join-Path $extension $_}) -DestinationPath $zip -Force
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $archive=[IO.Compression.ZipFile]::OpenRead($zip)

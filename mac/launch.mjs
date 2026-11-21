@@ -109,5 +109,5 @@ try {
 }catch(e){
   console.error(e.message);process.exitCode=1;
   await writeFile(join(runtime,'mac-error.txt'),e.message).catch(()=>{});
-  if(!nativeUI)spawnSync('/usr/bin/osascript',['-e','on run argv','-e','display alert "AI Quota Board" message (item 1 of argv)','-e','end run',e.message],{timeout:120000});
+  if(!nativeUI)spawnSync('/usr/bin/osascript',['-e','on run argv','-e','display alert "AI Usage Monitor" message (item 1 of argv)','-e','end run',e.message],{timeout:120000});
 }finally{if(ownsLock)await unlink(lock).catch(()=>{});}

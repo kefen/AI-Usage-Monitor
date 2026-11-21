@@ -74,7 +74,7 @@ if (args[0] === 'usage') {
     };
     const stop = () => { stopping = true; };
     process.on('SIGINT', stop); process.on('SIGTERM', stop);
-    console.log(`AI Quota Board ${version} - Stop from the tray menu, Stop.cmd, or Ctrl+C in console mode.`);
+    console.log(`AI Usage Monitor ${version} - Stop from the tray menu, Stop.cmd, or Ctrl+C in console mode.`);
     console.log('Token activity: once at startup, then every 60 minutes.');
     console.log('Source: local Codex CLI account. Verify it matches your desktop account.');
     try {

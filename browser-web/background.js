@@ -5,7 +5,7 @@ chrome.action.onClicked.addListener(async tab=>{
 });
 chrome.runtime.onInstalled.addListener(event=>{if(event.reason==='install')chrome.tabs.create({url:chrome.runtime.getURL('guide.html')});});
 
-const day=86400000,alarm='cqs-web-release',feed='https://raw.githubusercontent.com/kefen/AI-Quota-Board/main/browser-web/updates.json';
+const day=86400000,alarm='cqs-web-release',feed='https://raw.githubusercontent.com/kefen/AI-Usage-Monitor/main/browser-web/updates.json';
 function newer(a,b){
   if(typeof a!=='string'||!/^\d{1,5}\.\d{1,5}\.\d{1,5}$/.test(a))return false;
   const current=b.split('.').map(Number),d=a.split('.').map((n,i)=>Number(n)-current[i]);

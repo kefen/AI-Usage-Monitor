@@ -13,7 +13,7 @@ test('signed feed rejects tampering, expired metadata and invalid signatures',()
 
 test('Mac download retries an interrupted body and reports progress for each attempt',async()=>{
  const seen=[];let calls=0;
- const result=await updateBytes('https://github.com/kefen/AI-Quota-Board/releases/download/mac/test.dmg',4,true,async()=>{
+ const result=await updateBytes('https://github.com/kefen/AI-Usage-Monitor/releases/download/mac/test.dmg',4,true,async()=>{
   const attempt=++calls;
   return {ok:true,status:200,headers:new Headers(),body:(async function*(){yield Buffer.from('ab');if(attempt===1)throw Error('Disconnected');yield Buffer.from('cd');})()};
  },async()=>{},(received,attempt)=>seen.push([received,attempt]));
@@ -22,7 +22,7 @@ test('Mac download retries an interrupted body and reports progress for each att
 });
 
 test('Mac download times out on stalled body and does not retry oversized data',async()=>{
- const url='https://github.com/kefen/AI-Quota-Board/releases/download/mac/test.dmg';
+ const url='https://github.com/kefen/AI-Usage-Monitor/releases/download/mac/test.dmg';
  let calls=0;
  await assert.rejects(updateBytes(url,4,true,async(_,options)=>{
   calls++;
@@ -37,7 +37,7 @@ test('version comparisons and assets fail closed',()=>{
  assert.equal(newer('1.2.5','1.2.4'),true);assert.equal(newer('1.4.7-alpha.1','1.4.6-alpha.1'),true);
  assert.equal(newer('0.4.7-alpha.1','0.4.7'),false);assert.equal(newer('0.4.7','0.4.7-alpha.1'),true);
  assert.throws(()=>newer('garbage','0.1.0'));
- const asset={version:'0.12.5',url:'https://github.com/kefen/AI-Quota-Board/releases/download/windows%2Fv0.12.5/app.exe',sha256:'a'.repeat(64),size:123};
+ const asset={version:'0.12.5',url:'https://github.com/kefen/AI-Usage-Monitor/releases/download/windows%2Fv0.12.5/app.exe',sha256:'a'.repeat(64),size:123};
  assert.equal(validateAsset(asset).size,123);
  assert.throws(()=>validateAsset({...asset,url:'https://evil.example/app.exe'}));
  assert.throws(()=>validateAsset({...asset,size:900000000}));
@@ -66,7 +66,7 @@ test('update failures remain failures, with sanitized diagnostic codes',async()=
 test('feed transport retries once, but never fabricates an up-to-date result',async()=>{
  const {updateBytes}=await import('../src/update.mjs');let calls=0;
  const response={status:200,ok:true,headers:new Headers(),body:(async function*(){yield Buffer.from('{}');})()};
- const bytes=await updateBytes('https://raw.githubusercontent.com/kefen/AI-Quota-Board/main/docs/updates/latest.json',1000,false,async()=>{if(++calls===1)throw Error('Temporary outage');return response;},async()=>{});
+ const bytes=await updateBytes('https://raw.githubusercontent.com/kefen/AI-Usage-Monitor/main/docs/updates/latest.json',1000,false,async()=>{if(++calls===1)throw Error('Temporary outage');return response;},async()=>{});
  assert.equal(bytes.toString(),'{}');assert.equal(calls,2);
- await assert.rejects(()=>updateBytes('https://raw.githubusercontent.com/kefen/AI-Quota-Board/main/docs/updates/latest.json',1000,false,async()=>{throw Error('Offline');},async()=>{}),/E_UPDATE_NETWORK/);
+ await assert.rejects(()=>updateBytes('https://raw.githubusercontent.com/kefen/AI-Usage-Monitor/main/docs/updates/latest.json',1000,false,async()=>{throw Error('Offline');},async()=>{}),/E_UPDATE_NETWORK/);
 });

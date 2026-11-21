@@ -72,22 +72,24 @@ internal static class MeterPreferences {
         var date=control as BlankDatePicker;
         var clear=date==null?null:new NavigationItem{Name=control.Name+"Clear",Text="",Glyph="\uE711",AccessibleName=Locale.T("Clear selection"),ForeColor=MeterTheme.Muted,BackColor=MeterTheme.Tint(Color.FromArgb(244,247,252))};
         if(clear!=null){panel.Controls.Add(clear);clear.Click+=(s,e)=>date.Clear();var tip=new ToolTip();tip.SetToolTip(clear,clear.AccessibleName);panel.Disposed+=(s,e)=>tip.Dispose();}
-        Action arrange=()=>{using(var g=panel.CreateGraphics()){
+        bool arranging=false;Action arrange=()=>{if(arranging||panel.IsDisposed)return;arranging=true;try{using(var g=panel.CreateGraphics()){
             Func<int,int> px=n=>(int)Math.Round(n*g.DpiX/96);int width=panel.ClientSize.Width;
             caption.SetBounds(0,0,width,px(21));int cy=px(22+17);
             var combo=control as ComboBox;if(combo!=null)combo.ItemHeight=combo.Font.Height+px(2);
             int height=date!=null?date.PreferredHeight:combo.PreferredHeight;
             int reserved=date!=null&&date.Enabled?height+px(6):0;
             control.SetBounds(0,cy-height/2,Math.Max(1,width-reserved),height);
+            // Native drop-downs may enforce a different height after handle creation.
+            control.Top=cy-control.Height/2;
             if(clear!=null){clear.SetBounds(width-height,control.Top,height,height);clear.Visible=clear.Enabled=date.Enabled&&date.Checked;}
-        }};
-        panel.SizeChanged+=(s,e)=>arrange();panel.HandleCreated+=(s,e)=>arrange();control.FontChanged+=(s,e)=>arrange();
+        }}finally{arranging=false;}};
+        panel.SizeChanged+=(s,e)=>arrange();panel.HandleCreated+=(s,e)=>arrange();control.FontChanged+=(s,e)=>arrange();control.SizeChanged+=(s,e)=>arrange();control.HandleCreated+=(s,e)=>arrange();
         if(date!=null){date.EnabledChanged+=(s,e)=>arrange();date.PresenceChanged+=(s,e)=>arrange();}
         return panel;
     }
     internal static Form Create(string root,bool embedded){
         Directory.CreateDirectory(root);string memberPath=Path.Combine(root,"membership.json");var data=Read(memberPath);
-        var form=new Form();form.Text="AI Quota Board";MeterTheme.Style(form,960,640);form.MinimizeBox=false;
+        var form=new Form();form.Text="AI Usage Monitor";MeterTheme.Style(form,960,640);form.MinimizeBox=false;
         if(embedded)form.MinimumSize=Size.Empty;
         var body=MeterTheme.Body();body.AutoScroll=false;body.Padding=embedded?new Padding(0):new Padding(30,24,30,24);form.Controls.Add(body);if(!embedded)form.Controls.Add(MeterTheme.Header("Codex subscription record","Windows"));
         var content=new Panel{Name="planContent",Dock=DockStyle.Top,Height=530};body.Controls.Add(content);body.BringToFront();

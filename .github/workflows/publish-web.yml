@@ -26,9 +26,9 @@ jobs:
         run: |
           set -euo pipefail
           cd "dist/chrome-web-$VERSION"
-          zip="AI-Quota-Board-Chrome-$VERSION.zip"
+          zip="AI-Usage-Monitor-Chrome-$VERSION.zip"
           sha256sum "$zip" > Release-SHA256.txt
-          gh release create "$GITHUB_REF_NAME" "$zip" Release-SHA256.txt --verify-tag --latest=false --title "AI Quota Board · Chrome $VERSION" --notes-file "$GITHUB_WORKSPACE/browser-web/RELEASE.md"
+          gh release create "$GITHUB_REF_NAME" "$zip" Release-SHA256.txt --verify-tag --latest=false --title "AI Usage Monitor · Chrome $VERSION" --notes-file "$GITHUB_WORKSPACE/browser-web/RELEASE.md"
           mkdir downloaded
           gh release download "$GITHUB_REF_NAME" --dir downloaded
           cmp "$zip" "downloaded/$zip"

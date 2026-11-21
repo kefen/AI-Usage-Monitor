@@ -1,6 +1,6 @@
 import AppKit
 enum CqsLocale {
-    static let repository = URL(string: "https://github.com/kefen/AI-Quota-Board")!
+    static let repository = URL(string: "https://github.com/kefen/AI-Usage-Monitor")!
     static let modes = ["system","en","zh-CN","zh-TW"]
     static var mode: String { UserDefaults.standard.string(forKey: "cqs-language") ?? "system" }
     static func resolve(_ mode: String) -> String {

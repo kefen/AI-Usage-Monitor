@@ -110,7 +110,7 @@ function renderUpdate(){
  const message=$('#update-status');message.replaceChildren();message.hidden=!updateState;
  if(!updateState)return;
  if(updateState.key){message.textContent=t(updateState.key);return;}
- const link=node('a',t('Update available')+' '+updateState.version);link.href='https://github.com/kefen/AI-Quota-Board/releases/tag/'+encodeURIComponent(updateState.tag);link.target='_blank';link.rel='noopener noreferrer';
+ const link=node('a',t('Update available')+' '+updateState.version);link.href='https://github.com/kefen/AI-Usage-Monitor/releases/tag/'+encodeURIComponent(updateState.tag);link.target='_blank';link.rel='noopener noreferrer';
  message.append(link,node('p',t('Download, unpack and reload the extension in chrome://extensions.')),node('p',t('Release notes')+'\n'+releaseNotes(updateState.body)));
 }
 async function checkUpdates(manual=false){
@@ -119,7 +119,7 @@ async function checkUpdates(manual=false){
  if(!manual&&Date.now()-last<86400000)return;
  control.disabled=true;updateState={key:'Checking for updates...'};renderUpdate();
  try{
-  const response=await fetch('https://api.github.com/repos/kefen/AI-Quota-Board/releases?per_page=30',{credentials:'omit',signal:AbortSignal.timeout(15000)});if(!response.ok)throw Error('Network error');
+  const response=await fetch('https://api.github.com/repos/kefen/AI-Usage-Monitor/releases?per_page=30',{credentials:'omit',signal:AbortSignal.timeout(15000)});if(!response.ok)throw Error('Network error');
   const releases=await response.json(),current=chrome.runtime.getManifest().version.split('.').map(Number);
   const compare=(a,b)=>{for(let i=0;i<3;i++)if(a[i]!==b[i])return a[i]-b[i];return 0;};
   const candidates=releases.filter(r=>!r.draft&&!r.prerelease&&/^chrome\/v\d+\.\d+\.\d+$/.test(r.tag_name)).map(r=>({...r,parts:r.tag_name.slice(8).split('.').map(Number)})).sort((a,b)=>compare(b.parts,a.parts));
@@ -133,8 +133,8 @@ $('#display-settings').addEventListener('click',()=>{$('#settings-feedback').hid
 $('#check-updates').addEventListener('click',()=>checkUpdates(true));
 $('#refresh').addEventListener('click',refresh);
 $('#export').addEventListener('click',()=>{
- const report={tool:'AI Quota Board by KEFEN',version:chrome.runtime.getManifest().version,connection:offline?'helper-unavailable':data?.ok?'snapshot-read':'snapshot-unavailable',exportedAt:new Date().toISOString()};
- const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'})),link=node('a');link.href=url;link.download='AI-Quota-Board-browser-diagnostics.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);$('#help-feedback').textContent=t('Review diagnostics before attaching them to a GitHub issue. No files are uploaded automatically.');
+ const report={tool:'AI Usage Monitor by KEFEN',version:chrome.runtime.getManifest().version,connection:offline?'helper-unavailable':data?.ok?'snapshot-read':'snapshot-unavailable',exportedAt:new Date().toISOString()};
+ const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'})),link=node('a');link.href=url;link.download='AI-Usage-Monitor-browser-diagnostics.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);$('#help-feedback').textContent=t('Review diagnostics before attaching them to a GitHub issue. No files are uploaded automatically.');
 });
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)read();});
 setInterval(read,5000);setTimeout(()=>checkUpdates(),5000);render();read();

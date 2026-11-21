@@ -3,8 +3,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 if [[ "$(uname -m)" != arm64 ]]; then echo 'Apple Silicon Mac required.'; exit 1; fi
 dest="$HOME/Library/Application Support/CodexSidebarMeter"
-app="$HOME/Applications/AI Quota Board.app"
-if [[ ! -x runtime/node || ! -d 'build/AI Quota Board.app' ]]; then
+app="$HOME/Applications/AI Usage Monitor.app"
+if [[ ! -x runtime/node || ! -d 'build/AI Usage Monitor.app' ]]; then
   echo 'Build the native app with mac/Build.command and supply a verified arm64 Node runtime first.'
   exit 1
 fi
@@ -26,9 +26,9 @@ if ! "$stage/runtime/node" --version; then
   echo 'Node could not run. Check macOS version/security policy; installation incomplete.'
   exit 1
 fi
-cp -R 'build/AI Quota Board.app' "$stage/AI Quota Board.app"
+cp -R 'build/AI Usage Monitor.app' "$stage/AI Usage Monitor.app"
 printf '%s\n' 'local-codex-sidebar-meter-0.5.4-alpha.4' > "$stage/installed-by-meter"
-mv "$stage/AI Quota Board.app" "$app"
+mv "$stage/AI Usage Monitor.app" "$app"
 mv "$stage" "$dest"
-echo 'Installed. Open ~/Applications/AI Quota Board.app.'
+echo 'Installed. Open ~/Applications/AI Usage Monitor.app.'
 echo 'This Mac build has not been tested on a real Mac. No Codex app files were changed.'

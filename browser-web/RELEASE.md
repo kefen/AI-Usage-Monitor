@@ -1,4 +1,4 @@
-# AI Quota Board
+# AI Usage Monitor
 
 Chrome 0.5.4 adds a Monthly tokens display choice. Only an explicit current-month Token count from the current web account is shown. Unsupported accounts stay unavailable; no local CLI data or estimated counts are substituted.
 

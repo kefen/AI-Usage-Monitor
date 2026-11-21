@@ -7,7 +7,7 @@ using System.Text;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 internal static class Locale {
-    internal const string Repository="https://github.com/kefen/AI-Quota-Board";
+    internal const string Repository="https://github.com/kefen/AI-Usage-Monitor";
     static readonly Dictionary<string,string[]> Catalog=ReadCatalog();
     internal static string Language=SystemLanguage();
     static string root;

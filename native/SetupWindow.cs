@@ -21,7 +21,7 @@ internal sealed class SetupWindow : Form {
     internal System.Collections.Generic.Dictionary<string,bool> SelectedVisibility;
     internal SetupWindow(string destination,Action operation,Action launch,Func<string> detect=null,Action configure=null){
         original=Destination=destination;this.operation=operation;this.launch=launch;this.configure=configure;this.detect=detect??SetupSupport.FindCodex;
-        Text="AI Quota Board";MeterTheme.Style(this,1016,536);
+        Text="AI Usage Monitor";MeterTheme.Style(this,1016,536);
         MinimumSize=new Size(720,460);
         var header=MeterTheme.Header("Setup","Windows "+MeterTheme.Version);header.Height=68;header.Padding=new Padding(20,12,20,12);
         var logo=header.Controls.Find("brandLogo",true)[0];logo.Cursor=Cursors.Hand;logo.TabStop=true;logo.AccessibleName=Locale.T("Visit GitHub project");logo.Click+=(s,e)=>MeterTheme.OpenProject();

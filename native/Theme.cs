@@ -13,7 +13,7 @@ internal static class MeterTheme {
         button.Disposed+=(s,e)=>{timer.Stop();timer.Dispose();};timer.Start();
     }
     internal static int Mode=ReadMode();
-    static int ReadMode(){try{int m=Convert.ToInt32(Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Software\KEFEN\AI Quota Board","Appearance",0));return m>=0&&m<=2?m:0;}catch{return 0;}}
+    static int ReadMode(){try{int m=Convert.ToInt32(Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Software\KEFEN\AI Usage Monitor","Appearance",0));return m>=0&&m<=2?m:0;}catch{return 0;}}
     static bool IsDark(){if(SystemInformation.HighContrast)return false;if(Mode!=0)return Mode==2;try{return Convert.ToInt32(Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize","AppsUseLightTheme",1) ?? 1)==0;}catch{return false;}}
     static bool dark=IsDark();
     static readonly Color[,] palette={{Color.FromArgb(141,86,16),Color.FromArgb(246,190,115)},
@@ -54,7 +54,7 @@ internal static class MeterTheme {
     internal static Color Secondary{get{return Tint(Color.FromArgb(230,234,240));}}
     [System.Runtime.InteropServices.DllImport("dwmapi.dll")]static extern int DwmSetWindowAttribute(IntPtr hwnd,int attribute,ref int value,int size);
     static void Frame(Form f){if(f.IsHandleCreated){int v=dark?1:0;DwmSetWindowAttribute(f.Handle,20,ref v,4);}}
-    internal static void SetMode(int mode,bool persist=true){try{if(persist)Microsoft.Win32.Registry.SetValue(@"HKEY_CURRENT_USER\Software\KEFEN\AI Quota Board","Appearance",mode);}catch(Exception ex){Error(ex.Message);return;}Mode=mode;RefreshMode();}
+    internal static void SetMode(int mode,bool persist=true){try{if(persist)Microsoft.Win32.Registry.SetValue(@"HKEY_CURRENT_USER\Software\KEFEN\AI Usage Monitor","Appearance",mode);}catch(Exception ex){Error(ex.Message);return;}Mode=mode;RefreshMode();}
     static void RefreshMode(){bool next=IsDark();if(next==dark)return;dark=next;foreach(Form f in Application.OpenForms){ApplyColors(f);Frame(f);f.Invalidate(true);}}
     static void ApplyColors(Control c){var bg=Translate(c.BackColor,dark);if(bg.ToArgb()!=c.BackColor.ToArgb())c.BackColor=bg;
         if(c.ForeColor.ToArgb()!=Color.White.ToArgb()){var fg=c.ForeColor.ToArgb()==Color.Black.ToArgb()?Ink:Translate(c.ForeColor,dark);if(fg.ToArgb()!=c.ForeColor.ToArgb())c.ForeColor=fg;}
@@ -104,7 +104,7 @@ internal static class MeterTheme {
         icon.FlatAppearance.BorderSize=0;
         try{using(var source=Image.FromFile(Asset("cqs-128.png")))icon.BackgroundImage=new Bitmap(source);}catch{using(var stream=System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("brand.png")){if(stream!=null)using(var source=Image.FromStream(stream))icon.BackgroundImage=new Bitmap(source);}}
         var words=new Panel{Dock=DockStyle.Fill,Padding=new Padding(16,0,0,0)};
-        var title=Label("AI Quota Board",12.75f,Ink);title.Name="brandTitle";title.Dock=DockStyle.Top;title.Height=24;
+        var title=Label("AI Usage Monitor",12.75f,Ink);title.Name="brandTitle";title.Dock=DockStyle.Top;title.Height=24;
         var caption=Label("by KEFEN",8.5f,Muted);caption.Name="brandCaption";caption.Dock=DockStyle.Top;caption.Height=18;
         words.Controls.Add(caption);words.Controls.Add(title);panel.Controls.Add(words);panel.Controls.Add(icon);
         var languages=new Panel{Name="languageControl",Dock=DockStyle.Right,Width=105};
@@ -145,7 +145,7 @@ internal static class MeterTheme {
     internal static Panel Body(){return new Panel{Dock=DockStyle.Fill,Padding=new Padding(30,24,30,24),AutoScroll=false,BackColor=Surface};}
     internal static bool Consent(){
         using(var form=new Form()){
-            form.Text="AI Quota Board";Style(form,620,470);form.MinimizeBox=false;
+            form.Text="AI Usage Monitor";Style(form,620,470);form.MinimizeBox=false;
             var body=Body();form.Controls.Add(body);form.Controls.Add(Header(Locale.T("Local connection permission"),"Windows"));
             var title=Label(Locale.T("Allow local debugging"),17,Ink);title.Dock=DockStyle.Top;title.Height=44;
             var notice=Label(Locale.T("Debugging grants more than quota access. Other local programs may access the port. Stopping the meter does not close it: fully quit Codex and reopen from its official entry. This is unofficial software. Verify that the CLI and desktop accounts match."),10,Muted);notice.Dock=DockStyle.Top;notice.Height=190;
@@ -159,7 +159,7 @@ internal static class MeterTheme {
     }
     internal static void Error(string text){
         using(var form=new Form()){
-            form.Text="AI Quota Board";Style(form,620,330);
+            form.Text="AI Usage Monitor";Style(form,620,330);
             var body=Body();form.Controls.Add(body);form.Controls.Add(Header(Locale.T("Action needed"),"Windows"));
             body.Controls.Add(new TextBox{Text=text,ReadOnly=true,Multiline=true,Dock=DockStyle.Fill,BorderStyle=BorderStyle.None,BackColor=Surface,ForeColor=Ink,ScrollBars=ScrollBars.Vertical});
             var footer=Footer();var close=Button("close",Locale.T("Close"),true);close.DialogResult=DialogResult.OK;footer.Controls.Add(close);form.Controls.Add(footer);body.BringToFront();form.CancelButton=close;form.ShowDialog();
@@ -273,7 +273,7 @@ public static class MeterRestartDialog {
         Application.EnableVisualStyles();
         Locale.Load(Path.Combine(Path.GetDirectoryName(typeof(MeterRestartDialog).Assembly.Location),".runtime"));
         using(var form=new Form()){
-            form.Text="AI Quota Board";MeterTheme.Style(form,660,460);
+            form.Text="AI Usage Monitor";MeterTheme.Style(form,660,460);
             var body=MeterTheme.Body();form.Controls.Add(body);form.Controls.Add(MeterTheme.Header(Locale.T("Restart confirmation"),"Windows"));
             var steps=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false,AutoScroll=true};body.Controls.Add(steps);
             foreach(string key in new[]{"1. Codex is running without the required local connection.","2. Save all work and stop active tasks before continuing.","3. With your permission, verified Codex processes will restart to attach the sidebar.","4. Unsaved work may be lost. Cancel to leave Codex unchanged."}){

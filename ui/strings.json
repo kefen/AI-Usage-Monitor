@@ -262,9 +262,9 @@
     "在 Finder 中显示应用",
     "在 Finder 中顯示應用程式"
   ],
-  "1. Drag AI Quota Board.app from the disk image into Applications. Replace the old app if upgrading.\n2. Eject the disk image, then open AI Quota Board from Finder > Applications.\n3. Keep the app in the Dock for next time. You do not need to open the installer again.": [
-    "1. 将磁盘映像中的 AI Quota Board.app 拖入“应用程序”，升级时选择替换旧版。\n2. 弹出磁盘映像，再从 Finder → 应用程序打开 AI Quota Board。\n3. 可将应用保留在 Dock，下次无需再打开安装包。",
-    "1. 將磁碟映像中的 AI Quota Board.app 拖入「應用程式」，升級時選擇取代舊版。\n2. 退出磁碟映像，再從 Finder → 應用程式開啟 AI Quota Board。\n3. 可將應用程式保留在 Dock，下次無須再開啟安裝包。"
+  "1. Drag AI Usage Monitor.app from the disk image into Applications. Replace the old app if upgrading.\n2. Eject the disk image, then open AI Usage Monitor from Finder > Applications.\n3. Keep the app in the Dock for next time. You do not need to open the installer again.": [
+    "1. 将磁盘映像中的 AI Usage Monitor.app 拖入“应用程序”，升级时选择替换旧版。\n2. 弹出磁盘映像，再从 Finder → 应用程序打开 AI Usage Monitor。\n3. 可将应用保留在 Dock，下次无需再打开安装包。",
+    "1. 將磁碟映像中的 AI Usage Monitor.app 拖入「應用程式」，升級時選擇取代舊版。\n2. 退出磁碟映像，再從 Finder → 應用程式開啟 AI Usage Monitor。\n3. 可將應用程式保留在 Dock，下次無須再開啟安裝包。"
   ],
   "The connection port has an unverified owner. Export diagnostics; do not disable security checks.": [
     "连接端口存在未通过验证的进程。请导出诊断，不要关闭安全检查。",
@@ -1072,9 +1072,9 @@
     "导出失败：",
     "匯出失敗："
   ],
-  "AI Quota Board - Settings": [
-    "AI Quota Board - 设置",
-    "AI Quota Board - 設定"
+  "AI Usage Monitor - Settings": [
+    "AI Usage Monitor - 设置",
+    "AI Usage Monitor - 設定"
   ],
   "Settings file is too large.": [
     "设置文件过大。",

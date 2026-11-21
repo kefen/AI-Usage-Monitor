@@ -91,13 +91,13 @@ Then return to the app and reconnect. Do not disable Gatekeeper.
 
 繁體中文：Mac 攔截後請按「完成」，前往「系統設定 → 隱私權與安全性 → 強制打開」並確認；不要移到垃圾桶。應用程式和 Node 元件可能需要分別授權。
 
-AI Quota Board by KEFEN. English / 简体中文 / 繁體中文 are available
+AI Usage Monitor by KEFEN. English / 简体中文 / 繁體中文 are available
 from the upper-right language selector. Screenshots below are actual rendered
 Windows UI using test fixtures, not real account data.
 
 ## 1. Download The Right Package
 
-Open [Releases](https://github.com/kefen/AI-Quota-Board/releases).
+Open [Releases](https://github.com/kefen/AI-Usage-Monitor/releases).
 For Windows 10/11 x64, download the asset ending in
 `Windows-0.13.6-x64-Setup.exe`, plus its SHA256 file if verifying integrity.
 
@@ -207,10 +207,10 @@ connection on Apple Silicon; Intel account testing remains pending.
 
 ### Install, Upgrade And Open Again
 
-1. Quit the previous **AI Quota Board** using **Exit software**. This does not quit Codex.
+1. Quit the previous **AI Usage Monitor** using **Exit software**. This does not quit Codex.
 2. Open the downloaded DMG and read `READ-ME-FIRST.html`.
-3. Drag **AI Quota Board.app** onto **Applications**; select Replace when upgrading.
-4. Eject the DMG. Open **Finder > Applications > AI Quota Board**.
+3. Drag **AI Usage Monitor.app** onto **Applications**; select Replace when upgrading.
+4. Eject the DMG. Open **Finder > Applications > AI Usage Monitor**.
 5. Optionally right-click its Dock icon and choose **Options > Keep in Dock**.
 6. Check the version in the lower-left corner. Daily launches use Applications or Dock, not the DMG.
 
@@ -245,7 +245,7 @@ return to the panel and select Reconnect. Runtime failures have a distinct code,
 such as E_RUNTIME_START, E_RUNTIME_MISSING or E_RUNTIME_TIMEOUT.
 
 Choose `arm64` for Apple Silicon or `x86_64` for Intel. Open the DMG, drag
-AI Quota Board into Applications, then open it. Keep the application there;
+AI Usage Monitor into Applications, then open it. Keep the application there;
 do not run from the mounted disk image. The first run creates its private payload
 in `~/Library/Application Support/CodexSidebarMeter` and asks for connection consent.
 The app is ad-hoc signed, not Developer ID signed or notarized. macOS may block it;
@@ -293,9 +293,9 @@ not added together. Reset count is not a recharge-card count.
 
 ## 8. Browser Companion
 
-1. Download the [Chrome release ZIP](https://github.com/kefen/AI-Quota-Board/releases/tag/chrome/v0.5.4) and extract it to a permanent folder.
+1. Download the [Chrome release ZIP](https://github.com/kefen/AI-Usage-Monitor/releases/tag/chrome/v0.5.4) and extract it to a permanent folder.
 2. In `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select the folder containing manifest.json.
-3. Sign in to ChatGPT, reload existing tabs, then expand its sidebar. **AI Quota Board** is at the bottom. No desktop helper or registration is needed.
+3. Sign in to ChatGPT, reload existing tabs, then expand its sidebar. **AI Usage Monitor** is at the bottom. No desktop helper or registration is needed.
 4. For reset counts, choose **Read full usage**, verify the account and return the readings. For upgrades, follow the release link, replace the files and reload the extension and webpage.
 
 ![Chrome web sidebar card](screenshots/chrome-web-052.png)

@@ -3,7 +3,7 @@
   if(location.origin!=='https://chatgpt.com'||window!==window.top||!globalThis.CQSWebSource)return;
   const M=globalThis.CQSWebSource,id='cqs-web-usage-preview',keys=['week','plan','credits','resets','reset','monthly'];
   const text={
-    title:['AI Quota Board','AI Quota Board','AI Quota Board'],shared:['Codex / Work shared allowance','Codex / Work 共享额度','Codex / Work 共用額度'],
+    title:['AI Usage Monitor','AI Usage Monitor','AI Usage Monitor'],shared:['Codex / Work shared allowance','Codex / Work 共享额度','Codex / Work 共用額度'],
     week:['Weekly remaining','本周剩余','本週剩餘'],credits:['Credits','额度','額度'],resets:['Available resets','可用重置次数','可用重設次數'],reset:['Reset time','重置时间','重設時間'],plan:['Plan','套餐','方案'],
     refresh:['Read again','重新读取','重新讀取'],reading:['Reading…','正在读取…','正在讀取…'],settings:['Display choices','展示内容','顯示內容'],back:['Back','返回','返回'],
     source:['Read full usage','读取完整用量','讀取完整用量'],missing:['See full usage','见完整用量','見完整用量'],unsupported:['Not provided by this page','此网页未提供','此網頁未提供'],
@@ -151,7 +151,7 @@
     if(times.length&&!blocked){const stamp=E('div',t('stamp')+' '+new Date(Math.min(...times)).toLocaleTimeString(language,{hour:'2-digit',minute:'2-digit'}),'hint');body.append(stamp);}
     shadow.querySelector('.version').textContent='Web '+chrome.runtime.getManifest().version;
     const update=shadow.querySelector('.update');update.hidden=!updateVersion;
-    if(updateVersion){update.textContent=t('update')+' '+updateVersion;update.href='https://github.com/kefen/AI-Quota-Board/releases/tag/chrome/v'+updateVersion;}
+    if(updateVersion){update.textContent=t('update')+' '+updateVersion;update.href='https://github.com/kefen/AI-Usage-Monitor/releases/tag/chrome/v'+updateVersion;}
   }
   function mount(){
     const currentShell=document.getElementById('app-shell-sidebar');

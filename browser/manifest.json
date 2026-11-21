@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "AI Quota Board",
+  "name": "AI Usage Monitor",
   "version": "0.4.1",
   "author": "KEFEN",
   "description": "Read local Codex quota snapshots in a browser side panel. Unofficial companion by KEFEN.",
@@ -13,7 +13,7 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "AI Quota Board"
+    "default_title": "AI Usage Monitor"
   },
   "side_panel": {
     "default_path": "panel.html"

@@ -37,7 +37,7 @@ internal sealed class LaunchWindow : Form {
     string currentPage;
     internal LaunchWindow(Action openCodex,Action reconnect,Action settings,Action stop){
         reconnectAction=reconnect;
-        Text="AI Quota Board";MeterTheme.Style(this,1184,792);
+        Text="AI Usage Monitor";MeterTheme.Style(this,1184,792);
         Load+=(s,e)=>{
             float scale;using(var g=CreateGraphics())scale=g.DpiX/96f;
             var work=Screen.FromControl(this).WorkingArea;
@@ -58,7 +58,7 @@ internal sealed class LaunchWindow : Form {
         var nav=new FlowLayoutPanel{Dock=DockStyle.Top,Height=218,FlowDirection=FlowDirection.TopDown,WrapContents=false};rail.Controls.Add(nav);
         var brand=new Panel{Dock=DockStyle.Top,Height=80};rail.Controls.Add(brand);
         header.Controls.Find("brandCaption",true)[0].Parent.Dispose();
-        var brandTitle=MeterTheme.Label("AI Quota Board",9.75f,MeterTheme.Ink);brandTitle.Name="brandTitle";brandTitle.Dock=DockStyle.None;
+        var brandTitle=MeterTheme.Label("AI Usage Monitor",9.75f,MeterTheme.Ink);brandTitle.Name="brandTitle";brandTitle.Dock=DockStyle.None;
         var brandCaption=MeterTheme.Label("by KEFEN",8.25f,MeterTheme.Muted);brandCaption.Name="brandCaption";brandCaption.Dock=DockStyle.None;
         logo.Dock=DockStyle.None;brand.Controls.Add(logo);brand.Controls.Add(brandTitle);brand.Controls.Add(brandCaption);
         Action brandLayout=()=>{using(var g=brand.CreateGraphics()){
@@ -253,7 +253,7 @@ internal sealed class LaunchWindow : Form {
             actionRow("Issue feedback","Review the report and hide personal details in screenshots before attaching them to an issue.","Submit feedback on GitHub",()=>System.Diagnostics.Process.Start(Locale.Repository+"/issues/new"));
             text("No automatic uploads. You choose what to submit. A GitHub account is required to post an issue.");
         }else if(key=="About project"){
-            text("AI Quota Board");text("by KEFEN");text("Local, read-only quota and Token indicators in the Codex sidebar. Choose the metrics you need; official controls always have priority.");
+            text("AI Usage Monitor");text("by KEFEN");text("Local, read-only quota and Token indicators in the Codex sidebar. Choose the metrics you need; official controls always have priority.");
             var divider=new Panel{Width=Math.Max(400,body.ClientSize.Width-60),Height=1,BackColor=MeterTheme.Line,Margin=new Padding(0,6,0,14)};content.Controls.Add(divider);
             text("Author: KEFEN / License: MIT");text("Unofficial software. Not affiliated with or endorsed by OpenAI.");text("Uses the local CLI account. Token activity is not an API bill.");
             float scale;using(var g=body.CreateGraphics())scale=g.DpiX/96f;

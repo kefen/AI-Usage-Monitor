@@ -1,4 +1,4 @@
-# AI Quota Board
+# AI Usage Monitor
 
 by KEFEN
 
@@ -10,10 +10,10 @@ An unofficial quota and token usage companion for Codex desktop, with a separate
 
 | 系统 | 安装包 | 安装方式 |
 | --- | --- | --- |
-| Windows 10 / 11 x64 | [Windows 0.13.6](https://github.com/kefen/AI-Quota-Board/releases/tag/windows/v0.13.6) | 下载未签名的 Setup.exe；升级选择原安装目录。 |
-| Mac · Apple 芯片 | [Apple Silicon DMG](https://github.com/kefen/AI-Quota-Board/releases/download/macos%2Fv0.5.4-alpha.4/AI-Quota-Board-macOS-0.5.4-alpha.4-arm64-unsigned-test.dmg) | M 系列芯片；0.5.4-alpha.4，未公证预发布版。 |
-| Mac · Intel | [Intel DMG](https://github.com/kefen/AI-Quota-Board/releases/download/macos%2Fv0.5.4-alpha.4/AI-Quota-Board-macOS-0.5.4-alpha.4-x86_64-unsigned-test.dmg) | Intel 处理器；同一预发布版本。 |
-| Chrome | [Chrome 0.5.4](https://github.com/kefen/AI-Quota-Board/releases/tag/chrome/v0.5.4) | 解压 ZIP，在扩展管理页选择“加载已解压的扩展程序”；不是商店版。 |
+| Windows 10 / 11 x64 | [Windows 0.13.6](https://github.com/kefen/AI-Usage-Monitor/releases/tag/windows/v0.13.6) | 下载未签名的 Setup.exe；升级选择原安装目录。 |
+| Mac · Apple 芯片 | [Apple Silicon DMG](https://github.com/kefen/AI-Usage-Monitor/releases/download/macos%2Fv0.5.4-alpha.4/AI-Usage-Monitor-macOS-0.5.4-alpha.4-arm64-unsigned-test.dmg) | M 系列芯片；0.5.4-alpha.4，未公证预发布版。 |
+| Mac · Intel | [Intel DMG](https://github.com/kefen/AI-Usage-Monitor/releases/download/macos%2Fv0.5.4-alpha.4/AI-Usage-Monitor-macOS-0.5.4-alpha.4-x86_64-unsigned-test.dmg) | Intel 处理器；同一预发布版本。 |
+| Chrome | [Chrome 0.5.4](https://github.com/kefen/AI-Usage-Monitor/releases/tag/chrome/v0.5.4) | 解压 ZIP，在扩展管理页选择“加载已解压的扩展程序”；不是商店版。 |
 
 [安装与使用指南](docs/USER-GUIDE.md) · [安全说明](SECURITY.md) · [MIT License](LICENSE)
 
@@ -143,7 +143,7 @@ externally modified files are retained.
 
 ## Chrome Companion
 
-**AI Quota Board 0.5.4.** Expand ChatGPT's left sidebar: the compact Mac-style quota ruler is at the bottom. Read the current account's weekly allowance, plan, credits, available resets and reset time where provided. Select **Read full usage** to bring back a confirmed snapshot. Monthly Tokens appear only if the official page explicitly provides the current month's total; the extension does not substitute local desktop data. On desktop, Monthly Tokens sum the returned daily records for the current UTC calendar month; incomplete coverage is marked as partial and is not treated as zero.
+**AI Usage Monitor 0.5.4.** Expand ChatGPT's left sidebar: the compact Mac-style quota ruler is at the bottom. Read the current account's weekly allowance, plan, credits, available resets and reset time where provided. Select **Read full usage** to bring back a confirmed snapshot. Monthly Tokens appear only if the official page explicitly provides the current month's total; the extension does not substitute local desktop data. On desktop, Monthly Tokens sum the returned daily records for the current UTC calendar month; incomplete coverage is marked as partial and is not treated as zero.
 
 The extension observes changes already rendered by ChatGPT; it does not periodically refresh the site or hit a usage API. A daily public GitHub version check shows a toolbar badge and a link when a newer build exists. GitHub ZIPs must be replaced and reloaded manually.
 
@@ -187,11 +187,11 @@ macOS runners. The user confirmed live connection on Apple Silicon; Intel
 real-account acceptance remains pending. The packages are ad-hoc signed, not
 Developer ID signed or notarized.
 
-**首次更名升级：** 退出旧版 Codex Quota Sidebar.app，手动安装并打开 AI Quota Board.app。确认设置无误后只移除旧 .app，不删除应用支持目录；不要同时运行两份。
+**首次更名升级：** 退出旧版 Codex Quota Sidebar.app 或 AI Quota Board.app，手动安装并打开 AI Usage Monitor.app。确认设置无误后只移除旧 .app，不删除应用支持目录；不要同时运行两份。
 
 **Install once, launch normally:** quit the previous companion, open the correct
-DMG, drag **AI Quota Board.app** to **Applications** (replace when upgrading),
-then eject the DMG. Open **Finder > Applications > AI Quota Board** next time;
+DMG, drag **AI Usage Monitor.app** to **Applications** (replace when upgrading),
+then eject the DMG. Open **Finder > Applications > AI Usage Monitor** next time;
 optionally choose **Options > Keep in Dock**. Double-clicking the app inside the
 DMG does not install it. Read `READ-ME-FIRST.html` in the DMG before first launch.
 The app's **About project > Show application in Finder** locates the installed copy.
@@ -199,7 +199,7 @@ Closing its window keeps monitoring in the menu bar; **Exit software** stops it.
 
 `mac/trust.json` pins OpenAI's verified Team ID; the launcher also validates the
 bundle identifier, full signature and loopback listener ownership. See the
-[publisher audit](https://github.com/kefen/AI-Quota-Board/actions/runs/43805495761)
+[publisher audit](https://github.com/kefen/AI-Usage-Monitor/actions/runs/43805495761)
 and [Mac installation instructions](docs/USER-GUIDE.md#macos-experimental-installation).
 Do not bypass signature checks. Native compilation is not proof of live quota access.
 

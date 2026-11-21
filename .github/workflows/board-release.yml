@@ -1,7 +1,7 @@
-name: AI Quota Board release
+name: AI Usage Monitor release
 on:
   push:
-    branches: [main, candidate/ai-quota-board-release]
+    branches: [main, candidate/ai-usage-monitor-release]
     paths: ['.github/workflows/board-release.yml', 'versions.json', 'browser-web/manifest.json']
   workflow_dispatch:
 permissions:
@@ -24,8 +24,8 @@ jobs:
         with:
           name: board-windows
           path: |
-            dist/AI-Quota-Board-*Setup.exe
-            dist/AI-Quota-Board-source-*.zip
+            dist/AI-Usage-Monitor-*Setup.exe
+            dist/AI-Usage-Monitor-source-*.zip
           if-no-files-found: error
   mac:
     strategy:
@@ -43,7 +43,7 @@ jobs:
       - run: bash mac/Build.command ${{ matrix.arch }}
       - run: node test/mac-update-integration.mjs
       - name: Check packaged Mac application name
-        run: test -d "$(find build -type d -path '*/image/AI Quota Board.app' -print -quit)"
+        run: test -d "$(find build -type d -path '*/image/AI Usage Monitor.app' -print -quit)"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: native-screens-${{ matrix.arch }}
@@ -52,7 +52,7 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: board-mac-${{ matrix.arch }}
-          path: dist/AI-Quota-Board-*unsigned-test.dmg
+          path: dist/AI-Usage-Monitor-*unsigned-test.dmg
           if-no-files-found: error
   chrome:
     runs-on: ubuntu-latest
@@ -67,11 +67,11 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: board-chrome
-          path: dist/chrome-web-0.5.4/AI-Quota-Board-Chrome-0.5.4.zip
+          path: dist/chrome-web-0.5.4/AI-Usage-Monitor-Chrome-0.5.4.zip
           if-no-files-found: error
   publish:
     needs: [windows, mac, chrome]
-    if: github.repository == 'kefen/AI-Quota-Board' && github.ref == 'refs/heads/main'
+    if: github.repository == 'kefen/AI-Usage-Monitor' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions: {contents: write}
     steps:
@@ -88,7 +88,7 @@ jobs:
             local sums="SHA256SUMS-${tag%/*}.txt"
             sha256sum "$@" > "$sums"
             if ! gh release view "$tag" >/dev/null 2>&1; then
-              gh release create "$tag" "$@" "$sums" --target "$GITHUB_SHA" --title "AI Quota Board · $title" --notes "$notes" --draft
+              gh release create "$tag" "$@" "$sums" --target "$GITHUB_SHA" --title "AI Usage Monitor · $title" --notes "$notes" --draft
             fi
             local check
             check=$(mktemp -d)
@@ -96,6 +96,6 @@ jobs:
             for f in "$@" "$sums"; do cmp "$f" "$check/$f"; done
             gh release edit "$tag" --draft=false "$flag"
           }
-          publish 'macos/v0.5.4-alpha.4' 'macOS 0.5.4-alpha.4' '--prerelease' 'Apple Silicon: arm64; Intel: x86_64. 未公证的 Mac 预发布版。退出旧版后将 AI Quota Board.app 拖入应用程序。首次更名升级请手动安装；不删除设置目录。' AI-Quota-Board-macOS-0.5.4-alpha.4-{arm64,x86_64}-unsigned-test.dmg
-          publish 'chrome/v0.5.4' 'Chrome 0.5.4' '--latest=false' 'Standalone ChatGPT sidebar extension by KEFEN. 解压 ZIP 后在 Chrome 扩展管理页加载。非 Chrome 网上应用店发行版。' AI-Quota-Board-Chrome-0.5.4.zip
-          publish 'windows/v0.13.6' 'Windows 0.13.6' '--latest' 'Windows 10/11 x64 · by KEFEN. 下载 Setup.exe，核对 SHA-256 后安装；升级请使用原安装目录以保留设置。安装包未签名。' AI-Quota-Board-Windows-0.13.6-x64-Setup.exe AI-Quota-Board-source-windows-0.13.6-macos-0.5.4-alpha.4.zip
+          publish 'macos/v0.5.4-alpha.4' 'macOS 0.5.4-alpha.4' '--prerelease' 'Apple Silicon: arm64; Intel: x86_64. 未公证的 Mac 预发布版。退出旧版后将 AI Usage Monitor.app 拖入应用程序。首次更名升级请手动安装；不删除设置目录。' AI-Usage-Monitor-macOS-0.5.4-alpha.4-{arm64,x86_64}-unsigned-test.dmg
+          publish 'chrome/v0.5.4' 'Chrome 0.5.4' '--latest=false' 'Standalone ChatGPT sidebar extension by KEFEN. 解压 ZIP 后在 Chrome 扩展管理页加载。非 Chrome 网上应用店发行版。' AI-Usage-Monitor-Chrome-0.5.4.zip
+          publish 'windows/v0.13.6' 'Windows 0.13.6' '--latest' 'Windows 10/11 x64 · by KEFEN. 下载 Setup.exe，核对 SHA-256 后安装；升级请使用原安装目录以保留设置。安装包未签名。' AI-Usage-Monitor-Windows-0.13.6-x64-Setup.exe AI-Usage-Monitor-source-windows-0.13.6-macos-0.5.4-alpha.4.zip

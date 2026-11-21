@@ -8,7 +8,7 @@ version=$(node -p "JSON.parse(require('fs').readFileSync('versions.json')).macos
 nodeversion=$(node -p "JSON.parse(require('fs').readFileSync('dependency-pins.json')).nodeVersion")
 mkdir -p build dist
 stage=$(mktemp -d "build/mac-$arch-$version.XXXXXX")
-app="$stage/AI Quota Board.app"
+app="$stage/AI Usage Monitor.app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 /usr/bin/xcrun swiftc -O -target "$arch-apple-macosx13.5" -framework AppKit mac/Localization.swift mac/Bootstrap.swift mac/SettingsTransfer.swift mac/RuntimeProbe.swift mac/MetricPresentation.swift mac/QuotaSidebar.swift -o "$app/Contents/MacOS/QuotaSidebar"
 sed "s/@MAC_VERSION@/$version/g" mac/READ-ME-FIRST.html > "$app/Contents/Resources/READ-ME-FIRST.html"
@@ -47,11 +47,11 @@ fi
 file "$app/Contents/MacOS/QuotaSidebar" "$app/Contents/Resources/payload/runtime/node"
 image="$stage/image"
 mkdir "$image"
-ditto "$app" "$image/AI Quota Board.app"
+ditto "$app" "$image/AI Usage Monitor.app"
 cp "$app/Contents/Resources/READ-ME-FIRST.html" "$image/READ-ME-FIRST.html"
 ln -s /Applications "$image/Applications"
-dmg="dist/AI-Quota-Board-macOS-$version-$arch-unsigned-test.dmg"
-hdiutil create -size 512m -fs HFS+ -volname 'AI Quota Board' -srcfolder "$image" -ov -format UDZO "$dmg"
+dmg="dist/AI-Usage-Monitor-macOS-$version-$arch-unsigned-test.dmg"
+hdiutil create -size 512m -fs HFS+ -volname 'AI Usage Monitor' -srcfolder "$image" -ov -format UDZO "$dmg"
 hdiutil verify "$dmg"
 shasum -a 256 "$dmg"
 echo 'Local, ad-hoc signed test build only. Not notarized; no production Mac package created.'

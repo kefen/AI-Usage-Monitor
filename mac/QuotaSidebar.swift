@@ -379,7 +379,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         window = NSWindow(contentRect: NSRect(origin: .zero, size: initialSize), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
         window.contentMinSize = NSSize(width: 820, height: 520)
         window.collectionBehavior = [.fullScreenPrimary]
-        window.title = "AI Quota Board"; window.delegate = self; window.center(); window.isReleasedWhenClosed = false
+        window.title = "AI Usage Monitor"; window.delegate = self; window.center(); window.isReleasedWhenClosed = false
         applyAppearance()
         window.backgroundColor = .controlBackgroundColor
         window.contentView!.wantsLayer = true
@@ -398,7 +398,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         icon.toolTip = CqsLocale.t("Visit GitHub project"); icon.setAccessibilityLabel(CqsLocale.t("Visit GitHub project"))
         icon.widthAnchor.constraint(equalToConstant: 31).isActive = true; icon.heightAnchor.constraint(equalToConstant: 31).isActive = true
         let words = NSStackView(); words.orientation = .vertical; words.alignment = .leading; words.spacing = 4
-        let title = NSTextField(labelWithString: "AI Quota Board"); title.font = BoardType.command
+        let title = NSTextField(labelWithString: "AI Usage Monitor"); title.font = BoardType.command
         title.identifier = NSUserInterfaceItemIdentifier("brand-title")
         let version = NSTextField(labelWithString: "by KEFEN"); version.textColor = .secondaryLabelColor; version.font = BoardType.caption
         words.addArrangedSubview(title); words.addArrangedSubview(version)
@@ -521,7 +521,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             footer.widthAnchor.constraint(equalTo: container.widthAnchor), footer.heightAnchor.constraint(equalToConstant: 54)])
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let image = NSImage(contentsOf: root.appendingPathComponent("assets/tray-template.png")) { image.isTemplate = true; image.size = NSSize(width: 18, height: 18); statusItem.button?.image = image }
-        statusItem.button?.toolTip = "AI Quota Board"
+        statusItem.button?.toolTip = "AI Usage Monitor"
         let menu = NSMenu()
         for (text, action) in [(CqsLocale.t("View status"), #selector(showStatus)), (CqsLocale.t("Settings"), #selector(showSettings)), (CqsLocale.t("Sidebar items"), #selector(showDisplay)), (CqsLocale.t("Refresh data"), #selector(refresh)), (CqsLocale.t("Exit software"), #selector(stop))] {
             let item = NSMenuItem(title: text, action: action, keyEquivalent: ""); item.target = self; menu.addItem(item)
@@ -573,7 +573,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         let readOnlyVolume = path.hasPrefix("/Volumes/") && !FileManager.default.isWritableFile(atPath: Bundle.main.bundleURL.deletingLastPathComponent().path)
         guard readOnlyVolume || path.contains("/AppTranslocation/") else { return true }
         let prompt = NSAlert(); prompt.messageText = CqsLocale.t("Finish installing the app")
-        prompt.informativeText = CqsLocale.t("1. Drag AI Quota Board.app from the disk image into Applications. Replace the old app if upgrading.\n2. Eject the disk image, then open AI Quota Board from Finder > Applications.\n3. Keep the app in the Dock for next time. You do not need to open the installer again.")
+        prompt.informativeText = CqsLocale.t("1. Drag AI Usage Monitor.app from the disk image into Applications. Replace the old app if upgrading.\n2. Eject the disk image, then open AI Usage Monitor from Finder > Applications.\n3. Keep the app in the Dock for next time. You do not need to open the installer again.")
         prompt.addButton(withTitle: CqsLocale.t("Quit"))
         prompt.addButton(withTitle: CqsLocale.t("Open Applications"))
         NSApp.activate(ignoringOtherApps: true)
@@ -1400,7 +1400,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         setting("Language", languagePicker); setting("Appearance", picker); present()
     }
     @objc func backupSettings() {
-        let panel = NSSavePanel(); panel.nameFieldStringValue = "AI-Quota-Board-settings.json"
+        let panel = NSSavePanel(); panel.nameFieldStringValue = "AI-Usage-Monitor-settings.json"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do { try SettingsTransfer.exportData(runtime).write(to: url, options: .atomic) } catch { alert(error.localizedDescription) }
     }
@@ -1426,7 +1426,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         if prompt.runModal() == .alertSecondButtonReturn { do { try Data("clear".utf8).write(to: runtime.appendingPathComponent("clear-history.request"), options: .atomic) } catch { alert(error.localizedDescription) } }
     }
     @objc func exportDiagnostics() {
-        let dialog = NSSavePanel(); dialog.nameFieldStringValue = "AI-Quota-Board-diagnostics.json"
+        let dialog = NSSavePanel(); dialog.nameFieldStringValue = "AI-Usage-Monitor-diagnostics.json"
         guard dialog.runModal() == .OK, let url = dialog.url else { return }
         do {
             let code = errorText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1440,10 +1440,10 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]).write(to: url, options: .atomic)
         } catch { alert(error.localizedDescription) }
     }
-    @objc func openIssues() { NSWorkspace.shared.open(URL(string: "https://github.com/kefen/AI-Quota-Board/issues/new")!) }
+    @objc func openIssues() { NSWorkspace.shared.open(URL(string: "https://github.com/kefen/AI-Usage-Monitor/issues/new")!) }
     @objc func showAbout() {
         guard beginPage("about") else { return }; showingSettings = true; heading("About project")
-        let name = label("AI Quota Board", font: BoardType.title)
+        let name = label("AI Usage Monitor", font: BoardType.title)
         let identity = column(spacing: 3); identity.addArrangedSubview(name); identity.addArrangedSubview(label("by KEFEN", font: BoardType.caption, muted: true))
         let logo = NSButton(image: NSApp.applicationIconImage, target: self, action: #selector(openGitHub))
         logo.title = ""; logo.alternateTitle = ""; logo.isBordered = false; logo.imageScaling = .scaleProportionallyDown; logo.imagePosition = .imageOnly
@@ -1811,7 +1811,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
     }
     func alert(_ text: String) {
         if CommandLine.arguments.contains("--ui-smoke") { fputs("UI smoke alert: \(text)\n", stderr); exit(1) }
-        let a = NSAlert(); a.messageText = "AI Quota Board"; a.informativeText = text; a.runModal()
+        let a = NSAlert(); a.messageText = "AI Usage Monitor"; a.informativeText = text; a.runModal()
     }
     func windowDidMiniaturize(_ notification: Notification) { stopConnectionAnimation() }
     func windowDidDeminiaturize(_ notification: Notification) { updateConnectionAnimation() }
