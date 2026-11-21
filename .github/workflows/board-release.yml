@@ -154,11 +154,11 @@ jobs:
             gh release edit "$tag" --draft=false "$flag"
           }
           if [[ "$BUILD_MAC" == true ]]; then
-            publish "macos/v$MAC" "macOS $MAC" '--prerelease' '更新签名已更换。旧版请退出应用，从本页按芯片下载 DMG，将 AI Usage Monitor 拖入应用程序。无需清理设置。未公证预发布版。' AI-Usage-Monitor-macOS-"$MAC"-{arm64,x86_64}-unsigned-test.dmg
+            publish "macos/v$MAC" "macOS $MAC" '--prerelease' 'Choose arm64 for Apple Silicon or x86_64 for Intel. Quit the old app and drag AI Usage Monitor into Applications. This prerelease is not notarized.' AI-Usage-Monitor-macOS-"$MAC"-{arm64,x86_64}-unsigned-test.dmg
           fi
           if [[ "$BUILD_WEB" == true ]]; then
-            publish "chrome/v$WEB" "Chrome $WEB" '--latest=false' '解压 ZIP 后在 Chrome 扩展管理页加载。非商店版。' "AI-Usage-Monitor-Chrome-$WEB.zip"
+            publish "chrome/v$WEB" "Chrome $WEB" '--latest=false' 'Extract the ZIP and choose Load unpacked in chrome://extensions. Not a Chrome Web Store release.' "AI-Usage-Monitor-Chrome-$WEB.zip"
           fi
           if [[ "$BUILD_WIN" == true ]]; then
-            publish "windows/v$WIN" "Windows $WIN" '--latest' '更新签名已更换。旧版请从本页下载 Setup.exe 安装一次，选择原安装目录。Windows 10/11 x64；安装程序未做 Authenticode 签名。' "AI-Usage-Monitor-Windows-$WIN-x64-Setup.exe" "AI-Usage-Monitor-source-windows-$WIN-macos-$MAC.zip"
+            publish "windows/v$WIN" "Windows $WIN" '--latest' 'Windows 10/11 x64. Verify the SHA-256 and run Setup.exe in your existing installation folder. The installer is unsigned.' "AI-Usage-Monitor-Windows-$WIN-x64-Setup.exe" "AI-Usage-Monitor-source-windows-$WIN-macos-$MAC.zip"
           fi

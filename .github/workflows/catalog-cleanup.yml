@@ -1,0 +1,39 @@
+name: Normalize public release catalog
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/catalog-cleanup.yml']
+permissions:
+  contents: write
+jobs:
+  catalog:
+    if: github.repository == 'kefen/AI-Usage-Monitor'
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="repos/$GH_REPO/releases"
+          obsolete=(451175794 451175883 451250515 451175929 449542819 448515375 448280746 448157079 448280841 448157154 447146215 447014642 447146382 447014794)
+          check_old() {
+            gh api "$repo/$1" | jq -e '.draft == false and (.assets|length)==0 and (.name|startswith("AI Usage Monitor")|not) and (.tag_name|test("^(windows|chrome|macos)/v[0-9]"))' >/dev/null
+          }
+          for id in "${obsolete[@]}"; do check_old "$id"; done
+          notes() {
+            local id=$1 tag=$2 body=$3
+            gh api "$repo/$id" | jq -e --arg tag "$tag" '.tag_name==$tag and (.name|startswith("AI Usage Monitor")) and any(.assets[]; .name|startswith("AI-Usage-Monitor-"))' >/dev/null
+            gh api --silent --method PATCH "$repo/$id" -f body="$body"
+          }
+          notes 453556521 windows/v0.13.8 'Desktop updates now use a new signing key. On Windows 10/11 x64, download Setup.exe and install once in your existing folder. The installer is not Authenticode-signed. Check the release SHA-256 before installing.'
+          notes 453520293 windows/v0.13.7 'Windows 10/11 x64. Plan and renewal details are now grouped in the overview and adapt to narrow windows. The installer is unsigned. To keep your settings, use your existing installation folder. For the new signed update channel, install Windows 0.13.8 or later.'
+          notes 453507434 windows/v0.13.6 'Windows 10/11 x64. Verify the release SHA-256 before running the unsigned installer. Choose your existing installation folder when upgrading. For the new signed update channel, install Windows 0.13.8 or later.'
+          notes 453507412 chrome/v0.5.4 'Standalone ChatGPT sidebar extension by KEFEN. Extract the ZIP, open chrome://extensions, enable Developer mode and choose Load unpacked. This is not a Chrome Web Store release.'
+          notes 453556484 macos/v0.5.4-alpha.5 'Desktop updates now use a new signing key. Quit the previous app, download the arm64 DMG for Apple Silicon or the x86_64 DMG for Intel, and drag AI Usage Monitor into Applications. Keep your settings directory. This prerelease is not notarized.'
+          notes 453507376 macos/v0.5.4-alpha.4 'Choose arm64 for Apple Silicon or x86_64 for Intel. Quit the previous app and drag AI Usage Monitor into Applications. Keep your settings directory. This prerelease is not notarized. For the new signed update channel, install macOS 0.5.4-alpha.5 or later.'
+          for id in "${obsolete[@]}"; do
+            check_old "$id"
+            gh api --silent --method DELETE "$repo/$id"
+          done

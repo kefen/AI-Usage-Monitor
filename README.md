@@ -1,41 +1,39 @@
 # AI Usage Monitor
 
-by KEFEN
+by KEFEN · [简体中文](README.zh-CN.md)
 
-在 Codex 侧边栏看剩余额度和 Token 消耗，不用为了查一个数字打断当前工作。Windows 和 Mac 可查看每日走势、比较本周与本月用量，并记录自己的续费日。Chrome 版独立运行，只显示 ChatGPT 网页实际提供的用量，不读取桌面数据。
+See how much Codex quota you have left and how your token usage changes over time. On Windows and macOS, AI Usage Monitor puts quota readings in the Codex sidebar and usage history in a local dashboard. The standalone Chrome extension shows the usage figures ChatGPT makes available on the web. It doesn't need the desktop app.
 
-An unofficial quota and token usage companion for Codex desktop, with a separate Chrome extension for ChatGPT. Not affiliated with OpenAI. Usage is not an API invoice.
+This is an unofficial companion, not an OpenAI product. Token usage is not an API bill.
 
-## 下载 Downloads
+## Downloads
 
-| 系统 | 安装包 | 安装方式 |
+| Platform | Download | Installation |
 | --- | --- | --- |
-| Windows 10 / 11 x64 | [Windows 0.13.8](https://github.com/kefen/AI-Usage-Monitor/releases/tag/windows/v0.13.8) | 下载未签名的 Setup.exe；升级选择原安装目录。 |
-| Mac · Apple 芯片 | [Apple Silicon DMG](https://github.com/kefen/AI-Usage-Monitor/releases/download/macos%2Fv0.5.4-alpha.5/AI-Usage-Monitor-macOS-0.5.4-alpha.5-arm64-unsigned-test.dmg) | M 系列芯片；0.5.4-alpha.5，未公证预发布版。 |
-| Mac · Intel | [Intel DMG](https://github.com/kefen/AI-Usage-Monitor/releases/download/macos%2Fv0.5.4-alpha.5/AI-Usage-Monitor-macOS-0.5.4-alpha.5-x86_64-unsigned-test.dmg) | Intel 处理器；同一预发布版本。 |
-| Chrome | [Chrome 0.5.4](https://github.com/kefen/AI-Usage-Monitor/releases/tag/chrome/v0.5.4) | 解压 ZIP，在扩展管理页选择“加载已解压的扩展程序”；不是商店版。 |
+| Windows 10/11 (x64) | [Windows 0.13.8 installer](https://github.com/kefen/AI-Usage-Monitor/releases/download/windows%2Fv0.13.8/AI-Usage-Monitor-Windows-0.13.8-x64-Setup.exe) | Run Setup. When upgrading, choose your existing installation folder. The installer is unsigned. |
+| macOS (Apple Silicon) | [Apple Silicon DMG, 0.5.4-alpha.5](https://github.com/kefen/AI-Usage-Monitor/releases/download/macos%2Fv0.5.4-alpha.5/AI-Usage-Monitor-macOS-0.5.4-alpha.5-arm64-unsigned-test.dmg) | For M-series Macs. Quit the old app and drag AI Usage Monitor into Applications. Not notarized. |
+| macOS (Intel) | [Intel DMG, 0.5.4-alpha.5](https://github.com/kefen/AI-Usage-Monitor/releases/download/macos%2Fv0.5.4-alpha.5/AI-Usage-Monitor-macOS-0.5.4-alpha.5-x86_64-unsigned-test.dmg) | For Intel Macs. Same installation steps and notarization status. |
+| Chrome | [Chrome 0.5.4 ZIP](https://github.com/kefen/AI-Usage-Monitor/releases/download/chrome%2Fv0.5.4/AI-Usage-Monitor-Chrome-0.5.4.zip) | Extract the ZIP and use **Load unpacked** in `chrome://extensions`. Not distributed through the Chrome Web Store. |
 
-[安装与使用指南](docs/USER-GUIDE.md) · [安全说明](SECURITY.md) · [MIT License](LICENSE)
+**Upgrading from an older desktop build?** Install Windows 0.13.8 or macOS 0.5.4-alpha.5 manually once. Older builds cannot discover this signing-key migration in the app. New builds check a separately signed update feed. Chrome is unaffected.
 
-从旧名称升级，请从上表手动下载一次。Windows 选择原安装目录；Mac 先退出旧版，再将新应用拖入“应用程序”；Chrome 在原扩展目录替换文件并重新加载。
+[User guide](docs/USER-GUIDE.md) · [Security and privacy](SECURITY.md) · [MIT license](LICENSE)
 
-Windows 0.13.8 和 macOS 0.5.4-alpha.5 起使用新的应用内更新签名。旧版不会提示这次迁移，请手动安装一次。后续更新仍须校验签名和安装包 SHA-256；这不等于 Windows 安装程序签名或 Apple 公证。Chrome 不受影响。
+## Screenshots
 
-## 界面 Screenshots
+English interfaces with sample data, not live account readings.
 
-以下为运行界面的示例数据，不代表真实账户额度。
+**macOS: Usage overview.** Compare daily or cumulative tokens with your remaining five-hour and weekly allowances.
 
-**Windows · 用量概览**：左侧可切换每日与累计消耗，右侧同时显示 5 小时和本周剩余额度。
+![English macOS dashboard with a daily token chart and remaining quota](docs/screenshots/macos-overview-en.png)
 
-![Windows 用量概览](docs/screenshots/board-windows.png)
+**Windows: Plan and dates.** Record a plan and renewal date separately from the quota reset date.
 
-**macOS · 原生操作面板**：同一窗口查看趋势、套餐和设置，连接操作位于右下角。截图来自 Apple 芯片原生构建。
+![English Windows subscription form with a plan selector and renewal date](docs/screenshots/windows-plan-en.png)
 
-![macOS 原生面板](docs/screenshots/board-mac.png)
+**Chrome: ChatGPT sidebar.** Monthly tokens appear only when the page explicitly supplies the total.
 
-**Chrome · 网页用量**：只在网页明确提供本月总量时显示月度 Token。
-
-![Chrome 网页用量示例](docs/screenshots/board-chrome.png)
+![English Chrome sidebar showing weekly quota, credits and monthly tokens](docs/screenshots/chrome-usage-en.png)
 
 ## Before Downloading
 
@@ -58,7 +56,6 @@ Unpacked Chrome extensions can check and link to a newer release but must be
 downloaded, unpacked and reloaded in chrome://extensions; they cannot self-install.
 Existing older installations must be upgraded once to gain update support.
 
-在“关于项目”点击“检查更新”；仅发现已验证的新版时，语言选择旁显示更新图标。启动时及运行中每六小时检查，并非实时推送。已是最新版与网络失败会分别提示。桌面端可后台下载，确认后重启本工具安装，保留设置、不关闭 Codex。浏览器手动加载版需下载解压后重新加载。旧版 Mac 更新器失败时，请按安装指南手动替换一次应用。
 
 **Windows:** this unsigned installer may show “Windows protected your PC” and
 “Unknown publisher”. Verify the repository download and release SHA-256 first.
@@ -73,8 +70,6 @@ If blocked, choose **Done**, not Move to Trash. Go to
 The app and bundled Node runtime may need separate approval. Approve only verified
 downloads; do not disable Gatekeeper.
 
-Windows：核对来源及校验值后，如系统允许，可选择“更多信息 → 仍要运行”，不要关闭防护。
-Mac：被拦截时选择“完成”，不要移到废纸篓；到“系统设置 → 隐私与安全性 → 仍要打开”，再次确认。应用和 Node 可能需分别授权。
 
 ### Windows Compatibility
 
@@ -151,7 +146,6 @@ externally modified files are retained.
 
 The extension observes changes already rendered by ChatGPT; it does not periodically refresh the site or hit a usage API. A daily public GitHub version check shows a toolbar badge and a link when a newer build exists. GitHub ZIPs must be replaced and reloaded manually.
 
-中文版：无需桌面助手。刷新 ChatGPT 后展开左栏；底部卡片跟随网页可见读数变化。“读取完整用量”可带回同账号的确认读数。版本检测不上传用量。
 
 ## Security And Privacy
 
@@ -191,7 +185,6 @@ macOS runners. The user confirmed live connection on Apple Silicon; Intel
 real-account acceptance remains pending. The packages are ad-hoc signed, not
 Developer ID signed or notarized.
 
-**首次更名升级：** 退出旧版 Codex Quota Sidebar.app 或 AI Quota Board.app，手动安装并打开 AI Usage Monitor.app。确认设置无误后只移除旧 .app，不删除应用支持目录；不要同时运行两份。
 
 **Install once, launch normally:** quit the previous companion, open the correct
 DMG, drag **AI Usage Monitor.app** to **Applications** (replace when upgrading),
