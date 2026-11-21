@@ -810,7 +810,8 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
             checkLabels(charts)
         }
         if page == "subscription" {
-            require(plan.bounds.width > 200 && plan.bounds.width <= body.bounds.width, "Plan popup must fit available width")
+            let planColumn = plan.superview!.convert(plan.alignmentRect(forFrame: plan.frame), to: body)
+            require(planColumn.width > 200 && planColumn.minX >= -1 && planColumn.maxX <= body.bounds.width + 1, "Plan popup must fit available width: column=\(planColumn), body=\(body.bounds)")
             for control in [plan, tier, mode] { require(abs(control.bounds.height - 36) < 1, "Plan/date popups must be 36px high") }
             for control in [purchase, next] { require(abs(control.bounds.height - 36) < 1 && control.bounds.width >= 260, "Native date pickers must fit adaptive form tracks") }
             if body.bounds.width >= 640 {
