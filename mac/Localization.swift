@@ -1,11 +1,14 @@
 import AppKit
 enum CqsLocale {
-    static let repository = URL(string: "https://github.com/kefen/codex-quota-sidebar")!
-    static var language: String = {
-        let saved = UserDefaults.standard.string(forKey: "cqs-language") ?? Locale.preferredLanguages.first ?? "en"
-        if saved.hasPrefix("zh") { return saved.contains("Hant") || saved.contains("TW") || saved.contains("HK") ? "zh-TW" : "zh-CN" }
+    static let repository = URL(string: "https://github.com/kefen/AI-Quota-Board")!
+    static let modes = ["system","en","zh-CN","zh-TW"]
+    static var mode: String { UserDefaults.standard.string(forKey: "cqs-language") ?? "system" }
+    static func resolve(_ mode: String) -> String {
+        let saved = mode == "system" ? (Locale.preferredLanguages.first ?? "en") : mode
+        if saved.hasPrefix("zh") { return saved.contains("Hant") || saved.contains("TW") || saved.contains("HK") || saved.contains("MO") ? "zh-TW" : "zh-CN" }
         return "en"
-    }()
+    }
+    static var language = resolve(mode)
     static let catalog: [String:[String]] = {
         let url = Bundle.main.url(forResource: "strings", withExtension: "json") ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/CodexSidebarMeter/ui/strings.json")
         let object = (try? Data(contentsOf: url)).flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: [String]] } ?? [:]
@@ -26,7 +29,7 @@ enum CqsLocale {
     static func apply(_ view: NSView) {
         if let field = view as? NSTextField, !field.isEditable { field.stringValue = t(field.stringValue) }
         if let popup = view as? NSPopUpButton { if popup.identifier?.rawValue != "language" { for item in popup.itemArray { item.title = t(item.title) } } }
-        else if let button = view as? NSButton, button.identifier?.rawValue != "update-notice" { button.title = t(button.title) }
+        else if let button = view as? NSButton, button.imagePosition != .imageOnly { button.title = t(button.title) }
         for child in view.subviews { apply(child) }
     }
 }

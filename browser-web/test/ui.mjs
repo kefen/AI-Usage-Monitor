@@ -12,7 +12,7 @@ async function setup(page,language){
  await page.goto('https://chatgpt.com/');
  await page.evaluate(({language,icon})=>{
    globalThis.savedPrefs=[];
-   globalThis.chrome={runtime:{id:'test-extension',getURL:()=>icon,getManifest:()=>({version:'0.5.3'}),onMessage:{addListener(){}}},storage:{local:{get:async()=>({cqsWebPreferences:{language}}),set:async obj=>{savedPrefs.push(obj);}}}};
+   globalThis.chrome={runtime:{id:'test-extension',getURL:()=>icon,getManifest:()=>({version:'0.5.4'}),onMessage:{addListener(){}}},storage:{local:{get:async()=>({cqsWebPreferences:{language}}),set:async obj=>{savedPrefs.push(obj);}}}};
    document.getElementById('usage-trigger').addEventListener('click',()=>{
     const trigger=document.getElementById('usage-trigger'),open=trigger.getAttribute('aria-expanded')==='true';trigger.setAttribute('aria-expanded',String(!open));
     document.getElementById('portal').innerHTML=open?'':'<div id="usage-menu" role="menu" aria-labelledby="usage-trigger"><div>Usage source: Your Pro plan</div><div role="menuitem">Weekly limit 30% left</div><div><div>额度</div><div>额度：<span>163.9</span></div></div></div>';
@@ -37,6 +37,13 @@ try{
   assert.equal(await host.locator('details').evaluate(el=>el.scrollHeight>el.clientHeight+1),false,'default overview needs a scrollbar');
   const buttons=host.locator('.tools button');await buttons.last().click();
   assert.equal(await host.locator('input[type=checkbox]:disabled').count(),3);
+  const theme=host.locator('.language select').last(),lang=host.locator('.language select').first();
+  await theme.selectOption('dark');assert.equal(await host.getAttribute('data-appearance'),'dark');
+  await lang.selectOption('system');assert.equal(await page.evaluate(()=>savedPrefs.at(-1).cqsWebPreferences.language),'system');
+  if(language==='zh-CN'&&width===360)await page.screenshot({path:new URL('../../verification/browser-web/preferences-dark-360.png',import.meta.url).pathname.replace(/^\/([A-Za-z]:)/,'$1')});
+  await theme.selectOption('system');
+  const bulk=host.locator('form button.soft,section button.soft').first();
+  await bulk.click();assert.equal(await host.locator('input:checked').count(),0);await bulk.click();
   const week=host.locator('input[data-field=week]');await week.uncheck();await host.locator('section:not([hidden]) .tools button').click();
   assert.equal(await host.locator('[data-metric=week]').count(),0,'display setting did not apply');
   assert.equal(await page.evaluate(()=>savedPrefs.at(-1).cqsWebPreferences.choices.week),false);

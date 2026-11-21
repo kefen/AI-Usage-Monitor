@@ -9,18 +9,68 @@ internal static class MeterTheme {
     internal static void Saved(Button button){
         button.Text=Locale.T("Saved successfully");button.BackColor=Surface;button.ForeColor=Blue;button.FlatAppearance.BorderColor=Blue;button.Enabled=false;
         var timer=new Timer{Interval=1400};
-        timer.Tick+=(s,e)=>{timer.Stop();timer.Dispose();if(button.IsDisposed)return;button.Text=Locale.T("Save");button.BackColor=Blue;button.ForeColor=Color.White;button.Enabled=true;};
+        timer.Tick+=(s,e)=>{timer.Stop();timer.Dispose();if(button.IsDisposed)return;button.Text=Locale.T("Save");button.BackColor=SoftFill;button.ForeColor=SoftInk;button.Enabled=true;};
         button.Disposed+=(s,e)=>{timer.Stop();timer.Dispose();};timer.Start();
     }
-    internal static readonly Color Ink=SystemInformation.HighContrast?SystemColors.WindowText:Color.FromArgb(37,40,44);
-    internal static readonly Color Muted=SystemInformation.HighContrast?SystemColors.WindowText:Color.FromArgb(99,109,122);
-    internal static readonly Color Surface=SystemInformation.HighContrast?SystemColors.Window:Color.White;
-    internal static readonly Color Line=SystemInformation.HighContrast?SystemColors.WindowText:Color.FromArgb(224,227,231);
-    internal static readonly Color Green=SystemInformation.HighContrast?SystemColors.Highlight:Color.FromArgb(36,91,216);
-    internal static readonly Color Blue=Green;
-    internal static readonly Color Amber=SystemInformation.HighContrast?SystemColors.WindowText:Color.FromArgb(141,86,16);
+    internal static int Mode=ReadMode();
+    static int ReadMode(){try{int m=Convert.ToInt32(Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Software\KEFEN\AI Quota Board","Appearance",0));return m>=0&&m<=2?m:0;}catch{return 0;}}
+    static bool IsDark(){if(SystemInformation.HighContrast)return false;if(Mode!=0)return Mode==2;try{return Convert.ToInt32(Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize","AppsUseLightTheme",1) ?? 1)==0;}catch{return false;}}
+    static bool dark=IsDark();
+    static readonly Color[,] palette={{Color.FromArgb(141,86,16),Color.FromArgb(246,190,115)},
+        {Color.FromArgb(165,188,227),Color.FromArgb(104,126,164)},
+        {Color.FromArgb(203,208,215),Color.FromArgb(91,104,122)},
+        {Color.FromArgb(209,224,246),Color.FromArgb(68,84,110)},
+        {Color.FromArgb(219,232,255),Color.FromArgb(64,84,120)},
+        {Color.FromArgb(220,230,246),Color.FromArgb(62,74,91)},
+        {Color.FromArgb(224,227,231),Color.FromArgb(67,77,93)},
+        {Color.FromArgb(228,237,253),Color.FromArgb(44,64,99)},
+        {Color.FromArgb(232,241,255),Color.FromArgb(48,67,97)},
+        {Color.FromArgb(234,241,255),Color.FromArgb(44,59,86)},
+        {Color.FromArgb(237,241,247),Color.FromArgb(51,60,72)},
+        {Color.FromArgb(237,244,255),Color.FromArgb(43,60,84)},
+        {Color.FromArgb(240,245,252),Color.FromArgb(60,70,85)},
+        {Color.FromArgb(243,246,251),Color.FromArgb(35,41,51)},
+        {Color.FromArgb(243,247,254),Color.FromArgb(36,44,57)},
+        {Color.FromArgb(244,247,252),Color.FromArgb(48,57,70)},
+        {Color.FromArgb(248,250,253),Color.FromArgb(32,38,46)},
+        {Color.FromArgb(249,251,254),Color.FromArgb(34,40,50)},
+        {Color.FromArgb(25,112,90),Color.FromArgb(97,200,166)},
+        {Color.FromArgb(251,253,255),Color.FromArgb(29,35,44)},
+        {Color.FromArgb(255,249,238),Color.FromArgb(67,52,35)},
+        {Color.FromArgb(27,76,174),Color.FromArgb(153,188,249)},
+        {Color.FromArgb(30,85,192),Color.FromArgb(59,106,207)},
+        {Color.FromArgb(33,77,182),Color.FromArgb(134,161,244)},
+        {Color.FromArgb(36,91,216),Color.FromArgb(92,146,248)},
+        {Color.FromArgb(37,40,44),Color.FromArgb(234,238,244)},
+        {Color.FromArgb(99,109,122),Color.FromArgb(173,184,199)},
+        {Color.FromArgb(255,255,255),Color.FromArgb(26,31,38)},
+        {Color.FromArgb(38,88,201),Color.FromArgb(45,94,187)},
+        {Color.FromArgb(230,234,240),Color.FromArgb(56,66,80)}};
+    internal static Color Tint(Color c){if(!dark)return c;return Translate(c,true);}
+    static Color Translate(Color c,bool toDark){for(int i=0;i<palette.GetLength(0);i++)if(c.ToArgb()==palette[i,toDark?0:1].ToArgb())return palette[i,toDark?1:0];return c;}
+    internal static Color ActionFill{get{return SystemInformation.HighContrast?SystemColors.Highlight:Tint(Color.FromArgb(38,88,201));}}
+    internal static Color SoftFill{get{return SystemInformation.HighContrast?SystemColors.Highlight:Tint(Color.FromArgb(228,237,253));}}
+    internal static Color SoftInk{get{return SystemInformation.HighContrast?SystemColors.HighlightText:Tint(Color.FromArgb(27,76,174));}}
+    internal static Color Secondary{get{return Tint(Color.FromArgb(230,234,240));}}
+    [System.Runtime.InteropServices.DllImport("dwmapi.dll")]static extern int DwmSetWindowAttribute(IntPtr hwnd,int attribute,ref int value,int size);
+    static void Frame(Form f){if(f.IsHandleCreated){int v=dark?1:0;DwmSetWindowAttribute(f.Handle,20,ref v,4);}}
+    internal static void SetMode(int mode,bool persist=true){try{if(persist)Microsoft.Win32.Registry.SetValue(@"HKEY_CURRENT_USER\Software\KEFEN\AI Quota Board","Appearance",mode);}catch(Exception ex){Error(ex.Message);return;}Mode=mode;RefreshMode();}
+    static void RefreshMode(){bool next=IsDark();if(next==dark)return;dark=next;foreach(Form f in Application.OpenForms){ApplyColors(f);Frame(f);f.Invalidate(true);}}
+    static void ApplyColors(Control c){var bg=Translate(c.BackColor,dark);if(bg.ToArgb()!=c.BackColor.ToArgb())c.BackColor=bg;
+        if(c.ForeColor.ToArgb()!=Color.White.ToArgb()){var fg=c.ForeColor.ToArgb()==Color.Black.ToArgb()?Ink:Translate(c.ForeColor,dark);if(fg.ToArgb()!=c.ForeColor.ToArgb())c.ForeColor=fg;}
+        var b=c as Button;if(b!=null){b.FlatAppearance.BorderColor=Translate(b.FlatAppearance.BorderColor,dark);b.FlatAppearance.MouseOverBackColor=Translate(b.FlatAppearance.MouseOverBackColor,dark);}
+        foreach(Control child in c.Controls)ApplyColors(child);
+    }
+    static void WatchInputs(Control c){if(c is ComboBox||c is TextBoxBase||c is ListBox){c.BackColor=Surface;c.ForeColor=Ink;}c.ControlAdded+=(s,e)=>WatchInputs(e.Control);foreach(Control child in c.Controls)WatchInputs(child);}
+    internal static Color Ink{get{return SystemInformation.HighContrast?SystemColors.WindowText:MeterTheme.Tint(Color.FromArgb(37,40,44));}}
+    internal static Color Muted{get{return SystemInformation.HighContrast?SystemColors.WindowText:MeterTheme.Tint(Color.FromArgb(99,109,122));}}
+    internal static Color Surface{get{return SystemInformation.HighContrast?SystemColors.Window:Tint(Color.White);}}
+    internal static Color Line{get{return SystemInformation.HighContrast?SystemColors.WindowText:MeterTheme.Tint(Color.FromArgb(224,227,231));}}
+    internal static Color Green{get{return SystemInformation.HighContrast?SystemColors.Highlight:MeterTheme.Tint(Color.FromArgb(36,91,216));}}
+    internal static Color Blue{get{return Green;}}
+    internal static Color Amber{get{return SystemInformation.HighContrast?SystemColors.WindowText:MeterTheme.Tint(Color.FromArgb(141,86,16));}}
     internal static Font Font(float size){return new Font("Segoe UI",size,FontStyle.Regular);}
-    internal static void SizeCombo(ComboBox box){box.DrawMode=DrawMode.OwnerDrawFixed;box.ItemHeight=28;box.DrawItem+=(s,e)=>{e.DrawBackground();if(e.Index>=0)TextRenderer.DrawText(e.Graphics,Convert.ToString(box.Items[e.Index]),box.Font,new Rectangle(e.Bounds.X+9,e.Bounds.Y,e.Bounds.Width-9,e.Bounds.Height),box.ForeColor,TextFormatFlags.VerticalCenter|TextFormatFlags.Left);e.DrawFocusRectangle();};}
+    internal static void SizeCombo(ComboBox box){box.DrawMode=DrawMode.OwnerDrawFixed;box.ItemHeight=28;box.DrawItem+=(s,e)=>{bool highlighted=(e.State&DrawItemState.Selected)!=0&&(e.State&DrawItemState.ComboBoxEdit)==0;using(var brush=new SolidBrush(highlighted?SystemColors.Highlight:Surface))e.Graphics.FillRectangle(brush,e.Bounds);if(e.Index>=0)TextRenderer.DrawText(e.Graphics,Convert.ToString(box.Items[e.Index]),box.Font,new Rectangle(e.Bounds.X+9,e.Bounds.Y,e.Bounds.Width-9,e.Bounds.Height),highlighted?SystemColors.HighlightText:Ink,TextFormatFlags.VerticalCenter|TextFormatFlags.Left);e.DrawFocusRectangle();};}
     internal static string Version {
         get {try{string path=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"versions.json");if(!File.Exists(path))path=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"..","versions.json");var data=new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<System.Collections.Generic.Dictionary<string,object>>(File.ReadAllText(path));return Convert.ToString(data["windows"]);}catch{var v=typeof(MeterTheme).Assembly.GetName().Version;return v.Major==0&&v.Minor==0?"":v.ToString(3);}}
     }
@@ -38,6 +88,9 @@ internal static class MeterTheme {
     internal static void Style(Form form,int width,int height){
         // Defer autoscaling until the control tree exists, not the empty form.
         form.SuspendLayout();form.Load+=(s,e)=>form.ResumeLayout(true);
+        WatchInputs(form);form.HandleCreated+=(s,e)=>Frame(form);
+        Microsoft.Win32.UserPreferenceChangedEventHandler changed=(s,e)=>{if(Mode==0&&form.IsHandleCreated&&!form.IsDisposed)try{form.BeginInvoke((Action)RefreshMode);}catch(InvalidOperationException){}};
+        Microsoft.Win32.SystemEvents.UserPreferenceChanged+=changed;form.Disposed+=(s,e)=>Microsoft.Win32.SystemEvents.UserPreferenceChanged-=changed;
         form.Font=Font(10);form.ForeColor=Ink;form.BackColor=Surface;form.Icon=AppIcon();
         form.AutoScaleMode=AutoScaleMode.Dpi;form.AutoScaleDimensions=new SizeF(96,96);form.ClientSize=new Size(width,height);
         form.FormBorderStyle=FormBorderStyle.Sizable;form.MaximizeBox=true;form.MinimumSize=new Size(Math.Min(width,1040),Math.Min(height,640));form.StartPosition=FormStartPosition.CenterScreen;
@@ -47,31 +100,34 @@ internal static class MeterTheme {
     internal static Label PageTitle(string text){return new PageTitleLabel{Text=text,Font=Font(16.5f),ForeColor=Ink,AutoSize=false,TextAlign=ContentAlignment.TopLeft,Dock=DockStyle.Fill,UseMnemonic=false};}
     internal static Panel Header(string section,string version){
         var panel=new Panel{Dock=DockStyle.Top,Height=82,Padding=new Padding(26,22,26,20),BackColor=Surface};
-        var icon=new PictureBox{Dock=DockStyle.Left,Width=40,SizeMode=PictureBoxSizeMode.Zoom};
-        try{using(var source=Image.FromFile(Asset("cqs-128.png")))icon.Image=new Bitmap(source);}catch{using(var stream=System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("brand.png")){if(stream!=null)using(var source=Image.FromStream(stream))icon.Image=new Bitmap(source);}}
+        var icon=new Button{Name="brandLogo",Dock=DockStyle.Left,Width=40,FlatStyle=FlatStyle.Flat,TabStop=false,BackgroundImageLayout=ImageLayout.Zoom,UseVisualStyleBackColor=false};
+        icon.FlatAppearance.BorderSize=0;
+        try{using(var source=Image.FromFile(Asset("cqs-128.png")))icon.BackgroundImage=new Bitmap(source);}catch{using(var stream=System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("brand.png")){if(stream!=null)using(var source=Image.FromStream(stream))icon.BackgroundImage=new Bitmap(source);}}
         var words=new Panel{Dock=DockStyle.Fill,Padding=new Padding(16,0,0,0)};
-        var title=Label("Codex Quota Sidebar",12.75f,Ink);title.Dock=DockStyle.Top;title.Height=24;
+        var title=Label("AI Quota Board",12.75f,Ink);title.Name="brandTitle";title.Dock=DockStyle.Top;title.Height=24;
         var caption=Label("by KEFEN",8.5f,Muted);caption.Name="brandCaption";caption.Dock=DockStyle.Top;caption.Height=18;
         words.Controls.Add(caption);words.Controls.Add(title);panel.Controls.Add(words);panel.Controls.Add(icon);
-        var languages=new Panel{Name="languageControl",Dock=DockStyle.Right,Width=148,Padding=new Padding(27,5,6,0)};
-        var language=Locale.Picker();language.Dock=DockStyle.Fill;language.Font=Font(9.75f);languages.Controls.Add(language);
+        var languages=new Panel{Name="languageControl",Dock=DockStyle.Right,Width=105};
+        var language=Locale.Picker();language.Font=Font(9.75f);language.AccessibleName=Locale.T("Language");languages.Controls.Add(language);
+        languages.Layout+=(s,e)=>language.SetBounds(0,Math.Max(0,(languages.ClientSize.Height-language.Height)/2),languages.ClientSize.Width,language.Height);
         Action fitLanguage=()=>{if(!language.IsHandleCreated)return;using(var g=language.CreateGraphics()){
             var flags=TextFormatFlags.NoPadding|TextFormatFlags.NoPrefix|TextFormatFlags.SingleLine;int extra=SystemInformation.VerticalScrollBarWidth+(int)(12*g.DpiX/96f);
             int text=TextRenderer.MeasureText(g,language.Text,language.Font,new Size(Int32.MaxValue,Int32.MaxValue),flags).Width;
-            languages.Width=text+extra+languages.Padding.Horizontal;
+            language.AccessibleName=Locale.T("Language");
+            languages.Width=text+extra;
             int widest=0;foreach(object item in language.Items)widest=Math.Max(widest,TextRenderer.MeasureText(g,Convert.ToString(item),language.Font,new Size(Int32.MaxValue,Int32.MaxValue),flags).Width);language.DropDownWidth=widest+extra;
         }};
         language.SelectedIndexChanged+=(s,e)=>fitLanguage();language.FontChanged+=(s,e)=>fitLanguage();
         panel.HandleCreated+=(s,e)=>panel.BeginInvoke((Action)(()=>{if(!panel.IsDisposed)fitLanguage();}));
-        languages.Paint+=(s,e)=>{using(var pen=new Pen(Color.FromArgb(203,208,215)))e.Graphics.DrawRectangle(pen,0,0,languages.Width-1,35);using(var f=new Font("Segoe MDL2 Assets",11))using(var brush=new SolidBrush(Muted))e.Graphics.DrawString("\uE8C1",f,brush,7,10);};
         panel.Controls.Add(languages);words.BringToFront();
         panel.Paint+=(s,e)=>{using(var pen=new Pen(Line))e.Graphics.DrawLine(pen,0,panel.Height-1,panel.Width,panel.Height-1);};
-        panel.Disposed+=(s,e)=>{if(icon.Image!=null)icon.Image.Dispose();};return panel;
+        panel.Disposed+=(s,e)=>{if(icon.BackgroundImage!=null)icon.BackgroundImage.Dispose();};return panel;
     }
     internal static Button Button(string name,string label,bool primary){
-        var b=new V3Button{Name=name,Text=label,Width=110,Height=38,FlatStyle=FlatStyle.Flat,Font=Font(9.75f),Margin=new Padding(10,0,0,0),Cursor=Cursors.Hand,UseVisualStyleBackColor=false,BackColor=primary?Green:Surface,ForeColor=primary?Color.White:Ink};
-        b.FlatAppearance.BorderColor=primary?Green:Color.FromArgb(203,208,215);b.FlatAppearance.BorderSize=1;
-        b.FlatAppearance.MouseOverBackColor=primary?Color.FromArgb(30,85,192):Color.FromArgb(240,245,252);
+        bool soft=name=="selectAll"||name=="detectPlan"||name=="save"||name=="reconnect"||name=="Reconnect";if(soft)primary=false;
+        var b=new V3Button{Name=name,Text=label,Width=110,Height=38,FlatStyle=FlatStyle.Flat,Font=Font(9.75f),Margin=new Padding(10,0,0,0),Cursor=Cursors.Hand,UseVisualStyleBackColor=false,BackColor=primary?ActionFill:soft?SoftFill:Secondary,ForeColor=primary?Color.White:soft?SoftInk:Ink};
+        b.FlatAppearance.BorderColor=primary?ActionFill:soft?Tint(Color.FromArgb(209,224,246)):MeterTheme.Tint(Color.FromArgb(203,208,215));b.FlatAppearance.BorderSize=1;
+        b.FlatAppearance.MouseOverBackColor=primary?MeterTheme.Tint(Color.FromArgb(30,85,192)):soft?Tint(Color.FromArgb(219,232,255)):MeterTheme.Tint(Color.FromArgb(240,245,252));
         if(name=="save"||name=="saveDisplay")using(var g=Graphics.FromHwnd(IntPtr.Zero)){
             int width=110;var flags=TextFormatFlags.NoPadding|TextFormatFlags.NoPrefix|TextFormatFlags.SingleLine;
             foreach(string text in Locale.Translations("Saved successfully"))width=Math.Max(width,(int)Math.Ceiling(TextRenderer.MeasureText(g,text,b.Font,new Size(Int32.MaxValue,Int32.MaxValue),flags).Width*96/g.DpiX)+24);
@@ -79,11 +135,17 @@ internal static class MeterTheme {
         }
         return b;
     }
+    internal static void OpenProject(){try{System.Diagnostics.Process.Start(Locale.Repository);}catch(System.ComponentModel.Win32Exception){Error(Locale.Repository);}}
+    internal static int SaveWidth(Graphics g,Button b,bool showFeedback){
+        var flags=TextFormatFlags.NoPadding|TextFormatFlags.NoPrefix|TextFormatFlags.SingleLine;
+        int width=TextRenderer.MeasureText(g,Locale.T(showFeedback?"Saved successfully":"Save"),b.Font,Size.Empty,flags).Width;
+        return Math.Max((int)(56*g.DpiX/96),width+(int)(22*g.DpiX/96));
+    }
     internal static FlowLayoutPanel Footer(){var footer=new FlowLayoutPanel{Dock=DockStyle.Bottom,Height=64,Padding=new Padding(16,13,24,12),FlowDirection=FlowDirection.RightToLeft,WrapContents=false,BackColor=Surface};footer.Paint+=(s,e)=>{using(var p=new Pen(Line))e.Graphics.DrawLine(p,0,0,footer.Width,0);};return footer;}
     internal static Panel Body(){return new Panel{Dock=DockStyle.Fill,Padding=new Padding(30,24,30,24),AutoScroll=false,BackColor=Surface};}
     internal static bool Consent(){
         using(var form=new Form()){
-            form.Text="Codex Quota Sidebar";Style(form,620,470);form.MinimizeBox=false;
+            form.Text="AI Quota Board";Style(form,620,470);form.MinimizeBox=false;
             var body=Body();form.Controls.Add(body);form.Controls.Add(Header(Locale.T("Local connection permission"),"Windows"));
             var title=Label(Locale.T("Allow local debugging"),17,Ink);title.Dock=DockStyle.Top;title.Height=44;
             var notice=Label(Locale.T("Debugging grants more than quota access. Other local programs may access the port. Stopping the meter does not close it: fully quit Codex and reopen from its official entry. This is unofficial software. Verify that the CLI and desktop accounts match."),10,Muted);notice.Dock=DockStyle.Top;notice.Height=190;
@@ -97,7 +159,7 @@ internal static class MeterTheme {
     }
     internal static void Error(string text){
         using(var form=new Form()){
-            form.Text="Codex Quota Sidebar";Style(form,620,330);
+            form.Text="AI Quota Board";Style(form,620,330);
             var body=Body();form.Controls.Add(body);form.Controls.Add(Header(Locale.T("Action needed"),"Windows"));
             body.Controls.Add(new TextBox{Text=text,ReadOnly=true,Multiline=true,Dock=DockStyle.Fill,BorderStyle=BorderStyle.None,BackColor=Surface,ForeColor=Ink,ScrollBars=ScrollBars.Vertical});
             var footer=Footer();var close=Button("close",Locale.T("Close"),true);close.DialogResult=DialogResult.OK;footer.Controls.Add(close);form.Controls.Add(footer);body.BringToFront();form.CancelButton=close;form.ShowDialog();
@@ -133,7 +195,7 @@ internal sealed class NavigationItem : Control {
     protected override void OnKeyDown(KeyEventArgs e){if(e.KeyCode==Keys.Space||e.KeyCode==Keys.Enter){PerformClick();e.Handled=true;e.SuppressKeyPress=true;}base.OnKeyDown(e);}
     protected override void OnPaint(PaintEventArgs e){
         var g=e.Graphics;g.Clear(Parent==null?BackColor:Parent.BackColor);g.SmoothingMode=System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-        Color background=hover&&ForeColor!=MeterTheme.Green?Color.FromArgb(237,241,247):BackColor;
+        Color background=hover&&ForeColor!=MeterTheme.Green?MeterTheme.Tint(Color.FromArgb(237,241,247)):BackColor;
         float r=4*g.DpiX/96f;var rect=new RectangleF(0,0,Width-1,Height-1);
         using(var path=new System.Drawing.Drawing2D.GraphicsPath()){
             path.AddArc(rect.Left,rect.Top,r*2,r*2,180,90);path.AddArc(rect.Right-r*2,rect.Top,r*2,r*2,270,90);path.AddArc(rect.Right-r*2,rect.Bottom-r*2,r*2,r*2,0,90);path.AddArc(rect.Left,rect.Bottom-r*2,r*2,r*2,90,90);path.CloseFigure();
@@ -211,7 +273,7 @@ public static class MeterRestartDialog {
         Application.EnableVisualStyles();
         Locale.Load(Path.Combine(Path.GetDirectoryName(typeof(MeterRestartDialog).Assembly.Location),".runtime"));
         using(var form=new Form()){
-            form.Text="Codex Quota Sidebar";MeterTheme.Style(form,660,460);
+            form.Text="AI Quota Board";MeterTheme.Style(form,660,460);
             var body=MeterTheme.Body();form.Controls.Add(body);form.Controls.Add(MeterTheme.Header(Locale.T("Restart confirmation"),"Windows"));
             var steps=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false,AutoScroll=true};body.Controls.Add(steps);
             foreach(string key in new[]{"1. Codex is running without the required local connection.","2. Save all work and stop active tasks before continuing.","3. With your permission, verified Codex processes will restart to attach the sidebar.","4. Unsaved work may be lost. Cancel to leave Codex unchanged."}){

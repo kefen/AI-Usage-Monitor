@@ -7,19 +7,23 @@ using System.Text;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 internal static class Locale {
-    internal const string Repository="https://github.com/kefen/codex-quota-sidebar";
+    internal const string Repository="https://github.com/kefen/AI-Quota-Board";
     static readonly Dictionary<string,string[]> Catalog=ReadCatalog();
     internal static string Language=SystemLanguage();
     static string root;
+    static readonly string[] Modes={"system","en","zh-CN","zh-TW"};
+    internal static string Mode="system";
+    internal static bool UserPicked;
+    internal static event Action Changed;
     static bool applying;
     static int depth;
     internal static bool IsTranslating {get{return applying||depth>0;}}
     static readonly HashSet<Control> watched=new HashSet<Control>();
     static Dictionary<string,string[]> ReadCatalog(){using(var stream=typeof(Locale).Assembly.GetManifestResourceStream("strings.json")){if(stream==null)throw new InvalidDataException("Missing UI language catalog");using(var reader=new StreamReader(stream))return new JavaScriptSerializer().Deserialize<Dictionary<string,string[]>>(reader.ReadToEnd());}}
-    static string SystemLanguage(){string id=CultureInfo.CurrentUICulture.Name;return id.StartsWith("zh",StringComparison.OrdinalIgnoreCase)?(id.Contains("TW")||id.Contains("HK")||id.Contains("Hant")?"zh-TW":"zh-CN"):"en";}
-    internal static void Load(string runtime){root=runtime;try{string value=File.ReadAllText(Path.Combine(root,"language.json")).Trim().Trim('"');if(new[]{"en","zh-CN","zh-TW"}.Contains(value))Language=value;}catch{}}
-    internal static void Save(string runtime){Directory.CreateDirectory(runtime);File.WriteAllText(Path.Combine(runtime,"language.json"),"\""+Language+"\"",new UTF8Encoding(false));root=runtime;}
-    internal static void Set(string value){if(applying||!new[]{"en","zh-CN","zh-TW"}.Contains(value))return;Language=value;if(root!=null&&Directory.Exists(root))Save(root);applying=true;try{foreach(Form f in Application.OpenForms){f.SuspendLayout();try{Apply(f);}finally{f.ResumeLayout(true);}if(f.IsHandleCreated)f.Refresh();}}finally{applying=false;}}
+    static string SystemLanguage(){string id=CultureInfo.CurrentUICulture.Name;return id.StartsWith("zh",StringComparison.OrdinalIgnoreCase)?(id.Contains("TW")||id.Contains("HK")||id.Contains("MO")||id.Contains("Hant")?"zh-TW":"zh-CN"):"en";}
+    internal static void Load(string runtime){root=runtime;try{string value=File.ReadAllText(Path.Combine(root,"language.json")).Trim().Trim('"');Mode=File.Exists(Path.Combine(root,"language-system.flag"))?"system":Modes.Contains(value)?value:"system";Language=Mode=="system"?SystemLanguage():Mode;}catch{}}
+    internal static void Save(string runtime){Directory.CreateDirectory(runtime);File.WriteAllText(Path.Combine(runtime,"language.json"),"\""+Language+"\"",new UTF8Encoding(false));var flag=Path.Combine(runtime,"language-system.flag");if(Mode=="system")File.WriteAllText(flag,"");else if(File.Exists(flag))File.Delete(flag);root=runtime;}
+    internal static void Set(string value){if(applying||!Modes.Contains(value))return;Mode=value;Language=value=="system"?SystemLanguage():value;if(root!=null&&Directory.Exists(root))Save(root);applying=true;try{foreach(Form f in Application.OpenForms){f.SuspendLayout();try{Apply(f);}finally{f.ResumeLayout(true);}if(f.IsHandleCreated)f.Refresh();}}finally{applying=false;}if(Changed!=null)Changed();}
     internal static string T(string text){
         if(String.IsNullOrEmpty(text))return text;
         if(text.Trim()!=text)return text.Substring(0,text.Length-text.TrimStart().Length)+T(text.Trim())+text.Substring(text.TrimEnd().Length);
@@ -38,6 +42,10 @@ internal static class Locale {
             string number=text.Substring(prefix.Length+1);
             if(System.Text.RegularExpressions.Regex.IsMatch(number,@"^\d+(\.\d+)?%$"))return T(label)+" "+number;
         }
+        foreach(string translation in Translations("Used"))if(text.EndsWith(" "+translation,StringComparison.Ordinal)){
+            string percentage=text.Substring(0,text.Length-translation.Length-1);
+            if(System.Text.RegularExpressions.Regex.IsMatch(percentage,@"^\d+(\.\d+)?%$"))return percentage+" "+T("Used");
+        }
         return text;
     }
     internal static IEnumerable<string> Translations(string key){yield return key;string[] values;if(Catalog.TryGetValue(key,out values))foreach(string value in values)yield return value;}
@@ -45,7 +53,7 @@ internal static class Locale {
         depth++;try{
         if(control is DateTimePicker)return;
         if(control.Name=="selectionCount"){control.Text=T("Selected")+" "+Convert.ToString(control.Tag)+" / "+DisplayOptions.Keys.Length;return;}
-        if(control.Name=="language"){((ComboBox)control).SelectedIndex=Language=="en"?0:Language=="zh-CN"?1:2;return;}
+        if(control.Name=="language"){var picker=(ComboBox)control;picker.Items[0]=T("System");picker.SelectedIndex=Array.IndexOf(Modes,Mode);return;}
         var box=control as TextBox;
         if(!(control is ComboBox)&&(box==null||box.ReadOnly))control.Text=T(control.Text);
         var list=control as CheckedListBox;if(list!=null)for(int i=0;i<list.Items.Count;i++)list.Items[i]=T(Convert.ToString(list.Items[i]));
@@ -58,5 +66,5 @@ internal static class Locale {
         }
         }finally{depth--;}
     }
-    internal static ComboBox Picker(){var box=new ComboBox{Name="language",DropDownStyle=ComboBoxStyle.DropDownList,Width=126};box.Items.AddRange(new object[]{"English","\u7b80\u4f53\u4e2d\u6587","\u7e41\u9ad4\u4e2d\u6587"});box.SelectedIndex=Language=="en"?0:Language=="zh-CN"?1:2;box.SelectedIndexChanged+=(s,e)=>Set(new[]{"en","zh-CN","zh-TW"}[box.SelectedIndex]);return box;}
+    internal static ComboBox Picker(){var box=new ComboBox{Name="language",DropDownStyle=ComboBoxStyle.DropDownList,Width=126};box.Items.AddRange(new object[]{T("System"),"English","\u7b80\u4f53\u4e2d\u6587","\u7e41\u9ad4\u4e2d\u6587"});box.SelectedIndex=Array.IndexOf(Modes,Mode);box.SelectedIndexChanged+=(s,e)=>{if(!IsTranslating&&box.SelectedIndex>=0){UserPicked=true;Set(Modes[box.SelectedIndex]);}};return box;}
 }

@@ -2,15 +2,16 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 [[ "$(uname -s)" == Darwin ]] || { echo 'macOS build host required.'; exit 1; }
-arch="${1:-arm64}"
+arch="${1:-$(uname -m)}"
 case "$arch" in arm64) nodearch=arm64 ;; x86_64) nodearch=x64 ;; *) exit 2 ;; esac
 version=$(node -p "JSON.parse(require('fs').readFileSync('versions.json')).macos")
 nodeversion=$(node -p "JSON.parse(require('fs').readFileSync('dependency-pins.json')).nodeVersion")
-stage="build/mac-$arch"
-app="$stage/Codex Quota Sidebar.app"
+mkdir -p build dist
+stage=$(mktemp -d "build/mac-$arch-$version.XXXXXX")
+app="$stage/AI Quota Board.app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 /usr/bin/xcrun swiftc -O -target "$arch-apple-macosx13.5" -framework AppKit mac/Localization.swift mac/Bootstrap.swift mac/SettingsTransfer.swift mac/RuntimeProbe.swift mac/MetricPresentation.swift mac/QuotaSidebar.swift -o "$app/Contents/MacOS/QuotaSidebar"
-cp mac/READ-ME-FIRST.html "$app/Contents/Resources/READ-ME-FIRST.html"
+sed "s/@MAC_VERSION@/$version/g" mac/READ-ME-FIRST.html > "$app/Contents/Resources/READ-ME-FIRST.html"
 cp ui/strings.json "$app/Contents/Resources/strings.json"
 cp mac/Info.plist "$app/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${version%%-*}" "$app/Contents/Info.plist"
@@ -44,10 +45,14 @@ if [[ "$(uname -m)" == "$arch" ]]; then
   node --input-type=module -e 'import {spawnSync} from "node:child_process"; const r=spawnSync(process.argv[1],["--ui-smoke",process.argv[2]],{stdio:"inherit",timeout:120000}); if(r.error)console.error(r.error.message); process.exit(r.status??1);' "$app/Contents/MacOS/QuotaSidebar" "$PWD/verification/mac-$arch"
 fi
 file "$app/Contents/MacOS/QuotaSidebar" "$app/Contents/Resources/payload/runtime/node"
-mkdir -p "build/dmg-$arch" dist
-ditto "$app" "build/dmg-$arch/Codex Quota Sidebar.app"
-cp mac/READ-ME-FIRST.html "build/dmg-$arch/READ-ME-FIRST.html"
-ln -s /Applications "build/dmg-$arch/Applications"
-hdiutil create -size 512m -fs HFS+ -volname 'Codex Quota Sidebar Test' -srcfolder "build/dmg-$arch" -ov -format UDZO "dist/Codex-Quota-Sidebar-macOS-$version-$arch-unsigned-test.dmg"
+image="$stage/image"
+mkdir "$image"
+ditto "$app" "$image/AI Quota Board.app"
+cp "$app/Contents/Resources/READ-ME-FIRST.html" "$image/READ-ME-FIRST.html"
+ln -s /Applications "$image/Applications"
+dmg="dist/AI-Quota-Board-macOS-$version-$arch-unsigned-test.dmg"
+hdiutil create -size 512m -fs HFS+ -volname 'AI Quota Board' -srcfolder "$image" -ov -format UDZO "$dmg"
+hdiutil verify "$dmg"
+shasum -a 256 "$dmg"
 echo 'Local, ad-hoc signed test build only. Not notarized; no production Mac package created.'
 echo 'Official publisher verified; real-account connection acceptance is still pending.'

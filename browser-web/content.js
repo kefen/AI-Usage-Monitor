@@ -3,7 +3,7 @@
   if(location.origin!=='https://chatgpt.com'||window!==window.top||!globalThis.CQSWebSource)return;
   const M=globalThis.CQSWebSource,id='cqs-web-usage-preview',keys=['week','plan','credits','resets','reset','monthly'];
   const text={
-    title:['Codex Quota by KEFEN','Codex Quota by KEFEN','Codex Quota by KEFEN'],shared:['Codex / Work shared allowance','Codex / Work 共享额度','Codex / Work 共用額度'],
+    title:['AI Quota Board','AI Quota Board','AI Quota Board'],shared:['Codex / Work shared allowance','Codex / Work 共享额度','Codex / Work 共用額度'],
     week:['Weekly remaining','本周剩余','本週剩餘'],credits:['Credits','额度','額度'],resets:['Available resets','可用重置次数','可用重設次數'],reset:['Reset time','重置时间','重設時間'],plan:['Plan','套餐','方案'],
     refresh:['Read again','重新读取','重新讀取'],reading:['Reading…','正在读取…','正在讀取…'],settings:['Display choices','展示内容','顯示內容'],back:['Back','返回','返回'],
     source:['Read full usage','读取完整用量','讀取完整用量'],missing:['See full usage','见完整用量','見完整用量'],unsupported:['Not provided by this page','此网页未提供','此網頁未提供'],
@@ -15,7 +15,9 @@
     waiting:['Close other menus, then retry.','请关闭其他菜单后重试。','請關閉其他選單後重試。'],read:['Page readout','页面读数','頁面讀數'],
     stamp:['Read at','读取于','讀取於'],choose:['Language','语言','語言'],unavailable:['Usage menu unavailable','暂未找到官方用量菜单','暫未找到官方用量選單']
   };
-  let language=navigator.language.startsWith('zh')?(navigator.language.includes('TW')||navigator.language.includes('Hant')?'zh-TW':'zh-CN'):'en';
+  const systemLanguage=()=>/^zh/i.test(navigator.language)?(/Hant|TW|HK|MO/i.test(navigator.language)?'zh-TW':'zh-CN'):'en';
+  let languageMode='system',language=systemLanguage(),appearance='system';
+  Object.assign(text,{system:['Follow system','跟随系统','跟隨系統'],appearance:['Appearance','外观','外觀'],light:['Light','浅色','淺色'],dark:['Dark','深色','深色'],all:['Select all','全选','全選'],none:['Select none','全不选','全不選']});
   let choices=Object.fromEntries(keys.map(k=>[k,true])),host,shadow,body,form,status,refreshButton,settingsButton,details,observer,shell;
   let cells={},blocked=false,busy=false,editing=false,attempted=false,lastPath=location.href,timer,rendered='',stopped=false;
   let pending=null,returnRoute=false,updateVersion='',expiry;
@@ -82,18 +84,25 @@
   }
   function command(label,action){const b=E('button',label);b.type='button';b.addEventListener('click',action);return b;}
   async function save(){
-    try{await chrome.storage.local.set({cqsWebPreferences:{language,choices}});status.textContent=t('saved');}
+    try{await chrome.storage.local.set({cqsWebPreferences:{language:languageMode,choices,appearance}});status.textContent=t('saved');}
     catch{status.textContent=t('saveFailed');}
   }
   function renderSettings(){
     form.replaceChildren();const row=E('div',undefined,'tools'),heading=E('h2',t('settings'));
     row.append(heading,command(t('back'),()=>{editing=false;rendered='';render();settingsButton.focus();}));form.append(row);
-    for(const key of keys){const label=E('label',undefined,'check'),input=E('input');input.type='checkbox';input.checked=choices[key];input.dataset.field=key;input.addEventListener('change',()=>{choices[key]=input.checked;save();rendered='';render();});label.append(input,E('span',t(key)));form.append(label);}
+    for(const key of keys){const label=E('label',undefined,'check'),input=E('input');input.type='checkbox';input.checked=choices[key];input.dataset.field=key;input.addEventListener('change',()=>{choices[key]=input.checked;bulk.textContent=t(keys.every(k=>choices[k])?'none':'all');save();rendered='';render();});label.append(input,E('span',t(key)));form.append(label);}
+    const bulk=command(t(keys.every(k=>choices[k])?'none':'all'),()=>{
+      const on=!keys.every(k=>choices[k]);for(const k of keys){choices[k]=on;form.querySelector('[data-field="'+k+'"]').checked=on;}
+      bulk.textContent=t(on?'none':'all');save();
+    });bulk.className='soft';form.append(bulk);
     const unsupported=E('fieldset');unsupported.disabled=true;unsupported.append(E('legend',t('unsupported')));
     for(const key of ['short','token','renewal']){const label=E('label',undefined,'check'),input=E('input');input.type='checkbox';label.append(input,E('span',t(key)));unsupported.append(label);}form.append(unsupported);
     const label=E('label',undefined,'language');label.append(E('span',t('choose')));const select=E('select');select.setAttribute('aria-label',t('choose'));
-    for(const [value,title] of [['en','English'],['zh-CN','简体中文'],['zh-TW','繁體中文']]){const o=E('option',title);o.value=value;select.append(o);}select.value=language;
-    select.addEventListener('change',()=>{language=select.value;rendered='';render();save();renderSettings();});label.append(select);form.append(label);
+    for(const [value,title] of [['system',t('system')],['en','English'],['zh-CN','简体中文'],['zh-TW','繁體中文']]){const o=E('option',title);o.value=value;select.append(o);}select.value=languageMode;
+    select.addEventListener('change',()=>{languageMode=select.value;language=languageMode==='system'?systemLanguage():languageMode;rendered='';render();save();renderSettings();});label.append(select);form.append(label);
+    const theme=E('label',undefined,'language'),picker=E('select');theme.append(E('span',t('appearance')),picker);
+    for(const mode of ['system','light','dark']){const option=E('option',t(mode));option.value=mode;picker.append(option);}
+    picker.value=appearance;picker.onchange=()=>{appearance=picker.value;host.dataset.appearance=appearance;save();};form.append(theme);
   }
   function render(){
     if(!shadow)return;const values=nowValues(),signature=JSON.stringify({values,language,choices,editing,busy,blocked});
@@ -134,7 +143,7 @@
         try{if((await chrome.runtime.sendMessage({type:'CQS_FULL_RETURN',values}))?.ok){returnRoute=false;rendered='';render();return;}}catch{}
         status.textContent=t('retryFull');
       });
-      bring.disabled=blocked||!Object.values(values).some(v=>v!==null)||!M.collect(document,location.pathname,location.search).overview;
+      bring.className='primary';bring.disabled=blocked||!Object.values(values).some(v=>v!==null)||!M.collect(document,location.pathname,location.search).overview;
       body.append(bring);
     }
     const note=E('span',t('details'),'hint');footer.append(link,note);body.append(footer);
@@ -142,7 +151,7 @@
     if(times.length&&!blocked){const stamp=E('div',t('stamp')+' '+new Date(Math.min(...times)).toLocaleTimeString(language,{hour:'2-digit',minute:'2-digit'}),'hint');body.append(stamp);}
     shadow.querySelector('.version').textContent='Web '+chrome.runtime.getManifest().version;
     const update=shadow.querySelector('.update');update.hidden=!updateVersion;
-    if(updateVersion){update.textContent=t('update')+' '+updateVersion;update.href='https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v'+updateVersion;}
+    if(updateVersion){update.textContent=t('update')+' '+updateVersion;update.href='https://github.com/kefen/AI-Quota-Board/releases/tag/chrome/v'+updateVersion;}
   }
   function mount(){
     const currentShell=document.getElementById('app-shell-sidebar');
@@ -153,11 +162,11 @@
     }
     if(host?.isConnected&&host.parentElement===parent){startProbe();return;}
     host?.remove();host=E('aside');host.id=id;host.style.cssText='display:block;flex:0 0 auto;min-width:0;width:100%;position:relative;order:999;margin-top:auto;';
-    shadow=host.attachShadow({mode:'open'});const style=E('style');style.textContent=STYLE;shadow.append(style);
+    host.dataset.appearance=appearance;shadow=host.attachShadow({mode:'open'});const style=E('style');style.textContent=STYLE;shadow.append(style);
     details=E('details');details.open=true;const summary=E('summary'),image=E('img');image.src=chrome.runtime.getURL('icon-32.png');image.alt='';image.width=image.height=16;
     summary.append(image,E('span',t('title'),'title'));details.append(summary,E('p',t('shared'),'shared'));
     body=E('section');body.setAttribute('aria-label',t('title'));form=E('section');form.hidden=true;details.append(body,form);
-    const tools=E('div',undefined,'tools');refreshButton=command(t('refresh'),probe);settingsButton=command(t('settings'),()=>{editing=true;rendered='';render();renderSettings();form.querySelector('input')?.focus();});tools.append(refreshButton,settingsButton);
+    const tools=E('div',undefined,'tools');refreshButton=command(t('refresh'),probe);settingsButton=command(t('settings'),()=>{editing=true;rendered='';render();renderSettings();form.querySelector('input')?.focus();});refreshButton.className='soft';tools.append(refreshButton,settingsButton);
     status=E('div',undefined,'status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
     const meta=E('div',undefined,'meta'),update=E('a','','update');update.hidden=true;update.target='_blank';update.rel='noopener noreferrer';
     meta.append(E('span','Web '+chrome.runtime.getManifest().version,'version'),update);
@@ -174,6 +183,9 @@
     .tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}button,select{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:4px;min-height:28px;padding:3px 8px;cursor:pointer;max-width:100%}button:hover{background:color-mix(in srgb,var(--blue) 7%,var(--surface))}button:disabled{opacity:.65;cursor:wait}button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--blue);outline-offset:2px}.status,.version{font-size:10px;color:var(--muted);display:block;overflow-wrap:anywhere}.status{margin-top:6px;min-height:15px}.version{margin-top:3px}
     h2{font-size:13px;font-weight:600;margin:0;flex:1}.check{display:flex;gap:7px;align-items:center;min-height:28px;cursor:pointer}.check input{accent-color:var(--blue);flex:0 0 14px;width:14px;height:14px;margin:0}fieldset{border:0;border-top:1px solid var(--line);padding:8px 0 0;margin:9px 0;color:var(--muted);min-width:0}fieldset .check{cursor:default}legend{font-size:11px;padding:0 5px 0 0}.language{display:flex;align-items:center;justify-content:space-between;gap:8px}.language select{max-width:110px}[hidden]{display:none!important}
     @media(prefers-color-scheme:dark){:host{--ink:#e5e9f0;--muted:#aeb8c8;--line:#3b4350;--surface:#20242b;--blue:#91b5ff;--green:#50b89b}}
+    :host([data-appearance="light"]){color-scheme:light;--ink:#252b35;--muted:#566274;--line:#dce1e8;--surface:#fff;--blue:#255adc;--green:#187e68}
+    :host([data-appearance="dark"]){color-scheme:dark;--ink:#e5e9f0;--muted:#aeb8c8;--line:#3b4350;--surface:#20242b;--blue:#91b5ff;--green:#50b89b}
+    button{background:color-mix(in srgb,var(--muted) 14%,var(--surface))}button.soft{background:color-mix(in srgb,var(--blue) 14%,var(--surface));color:var(--blue)}button.primary{background:#2658c9;color:#fff}button:hover:enabled{border-color:var(--muted)}.language{padding:6px 0;border-top:1px solid var(--line)}.check:has(input:focus-visible){outline:1px solid var(--blue)}
     details{padding:6px 12px}.shared{margin:0 0 5px}.metrics{gap:5px 12px;margin:0 0 6px}.week{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 8px}.week dd{font-size:20px;line-height:24px}.week .track{grid-column:1/-1;margin-top:0}.history{display:flex;justify-content:space-between;gap:6px;padding:4px 0}.foot{padding-top:4px}.tools{margin-top:5px}.status:empty{display:none}
     details{border:1px solid var(--line);border-radius:8px;margin:4px 6px 6px;padding:8px 10px;max-height:min(52dvh,440px)}
     summary{font:600 14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;min-height:28px}
@@ -189,6 +201,7 @@
   },true);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick();});
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&editing){editing=false;rendered='';render();settingsButton?.focus();}});
+  window.addEventListener('languagechange',()=>{if(languageMode==='system'){language=systemLanguage();rendered='';render();if(editing)renderSettings();}});
   window.addEventListener('popstate',tick);
   window.navigation?.addEventListener('currententrychange',schedule);
   chrome.runtime.onMessage.addListener((message,sender,reply)=>{
@@ -205,7 +218,7 @@
   });
   if(location.href===overviewURL)chrome.runtime.sendMessage({type:'CQS_FULL_ROUTE'}).then(r=>{returnRoute=!!r?.ok;rendered='';render();}).catch(()=>{});
   chrome.storage.local.get('cqsWebPreferences').then(result=>{
-    const prefs=result.cqsWebPreferences;if(['en','zh-CN','zh-TW'].includes(prefs?.language))language=prefs.language;
+    const prefs=result.cqsWebPreferences;if(['en','zh-CN','zh-TW'].includes(prefs?.language))language=languageMode=prefs.language;if(['dark','light'].includes(prefs?.appearance))appearance=prefs.appearance;
     for(const key of keys)if(typeof prefs?.choices?.[key]==='boolean')choices[key]=prefs.choices[key];tick();
   }).catch(tick);
   const structural=new MutationObserver(records=>{

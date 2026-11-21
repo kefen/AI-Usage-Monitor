@@ -56,6 +56,15 @@ internal static class UsageOverviewTest {
             if(view.Controls.Find("metricCaption0",true)[0].Text!=Locale.T("Data expired"))throw new Exception("Expired state must be explicit");
             view.UpdateSnapshot(data,false,now);
             if(view.Controls.Find("metric4",true)[0].Text!="--")throw new Exception("Disconnected data leaked");
+            double day5=(new DateTime(2026,11,5)-new DateTime(1970,1,1)).TotalMilliseconds;
+            var series=new Dictionary<string,object>{{"month","2026-11"},{"days",new object[]{0,4,null,7,null,99}}};
+            var sample=new Dictionary<string,object>{{"usageAt",day5},{"generatedAt",day5},{"monthTrend",series}};
+            view.UpdateSnapshot(sample,true,day5);var plot=(UsageTrend)view.Controls.Find("monthlyTrend",true)[0];
+            if(plot.SelectedDay!=4||plot.SelectedValue!=0||!plot.NoEntry)throw new Exception("Missing current day must remain selectable at baseline; future values must be excluded");
+            plot.SelectedDay=0;if(plot.SelectedValue!=0||plot.NoEntry)throw new Exception("Explicit zero must be distinguished from no record");
+            plot.Cumulative=true;plot.SelectedDay=2;if(plot.SelectedValue!=4)throw new Exception("Cumulative chart must stay flat on inactive days");
+            series["days"]=new object[]{null,null};view.UpdateSnapshot(sample,true,day5);
+            if(plot.SelectedValue.HasValue)throw new Exception("Completely unavailable history must not be drawn as zero usage");
         }
         Console.WriteLine("PASS: three locales, quota values, real zero, stale and disconnected snapshots");return 0;
     }

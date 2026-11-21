@@ -40,7 +40,8 @@ internal static class Installer {
                 if(p.ExitCode!=0)throw new IOException(error.Result+"\n"+output.Result);
             }
             DisplayOptions.Save(Path.Combine(destination,".runtime"),window.SelectedVisibility);
-            Locale.Save(Path.Combine(destination,".runtime"));
+            string runtime=Path.Combine(destination,".runtime");
+            if(Locale.UserPicked||!File.Exists(Path.Combine(runtime,"language.json")))Locale.Save(runtime);
             },()=>Process.Start(new ProcessStartInfo(Path.Combine(destination,"CodexMeter.exe")){UseShellExecute=true}),null,()=>MeterPreferences.Edit(Path.Combine(destination,".runtime"))))window.ShowDialog();return 0;
         }catch(Exception e){MeterTheme.Error(e.Message);return 1;}
         finally{if(temp!=null && Directory.Exists(temp) && Path.GetFullPath(temp).StartsWith(Path.Combine(Path.GetTempPath(),"CodexMeter-install-"),StringComparison.OrdinalIgnoreCase))Directory.Delete(temp,true);}

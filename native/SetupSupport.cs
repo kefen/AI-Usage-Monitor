@@ -51,7 +51,12 @@ internal static class SetupSupport {
     internal static string DefaultDestination(){
         string legacy=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"Documents\\Codex\\Apps\\CodexSidebarMeter");
         // Resolve an existing shortcut without executing its target.
-        try{Type type=Type.GetTypeFromProgID("WScript.Shell");dynamic shell=Activator.CreateInstance(type);string link=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),"Codex Quota Sidebar.lnk");if(File.Exists(link)){dynamic shortcut=shell.CreateShortcut(link);string root=Path.GetDirectoryName((string)shortcut.TargetPath);if(Owned(root))return root;}}catch{}
+        try{Type type=Type.GetTypeFromProgID("WScript.Shell");dynamic shell=Activator.CreateInstance(type);
+            foreach(string name in new[]{"AI Quota Board.lnk","Codex Quota Sidebar.lnk"}){
+                string link=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),name);
+                if(File.Exists(link)){dynamic shortcut=shell.CreateShortcut(link);string root=Path.GetDirectoryName((string)shortcut.TargetPath);if(Owned(root))return root;}
+            }
+        }catch{}
         return legacy;
     }
     internal static string FriendlyError(string message){

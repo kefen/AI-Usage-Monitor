@@ -48,7 +48,7 @@ try {
     Copy-Item -LiteralPath $shortcut -Destination $garbled
     $unicodeForeign=Join-Path $root ('Other '+[char]0x951f+'.lnk')
     Copy-Item -LiteralPath $otherLink -Destination $unicodeForeign
-    $shortcut=Join-Path $root 'Codex Quota Sidebar.lnk'
+    $shortcut=Join-Path $root 'AI Quota Board.lnk'
     & (Join-Path $source 'Install.ps1') -Destination $dest -ShortcutPath $shortcut
     Assert (Test-Path -LiteralPath $shortcut) 'English shortcut missing'
     Assert (-not(Test-Path -LiteralPath $legacy)) 'Old shortcut remained'

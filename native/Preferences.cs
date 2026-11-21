@@ -65,37 +65,40 @@ internal static class MeterPreferences {
         if(known)input.Value=date;input.Checked=known;input.ValueChanged+=(s,e)=>input.CustomFormat=input.Checked?"yyyy-MM-dd":" ";return input;
     }
     static void LoadDate(BlankDatePicker input,string saved){DateTime date;bool known=DateTime.TryParseExact(saved,"yyyy-MM-dd",CultureInfo.InvariantCulture,DateTimeStyles.None,out date);if(known)input.Value=date;input.Checked=known;}
-    static Panel Field(string label,Control control){var panel=new Panel{Dock=DockStyle.Fill,Margin=new Padding(0,0,24,0)};var caption=MeterTheme.Label(label,10,MeterTheme.Ink);caption.Dock=DockStyle.Top;caption.Height=28;var box=new Panel{Dock=DockStyle.Top,Height=40,Padding=new Padding(0,3,0,0)};box.Controls.Add(control);
-        var date=control as BlankDatePicker;if(date!=null){
-            date.Dock=DockStyle.None;date.MinimumSize=Size.Empty;
-            var clear=new NavigationItem{Name=control.Name+"Clear",Text="",Glyph="\uE711",AccessibleName=Locale.T("Clear selection"),ForeColor=MeterTheme.Muted,BackColor=MeterTheme.Surface,Margin=new Padding(0)};
-            clear.Click+=(s,e)=>date.Clear();box.Controls.Add(clear);
-            bool layingOut=false;Action arrangeDate=()=>{if(layingOut)return;layingOut=true;try{
-                float scale;using(var g=box.CreateGraphics())scale=g.DpiX/96f;
-                int height=date.PreferredHeight,gap=(int)(6*scale),y=Math.Max(0,(box.ClientSize.Height-height)/2);
-                date.SetBounds(0,y,Math.Max(0,box.ClientSize.Width-height-gap),height);
-                clear.SetBounds(Math.Max(0,box.ClientSize.Width-height),y,height,height);
-                clear.Visible=date.Enabled&&date.Checked;clear.Enabled=date.Enabled&&date.Checked;
-            }finally{layingOut=false;}};
-            box.SizeChanged+=(s,e)=>arrangeDate();date.EnabledChanged+=(s,e)=>arrangeDate();date.ValueChanged+=(s,e)=>arrangeDate();date.FontChanged+=(s,e)=>arrangeDate();box.HandleCreated+=(s,e)=>arrangeDate();
-            date.PresenceChanged+=(s,e)=>arrangeDate();
-            var tip=new ToolTip();tip.SetToolTip(clear,Locale.T("Clear selection"));clear.Disposed+=(s,e)=>tip.Dispose();
-        }
-        panel.Controls.Add(box);panel.Controls.Add(caption);box.BringToFront();return panel;}
+    static Panel Field(string label,Control control){
+        var panel=new Panel{Margin=Padding.Empty};
+        var caption=MeterTheme.Label(label,9,MeterTheme.Muted);caption.Dock=control.Dock=DockStyle.None;
+        panel.Controls.Add(caption);panel.Controls.Add(control);
+        var date=control as BlankDatePicker;
+        var clear=date==null?null:new NavigationItem{Name=control.Name+"Clear",Text="",Glyph="\uE711",AccessibleName=Locale.T("Clear selection"),ForeColor=MeterTheme.Muted,BackColor=MeterTheme.Tint(Color.FromArgb(244,247,252))};
+        if(clear!=null){panel.Controls.Add(clear);clear.Click+=(s,e)=>date.Clear();var tip=new ToolTip();tip.SetToolTip(clear,clear.AccessibleName);panel.Disposed+=(s,e)=>tip.Dispose();}
+        Action arrange=()=>{using(var g=panel.CreateGraphics()){
+            Func<int,int> px=n=>(int)Math.Round(n*g.DpiX/96);int width=panel.ClientSize.Width;
+            caption.SetBounds(0,0,width,px(21));int cy=px(22+17);
+            var combo=control as ComboBox;if(combo!=null)combo.ItemHeight=combo.Font.Height+px(2);
+            int height=date!=null?date.PreferredHeight:combo.PreferredHeight;
+            int reserved=date!=null&&date.Enabled?height+px(6):0;
+            control.SetBounds(0,cy-height/2,Math.Max(1,width-reserved),height);
+            if(clear!=null){clear.SetBounds(width-height,control.Top,height,height);clear.Visible=clear.Enabled=date.Enabled&&date.Checked;}
+        }};
+        panel.SizeChanged+=(s,e)=>arrange();panel.HandleCreated+=(s,e)=>arrange();control.FontChanged+=(s,e)=>arrange();
+        if(date!=null){date.EnabledChanged+=(s,e)=>arrange();date.PresenceChanged+=(s,e)=>arrange();}
+        return panel;
+    }
     internal static Form Create(string root,bool embedded){
         Directory.CreateDirectory(root);string memberPath=Path.Combine(root,"membership.json");var data=Read(memberPath);
-        var form=new Form();form.Text=Locale.T("Codex Quota Sidebar - Settings");MeterTheme.Style(form,960,640);form.MinimizeBox=false;
+        var form=new Form();form.Text="AI Quota Board";MeterTheme.Style(form,960,640);form.MinimizeBox=false;
         if(embedded)form.MinimumSize=Size.Empty;
         var body=MeterTheme.Body();body.AutoScroll=false;body.Padding=embedded?new Padding(0):new Padding(30,24,30,24);form.Controls.Add(body);if(!embedded)form.Controls.Add(MeterTheme.Header("Codex subscription record","Windows"));
         var content=new Panel{Name="planContent",Dock=DockStyle.Top,Height=530};body.Controls.Add(content);body.BringToFront();
-        var optional=MeterTheme.Label("Only record your existing Codex subscription. No sign-up or purchase for this tool.",10,MeterTheme.Muted);optional.Dock=DockStyle.Top;optional.Height=46;content.Controls.Add(optional);
-        var planRow=new TableLayoutPanel{Dock=DockStyle.Top,Height=94,ColumnCount=2,RowCount=1,Padding=new Padding(0,16,0,0)};planRow.RowStyles.Add(new RowStyle(SizeType.Percent,100));planRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));planRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,88));content.Controls.Add(planRow);planRow.BringToFront();
+        var summary=MeterTheme.Label("",13,MeterTheme.Ink);
+        var optional=MeterTheme.Label("Only record your existing Codex subscription. No sign-up or purchase for this tool.",9,MeterTheme.Muted);
         var ids=new[]{"free","go","plus","pro","business","enterprise","edu","other"};
         var plan=new ComboBox{Name="plan",DropDownStyle=ComboBoxStyle.DropDownList,Dock=DockStyle.Fill};plan.Items.AddRange(new object[]{"Free","Go","Plus","Pro","Business","Enterprise","Edu","Other / unknown"});plan.SelectedIndex=7;
         for(int i=0;i<ids.Length;i++)if(ids[i]==Value(data,"plan",""))plan.SelectedIndex=i;
-        planRow.Controls.Add(Field("Plan badge",plan),0,0);var detect=MeterTheme.Button("detectPlan","Detect",false);detect.Anchor=AnchorStyles.Left|AnchorStyles.Top;detect.Height=38;detect.Width=84;detect.Margin=new Padding(4,30,0,10);planRow.Controls.Add(detect,1,0);
-        var source=MeterTheme.Label(Value(data,"planSource","")=="desktop"?"Plan family detected from Codex desktop":"Manual record preserved",9,Value(data,"planSource","")=="desktop"?Color.FromArgb(25,112,90):MeterTheme.Amber);source.Name="planSource";source.Dock=DockStyle.Top;source.Height=42;content.Controls.Add(source);source.BringToFront();
-        var fields=new TableLayoutPanel{Dock=DockStyle.Top,Height=186,ColumnCount=2,RowCount=2,Padding=new Padding(0,16,0,0)};fields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));fields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));fields.RowStyles.Add(new RowStyle(SizeType.Absolute,82));fields.RowStyles.Add(new RowStyle(SizeType.Absolute,82));content.Controls.Add(fields);fields.BringToFront();
+        var detect=MeterTheme.Button("detectPlan","Detect",false);
+        var source=MeterTheme.Label(Value(data,"planSource","")=="desktop"?"Plan family detected from Codex desktop":"Manual record preserved",9,MeterTheme.Muted);source.Name="planSource";
+        var dateTitle=MeterTheme.Label("Dates and renewal",11,MeterTheme.Ink);
         var tier=new ComboBox{Name="tier",DropDownStyle=ComboBoxStyle.DropDownList,Dock=DockStyle.Fill};
         string[] tierIds=new string[0];bool refreshingTier=false;
         Action<string> populateTiers=prior=>{refreshingTier=true;tier.BeginUpdate();try{
@@ -108,45 +111,52 @@ internal static class MeterPreferences {
         Action loadTier=()=>populateTiers(Value(data,"tier","unknown"));loadTier();
         var mode=new ComboBox{Name="dateMode",DropDownStyle=ComboBoxStyle.DropDownList,Dock=DockStyle.Fill};mode.Items.AddRange(new object[]{Locale.T("Monthly estimate (purchase + one month)"),Locale.T("Manual renewal date"),Locale.T("Manual expiry date"),Locale.T("Business annual estimate")});mode.SelectedIndex=Value(data,"annualEstimate","")=="True"?3:Value(data,"monthlyEstimate","")=="True"||!data.ContainsKey("date")?0:Value(data,"kind","")=="expiry"?2:1;
         var purchase=DateInput("purchaseDate",Value(data,"purchaseDate",""));var next=DateInput("nextDate",Value(data,"date",""));
+        // Keep Latin digits and Han text on one UI typeface in both GDI-drawn and native editors.
+        var fieldFont=new Font("Microsoft YaHei UI",10f,FontStyle.Regular);
+        if(fieldFont.Name!="Microsoft YaHei UI"){fieldFont.Dispose();fieldFont=MeterTheme.Font(10);}
+        form.Disposed+=(s,e)=>fieldFont.Dispose();
+        foreach(Control input in new Control[]{plan,tier,mode,purchase,next})input.Font=fieldFont;
         foreach(var combo in new[]{plan,tier,mode})MeterTheme.SizeCombo(combo);
-        fields.Controls.Add(Field("Specific tier (manual, optional)",tier),0,0);fields.Controls.Add(Field("Date type",mode),1,0);fields.Controls.Add(Field("Purchase date",purchase),0,1);fields.Controls.Add(Field("Renewal / expiry",next),1,1);
-        planRow.Controls[0].Margin=new Padding(0,0,12,0);fields.GetControlFromPosition(1,0).Margin=fields.GetControlFromPosition(1,1).Margin=new Padding(0);
-        var note=MeterTheme.Label("Dates are yours to enter. Detection never changes purchase or renewal dates. Leave blank to hide dates.",9,MeterTheme.Muted);note.Dock=DockStyle.Top;note.Height=46;content.Controls.Add(note);note.BringToFront();
-        var enabled=new CheckBox{Name="membershipEnabled",Text=Locale.T("Show renewal date in sidebar and overview"),Dock=DockStyle.Top,Height=46,Checked=data.Count>0&&Value(data,"enabled","True")!="False"};content.Controls.Add(enabled);enabled.BringToFront();
-        var buttons=new FlowLayoutPanel{Dock=DockStyle.Top,Height=70,Padding=new Padding(0,20,0,0),WrapContents=false};content.Controls.Add(buttons);buttons.BringToFront();
-        var save=MeterTheme.Button("save","Save",true);save.Width=80;save.Margin=new Padding(0,0,14,0);var skip=MeterTheme.Button("skip","Skip / hide",false);var cancel=MeterTheme.Button("cancel","Cancel",false);cancel.DialogResult=DialogResult.Cancel;buttons.Controls.Add(save);if(!embedded){buttons.Controls.Add(skip);buttons.Controls.Add(cancel);form.CancelButton=cancel;}
-        var hint=MeterTheme.Label("Changes apply after saving. No reconnect needed.",9,MeterTheme.Muted);hint.Dock=DockStyle.None;hint.Width=400;hint.Height=38;buttons.Controls.Add(hint);form.AcceptButton=save;
+        var familyField=Field("Plan badge",plan);var tierField=Field("Specific tier (manual, optional)",tier);
+        var purchaseField=Field("Purchase date",purchase);var modeField=Field("Date type",mode);var nextField=Field("Renewal / expiry",next);
+        var note=MeterTheme.Label("Dates are optional. Detection never changes dates. Leave blank to hide.",9,MeterTheme.Muted);
+        var enabled=new CheckBox{Name="membershipEnabled",Font=fieldFont,Text=Locale.T("Show renewal date in sidebar and overview"),Checked=data.Count>0&&Value(data,"enabled","True")!="False"};
+        var buttons=new FlowLayoutPanel{Margin=Padding.Empty,WrapContents=false};
+        var save=MeterTheme.Button("save","Save",true);var skip=MeterTheme.Button("skip","Skip / hide",false);var cancel=MeterTheme.Button("cancel","Cancel",false);
+        buttons.Controls.Add(save);if(!embedded){buttons.Controls.Add(skip);buttons.Controls.Add(cancel);cancel.DialogResult=DialogResult.Cancel;form.CancelButton=cancel;}
+        var lines=new[]{new Panel(),new Panel(),new Panel()};foreach(var line in lines){line.BackColor=MeterTheme.Line;content.Controls.Add(line);}
+        foreach(Control c in new Control[]{summary,source,optional,detect,dateTitle,familyField,tierField,purchaseField,modeField,nextField,note,enabled,buttons}){c.Dock=DockStyle.None;content.Controls.Add(c);}
+        form.AcceptButton=save;
+        Action updateSummary=()=>{summary.Text=plan.Text+(tier.Enabled&&tier.SelectedIndex>0?"   /   "+tier.Text:"");};
+        plan.SelectedIndexChanged+=(s,e)=>updateSummary();tier.SelectedIndexChanged+=(s,e)=>updateSummary();updateSummary();
         bool arranging=false;
-        Action arrange=()=>{
-            if(arranging)return;arranging=true;
-            try{
-                float scale;using(var g=content.CreateGraphics())scale=g.DpiX/96f;
-                int available=Math.Max(0,body.ClientSize.Height-body.Padding.Vertical);
-                // Keep the approved spacing when it fits; reclaim whitespace before scrolling.
-                float room=Math.Max(0,Math.Min(1,(available/scale-420)/110));
-                int[] regular={46,94,42,186,46,46,70},compact={32,80,30,152,40,36,50};
-                Control[] rows={optional,planRow,source,fields,note,enabled,buttons};
-                int width=Math.Min((int)(760*scale),Math.Max(0,body.ClientSize.Width-body.Padding.Horizontal)),y=0;
-                for(int i=0;i<rows.Length;i++){
-                    int height=(int)Math.Floor((compact[i]+(regular[i]-compact[i])*room)*scale);
-                    rows[i].Dock=DockStyle.None;rows[i].SetBounds(0,y,width,height);y+=height;
-                }
-                planRow.Padding=new Padding(0,(int)((8+8*room)*scale),0,0);
-                detect.Margin=new Padding((int)(4*scale),(int)(30*scale),0,(int)(10*room*scale));
-                fields.Padding=new Padding(0,(int)((8+8*room)*scale),0,0);
-                float fieldHeight=(fields.Height-fields.Padding.Top-(int)(6*room*scale))/2f;
-                foreach(RowStyle row in fields.RowStyles){row.SizeType=SizeType.Absolute;row.Height=fieldHeight;}
-                buttons.Padding=new Padding(0,(int)((8+12*room)*scale),0,0);
-                content.Height=y;
-                body.AutoScroll=available<(int)(420*scale);
-                body.AutoScrollMinSize=body.AutoScroll?new Size(0,y):Size.Empty;
-            }finally{arranging=false;}
-        };
-        content.Resize+=(s,e)=>arrange();body.ClientSizeChanged+=(s,e)=>arrange();form.Shown+=(s,e)=>arrange();arrange();
-        foreach(var p in new[]{planRow,fields})p.Paint+=(s,e)=>{using(var pen=new Pen(MeterTheme.Line))e.Graphics.DrawLine(pen,0,0,p.Width,0);};
+        Action arrange=()=>{if(arranging)return;arranging=true;try{using(var g=content.CreateGraphics()){
+            Func<int,int> px=n=>(int)Math.Round(n*g.DpiX/96);
+            int available=body.ClientSize.Height-body.Padding.Vertical;
+            int w=Math.Min(px(900),Math.Max(0,body.ClientSize.Width-body.Padding.Horizontal));
+            int gap=px(16),col=Math.Max(1,(w-gap)/2),right=col+gap;
+            int detectWidth=Math.Max(px(110),TextRenderer.MeasureText(g,detect.Text,detect.Font).Width+px(20));
+            detect.SetBounds(w-detectWidth,0,detectWidth,px(34));
+            int titleWidth=Math.Min(w/3,TextRenderer.MeasureText(g,summary.Text,summary.Font).Width+px(12));
+            summary.SetBounds(0,0,titleWidth,px(34));source.SetBounds(titleWidth,0,Math.Max(0,detect.Left-titleWidth-gap),px(34));
+            optional.SetBounds(0,px(35),w,px(29));lines[0].SetBounds(0,px(70),w,1);
+            familyField.SetBounds(0,px(76),col,px(60));tierField.SetBounds(right,px(76),w-right,px(60));
+            lines[1].SetBounds(0,px(146),w,1);dateTitle.SetBounds(0,px(151),w,px(23));
+            purchaseField.SetBounds(0,px(178),col,px(60));modeField.SetBounds(right,px(178),w-right,px(60));
+            nextField.SetBounds(0,px(244),col,px(60));enabled.SetBounds(right,px(264),w-right,px(36));
+            int nh=Math.Max(px(24),TextRenderer.MeasureText(g,note.Text,note.Font,new Size(Math.Max(1,w),int.MaxValue),TextFormatFlags.WordBreak).Height+2);
+            note.SetBounds(0,px(309),w,nh);lines[2].SetBounds(0,note.Bottom+px(8),w,1);
+            save.MinimumSize=new Size(MeterTheme.SaveWidth(g,save,true),0);
+            foreach(Button b in buttons.Controls){b.Margin=new Padding(0,0,px(8),0);b.Size=new Size(Math.Max(b.MinimumSize.Width,TextRenderer.MeasureText(g,b.Text,b.Font).Width+px(26)),px(34));}
+            buttons.SetBounds(0,lines[2].Bottom+px(10),w,px(38));
+            int h=buttons.Bottom+px(4);content.Height=h;body.AutoScroll=available<h;
+            body.AutoScrollMinSize=body.AutoScroll?new Size(0,h):Size.Empty;
+        }}finally{arranging=false;}};
+        content.Resize+=(s,e)=>arrange();body.ClientSizeChanged+=(s,e)=>arrange();form.Shown+=(s,e)=>arrange();
+        foreach(var c in new Control[]{summary,optional,note,detect,source,skip,cancel})c.TextChanged+=(s,e)=>arrange();arrange();
         bool dirty=false,loading=false,planEdited=false,tierEdited=false;
         Action update=()=>{bool estimate=mode.SelectedIndex==0||mode.SelectedIndex==3;next.Enabled=!estimate;if(estimate){next.Checked=purchase.Checked;if(purchase.Checked)next.Value=mode.SelectedIndex==3?purchase.Value.AddYears(1):purchase.Value.AddMonths(1);next.CustomFormat=next.Checked?"yyyy-MM-dd":" ";}};
-        Action change=()=>{if(!loading&&!Locale.IsTranslating)dirty=true;};
+        Action change=()=>{if(!loading&&!Locale.IsTranslating){dirty=true;}};
         plan.SelectedIndexChanged+=(s,e)=>{if(Locale.IsTranslating||loading||plan.SelectedIndex<0)return;string prior=tierIds[Math.Max(0,tier.SelectedIndex)];populateTiers(prior);planEdited=tierEdited=true;source.Text=Locale.T("Manual record preserved");source.ForeColor=MeterTheme.Amber;change();};
         tier.SelectedIndexChanged+=(s,e)=>{if(!Locale.IsTranslating&&!loading&&!refreshingTier){planEdited=true;tierEdited=true;change();}};
         mode.SelectedIndexChanged+=(s,e)=>{if(!Locale.IsTranslating){update();change();}};purchase.ValueChanged+=(s,e)=>{update();change();};next.ValueChanged+=(s,e)=>change();enabled.CheckedChanged+=(s,e)=>change();update();dirty=false;
@@ -177,7 +187,7 @@ internal static class MeterPreferences {
             if(!resolve())return;
             if(MessageBox.Show(Locale.T("Detect the plan family from Codex desktop? Manual tier and dates stay unchanged."),form.Text,MessageBoxButtons.OKCancel,MessageBoxIcon.Question,MessageBoxDefaultButton.Button2)!=DialogResult.OK)return;
             detect.Enabled=false;source.Text=Locale.T("Detecting plan...");
-            DetectPlan(form,new DirectoryInfo(root).Parent.FullName,"detect",result=>{detect.Enabled=true;bool ok=Value(result,"detected","")=="True";if(ok){data=Read(memberPath);loading=true;for(int i=0;i<ids.Length;i++)if(ids[i]==Value(data,"plan",""))plan.SelectedIndex=i;loadTier();loading=false;dirty=false;planEdited=false;source.Text=Locale.T("Plan family detected from Codex desktop");source.ForeColor=Color.FromArgb(25,112,90);}else{source.Text=DetectionMessage(result);source.ForeColor=MeterTheme.Amber;}});
+            DetectPlan(form,new DirectoryInfo(root).Parent.FullName,"detect",result=>{detect.Enabled=true;bool ok=Value(result,"detected","")=="True";if(ok){data=Read(memberPath);loading=true;for(int i=0;i<ids.Length;i++)if(ids[i]==Value(data,"plan",""))plan.SelectedIndex=i;loadTier();loading=false;dirty=false;planEdited=false;source.Text=Locale.T("Plan family detected from Codex desktop");source.ForeColor=MeterTheme.Tint(Color.FromArgb(25,112,90));}else{source.Text=DetectionMessage(result);source.ForeColor=MeterTheme.Amber;}});
         };
         return form;
     }

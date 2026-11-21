@@ -7,9 +7,9 @@ $version=$manifest.version
 $folder=Join-Path $project "dist/chrome-web-$version"
 $extension=Join-Path $folder 'extension'
 New-Item -ItemType Directory -Path $extension -Force | Out-Null
-$names=@('manifest.json','source.js','content.js','background.js','icon-32.png','icon-128.png','guide.html','README.md')
+$names=@('manifest.json','source.js','content.js','background.js','icon-32.png','icon-128.png','guide.html','guide.js','README.md')
 foreach($name in $names){Copy-Item -LiteralPath (Join-Path $source $name) -Destination (Join-Path $extension $name) -Force}
-$zip=Join-Path $folder "Codex-Quota-by-KEFEN-Chrome-$version.zip"
+$zip=Join-Path $folder "AI-Quota-Board-Chrome-$version.zip"
 Compress-Archive -LiteralPath @($names | ForEach-Object {Join-Path $extension $_}) -DestinationPath $zip -Force
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $archive=[IO.Compression.ZipFile]::OpenRead($zip)
@@ -26,6 +26,6 @@ try{
 }finally{$archive.Dispose()}
 $sums=@($zip)+@($names | ForEach-Object {Join-Path $extension $_}) | ForEach-Object {(Get-FileHash -LiteralPath $_ -Algorithm SHA256).Hash.ToLowerInvariant()+'  '+[IO.Path]::GetFileName($_)}
 $sums | Set-Content -LiteralPath (Join-Path $folder 'SHA256SUMS.txt') -Encoding ascii
-Write-Host 'PASS: eight allowlisted runtime/documentation files; extracted ZIP hashes match source; no tests, profiles or account data bundled.'
+Write-Host 'PASS: nine allowlisted runtime/documentation files; extracted ZIP hashes match source; no tests, profiles or account data bundled.'
 Write-Host "Release ZIP: $zip"
 Write-Host "Load unpacked: $extension"

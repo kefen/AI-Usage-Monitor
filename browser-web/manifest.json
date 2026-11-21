@@ -1,12 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "Codex Quota by KEFEN",
-  "version": "0.5.3",
+  "name": "AI Quota Board",
+  "version": "0.5.4",
   "description": "Your current web account's Codex / Work allowance at the bottom of the ChatGPT sidebar.",
   "author": "KEFEN",
   "permissions": ["storage","alarms"],
   "options_page": "guide.html",
-  "action": { "default_title": "Codex usage / Show or hide", "default_icon": "icon-32.png" },
+  "action": { "default_title": "AI Quota Board · Show or hide", "default_icon": "icon-32.png" },
   "background": { "service_worker": "background.js" },
   "content_scripts": [{
     "matches": ["https://chatgpt.com/*"],

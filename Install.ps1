@@ -4,7 +4,7 @@ $ErrorActionPreference = 'Stop'
 $source = [IO.Path]::GetFullPath($PSScriptRoot)
 if (-not $Destination) { $Destination = Join-Path $env:USERPROFILE 'Documents\Codex\Apps\CodexSidebarMeter' }
 if (-not $ShortcutPath) {
-    $name = 'Codex Quota Sidebar.lnk'
+    $name = 'AI Quota Board.lnk'
     $ShortcutPath = Join-Path ([Environment]::GetFolderPath('Desktop')) $name
 }
 $Destination = [IO.Path]::GetFullPath($Destination).TrimEnd('\')
@@ -39,7 +39,7 @@ if (Test-Path -LiteralPath $Destination) {
     } else {
         $old = Get-Content -LiteralPath $marker -Raw -Encoding UTF8 | ConvertFrom-Json
         if ($old.id -ne 'local-codex-sidebar-meter') { throw 'Unrecognized install marker.' }
-        if ($old.shortcut -ne $ShortcutPath -and [IO.Path]::GetFileName($ShortcutPath) -ne 'Codex Quota Sidebar.lnk') { throw 'Use the shortcut location recorded by the existing installation.' }
+        if ($old.shortcut -ne $ShortcutPath -and [IO.Path]::GetFileName($ShortcutPath) -ne 'AI Quota Board.lnk') { throw 'Use the shortcut location recorded by the existing installation.' }
     }
 }
 $shell = New-Object -ComObject WScript.Shell
@@ -119,7 +119,7 @@ $cleanupBackup=$true
     }
 }
 Write-Host "Installed: $Destination"
-if([IO.Path]::GetFileName($ShortcutPath) -eq 'Codex Quota Sidebar.lnk'){
+if([IO.Path]::GetFileName($ShortcutPath) -eq 'AI Quota Board.lnk'){
     # Only remove verified duplicates beside the successfully installed shortcut.
     foreach($candidate in Get-ChildItem -LiteralPath (Split-Path $ShortcutPath -Parent) -Filter '*.lnk' -File){
         if($candidate.FullName -eq $ShortcutPath -or ($candidate.Attributes -band [IO.FileAttributes]::ReparsePoint)){continue}

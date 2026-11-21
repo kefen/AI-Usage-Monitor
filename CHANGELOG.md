@@ -1,5 +1,10 @@
 # Changelog
 
+## AI Quota Board by KEFEN: Windows 0.13.6 / macOS 0.5.4-alpha.4 / Chrome 0.5.4
+- Renamed the apps, installers, extension and project. Existing settings retain their storage locations. The first Mac upgrade across the app rename is manual.
+- Updated the native usage, plan and settings views, action styles and multilingual preferences. Chrome remains standalone and uses only readings offered by the web page.
+- Both Mac architectures are separate, non-notarized prerelease downloads; Windows is unsigned and Chrome is an unpacked extension.
+
 ## Monthly Tokens: Windows 0.13.5 / macOS 0.5.2-alpha.1 / Chrome 0.5.3
 - Windows and macOS show the current UTC calendar month's sum of returned daily Token records in the sidebar and overview. Partial coverage, missing data and zero are distinct; monthly average remains separate.
 - Chrome shows the total only if the official usage page provides an explicitly labeled current-month Token count for the signed-in account. It does not use desktop data.

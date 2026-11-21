@@ -47,7 +47,7 @@ enum Bootstrap {
            fm.isExecutableFile(atPath: root.appendingPathComponent("runtime/node").path) { return }
         let lock = root.appendingPathComponent(".runtime/mac.pid")
         if let text = try? String(contentsOf: lock, encoding: .utf8), let pid = Int32(text.trimmingCharacters(in: .whitespacesAndNewlines)), pid > 1, kill(pid, 0) == 0 {
-            throw NSError(domain: "CQS", code: 1, userInfo: [NSLocalizedDescriptionKey: "Exit the previous Codex Quota Sidebar before installing this update."])
+            throw NSError(domain: "CQS", code: 1, userInfo: [NSLocalizedDescriptionKey: "Exit the previous AI Quota Board before installing this update."])
         }
         let parent = root.deletingLastPathComponent()
         try fm.createDirectory(at: parent, withIntermediateDirectories: true)

@@ -38,7 +38,7 @@ internal static class NativeVisualTest {
         using(var window=new LaunchWindow(()=>opens++,()=>retries++,()=>{},()=>{})){
             Assert(window.Controls.Find("brandCaption",true)[0].Text=="by KEFEN","Main header must not repeat page name or slash");
             Assert(window.ClientSize==new Size(1184,792),"V3 target must be 1184 x 792 client pixels at 100% DPI");
-            window.Present();window.UpdateState("starting",new Dictionary<string,object>());Assert(window.Controls.Find("statusHeadline",true)[0].Parent.Parent.Parent.Controls.Count==1,"Initial overview is covered by a transient page");Capture(window,"startup");
+            window.Present();window.UpdateState("starting",new Dictionary<string,object>());Assert(window.Controls.Find("usageOverview",true)[0].Visible,"Initial overview is covered by a transient page");Capture(window,"startup");
             window.UpdateState("failed",new Dictionary<string,object>{{"code","Codex preparation failed. Run Diagnose.cmd."}});Capture(window,"retry");((Button)window.Controls.Find("reconnect",true)[0]).PerformClick();Assert(retries==1,"Retry callback missing");
             window.UpdateState("mounted",new Dictionary<string,object>{{"quotaAvailable",true},{"usageAvailable",false},{"updatedAt","2026-01-01T12:00:00Z"}});Capture(window,"connected");Assert(window.Controls.Find("reconnect",true)[0].Enabled,"Reconnect must work with an existing monitor");
             foreach(string language in new[]{"en","zh-CN","zh-TW"}){
@@ -59,19 +59,36 @@ internal static class NativeVisualTest {
                 int topLevel=0;foreach(Form f in Application.OpenForms)if(f.TopLevel&&f.Visible)topLevel++;
                 Assert(topLevel==1,"Navigation opened a separate top-level window");
                 if(section=="Codex subscription record"||section=="Sidebar content"){
-                    if(section=="Codex subscription record"){var p=window.Controls.Find("planContent",true)[0];Assert(p.Height>=420&&p.Width>=700,"Plan form collapsed: "+p.Size);var control=window.Controls.Find("save",true)[0];Assert(window.RectangleToScreen(window.ClientRectangle).Contains(control.RectangleToScreen(control.ClientRectangle)),"Plan controls not in visible viewport");}
+                    if(section=="Codex subscription record"){var p=window.Controls.Find("planContent",true)[0];Assert(p.Height>=360&&p.Width>=700,"Plan form collapsed: "+p.Size);var control=window.Controls.Find("save",true)[0];Assert(window.RectangleToScreen(window.ClientRectangle).Contains(control.RectangleToScreen(control.ClientRectangle)),"Plan controls not in visible viewport");}
                     if(section=="Codex subscription record"){
                         var embedded=window.Controls.Find("plan",true)[0].FindForm();var guard=embedded.Tag;embedded.Tag=new Func<bool>(()=>false);Assert(!window.ResolveEdits(),"Update/quit must respect unsaved page guard");embedded.Tag=guard;
                         ((ComboBox)window.Controls.Find("plan",true)[0]).SelectedIndex=2;
                         ((NavigationItem)buttons[0]).PerformClick();Application.DoEvents();
                         Assert(((ComboBox)window.Controls.Find("plan",true)[0]).SelectedIndex==2,"Clicking current page discarded edits");
                     }
-                    var save=(Button)window.Controls.Find(section=="Sidebar content"?"saveDisplay":"save",true)[0];save.PerformClick();Application.DoEvents();
-                    Assert(save.Visible&&!save.Enabled&&save.Text==Locale.T("Saved successfully"),"Save did not remain on page with success feedback");
-                    if(section=="Codex subscription record")Assert(((Func<bool>)save.FindForm().Tag)(),"Successful save left dirty guard active");
-                    var until=DateTime.UtcNow.AddMilliseconds(1600);while(DateTime.UtcNow<until){Application.DoEvents();System.Threading.Thread.Sleep(10);}
-                    Assert(save.Enabled&&save.Text==Locale.T("Save"),"Save feedback did not reset");
+                    if(section=="Sidebar content"){
+                        Assert(window.Controls.Find("displayAutoSave",true).Length==0&&window.Controls.Find("saveDisplay",true).Length==0,"Unexpected manual save controls");
+                        var bulk=(Button)window.Controls.Find("selectAll",true)[0];
+                        var list=(CheckedListBox)window.Controls.Find("displayOptions",true)[0];
+                        if(list.CheckedItems.Count!=list.Items.Count)bulk.PerformClick();
+                        Assert(bulk.Text==Locale.T("Select none"),"All-selected action mismatch");
+                        bulk.PerformClick();Application.DoEvents();
+                        Assert(list.CheckedItems.Count==0&&bulk.Text==Locale.T("Select all"),"Clear-all action mismatch");
+                        ((CheckBox)window.Controls.Find("display-monthly",true)[0]).Checked=true;Application.DoEvents();
+                        Assert(bulk.Text==Locale.T("Select all"),"Partial selection action mismatch");
+                        var saved=MeterPreferences.Read(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,".runtime","display.json"));
+                        Assert(Convert.ToBoolean(saved["monthly"])&&!Convert.ToBoolean(saved["weekly"]),"Selection not persisted");
+                        bulk.PerformClick();Application.DoEvents();
+                    }else{
+                        var save=(Button)window.Controls.Find("save",true)[0];
+                        save.PerformClick();Application.DoEvents();
+                        Assert(save.Visible&&!save.Enabled&&save.Text==Locale.T("Saved successfully"),"Save did not remain on page with success feedback");
+                        Assert(((Func<bool>)save.FindForm().Tag)(),"Successful save left dirty guard active");
+                        var until=DateTime.UtcNow.AddMilliseconds(1600);while(DateTime.UtcNow<until){Application.DoEvents();System.Threading.Thread.Sleep(10);}
+                        Assert(save.Enabled&&save.Text==Locale.T("Save"),"Save feedback did not reset");
+                    }
                 }
+                if(section=="Data and settings"){int previous=MeterTheme.Mode;MeterTheme.SetMode(2,false);Application.DoEvents();Assert(window.BackColor.GetBrightness()<0.35,"Window did not adopt dark appearance");Capture(window,"settings-dark");MeterTheme.SetMode(1,false);Assert(window.BackColor.GetBrightness()>0.8,"Window did not adopt light appearance");MeterTheme.SetMode(previous,false);}
                 Capture(window,"page-"+section.Replace(" ","-"));
                 foreach(string language in new[]{"zh-CN","zh-TW","en"}){Locale.Set(language);Capture(window,"page-"+section.Replace(" ","-")+"-"+language);}
             }
@@ -82,7 +99,10 @@ internal static class NativeVisualTest {
         }
         int installs=0,launches=0;
         string destination=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"wizard");
-        using(var setup=new SetupWindow(destination,()=>{if(++installs==1)throw new IOException("Test failure; retry is safe.");},()=>launches++,()=>@"C:\Program Files\WindowsApps\OpenAI.Codex",()=>{})){
+        using(var finishFirst=new System.Threading.ManualResetEventSlim(false))
+        using(var setup=new SetupWindow(destination,()=>{if(++installs==1){finishFirst.Wait(5000);throw new IOException("Test failure; retry is safe.");}},()=>launches++,()=>@"C:\Program Files\WindowsApps\OpenAI.Codex",()=>{})){
+            var about=(NavigationItem)setup.Controls.Find("setupAbout",true)[0];
+            Assert(about.Glyph=="\uE946"&&about.Dock==DockStyle.Bottom&&about.TabStop,"Setup About must use the keyboard-accessible info navigation item");
             setup.Show();Wait(setup);Capture(setup,"install-environment");foreach(string language in new[]{"zh-CN","zh-TW","en"}){Locale.Set(language);Capture(setup,"install-environment-"+language);}Click(setup);
             var path=(TextBox)setup.Controls.Find("destination",true)[0];path.Text=@"D:\CodexTools\CodexQuotaSidebar";Capture(setup,"install-location");
             foreach(string language in new[]{"zh-CN","zh-TW","en"}){Locale.Set(language);Capture(setup,"install-location-"+language);}
@@ -91,7 +111,10 @@ internal static class NativeVisualTest {
             Assert(setup.Controls.Find("setupError",true).Length==1,"Invalid destination must show inline feedback");
             ((TextBox)setup.Controls.Find("destination",true)[0]).Text=destination;Click(setup);
             foreach(string language in new[]{"en","zh-CN","zh-TW"}){Locale.Set(language);Capture(setup,"options-"+language);}Locale.Set("en");
-            Capture(setup,"install-options");Click(setup);Wait(setup);
+            Capture(setup,"install-options");Click(setup);
+            try{Assert(!setup.Controls.Find("install",true)[0].Enabled,"Install action must not run twice");Locale.Set("zh-TW");Capture(setup,"install-working-zh-TW");}finally{finishFirst.Set();}Wait(setup);
+            Assert(setup.Controls.Find("membership",true).Length==0&&setup.Controls.Find("setupError",true).Length==1,"Failed install must not show completion actions");
+            Locale.Set("en");
             Assert(installs==1,"Install callback missing");Capture(setup,"install-failed");Click(setup);Wait(setup);
             Assert(installs==2,"Retry did not invoke install");Capture(setup,"installed");
             foreach(string language in new[]{"zh-CN","zh-TW","en"}){Locale.Set(language);Capture(setup,"installed-"+language);}

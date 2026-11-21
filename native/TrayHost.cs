@@ -15,7 +15,7 @@ internal static class TrayHost {
     static readonly string Runtime = Path.Combine(Root, ".runtime");
     static readonly string StopPath = Path.Combine(Runtime, "background-stop.request");
     static readonly string OpenPath = Path.Combine(Runtime, "background-open.request");
-    static readonly string Title = "Codex Quota Sidebar";
+    static readonly string Title = "AI Quota Board";
     static readonly JavaScriptSerializer Json = new JavaScriptSerializer();
     static readonly string Ps = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell\\v1.0\\powershell.exe");
     static Process child;

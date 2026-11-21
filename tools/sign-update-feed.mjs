@@ -16,14 +16,14 @@ const notesFile=macOnly?(versions.macos==='0.5.2-alpha.1'?'notes-monthly-tokens'
 const notesByLocale=JSON.parse(await readFile('docs/releases/'+notesFile+'.json','utf8'));
 const notes=notesByLocale.en.map((line,i)=>(i+1)+'. '+line).join('\n');
 for(const [target,version,name,tag] of [
- ['windows-x64',versions.windows,'Codex-Quota-Sidebar-Windows-'+versions.windows+'-x64-Setup.exe','windows/v'+versions.windows],
- ['macos-arm64',versions.macos,'Codex-Quota-Sidebar-macOS-'+versions.macos+'-arm64-unsigned-test.dmg','macos/v'+versions.macos],
- ['macos-x64',versions.macos,'Codex-Quota-Sidebar-macOS-'+versions.macos+'-x86_64-unsigned-test.dmg','macos/v'+versions.macos]
+ ['windows-x64',versions.windows,'AI-Quota-Board-Windows-'+versions.windows+'-x64-Setup.exe','windows/v'+versions.windows],
+ ['macos-arm64',versions.macos,'AI-Quota-Board-macOS-'+versions.macos+'-arm64-unsigned-test.dmg','macos/v'+versions.macos],
+ ['macos-x64',versions.macos,'AI-Quota-Board-macOS-'+versions.macos+'-x86_64-unsigned-test.dmg','macos/v'+versions.macos]
 ]){
  if(windowsOnly&&target!=='windows-x64')continue;
  if(macOnly&&target==='windows-x64')continue;
  const bytes=await readFile(join(process.env.CQS_ARTIFACT_DIRECTORY||'dist',name));
- releases[target]=validateAsset({version,size:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex'),url:'https://github.com/kefen/codex-quota-sidebar/releases/download/'+encodeURIComponent(tag)+'/'+name,notes,notesByLocale});
+ releases[target]=validateAsset({version,size:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex'),url:'https://github.com/kefen/AI-Quota-Board/releases/download/'+encodeURIComponent(tag)+'/'+name,notes,notesByLocale});
 }
 const payload=Buffer.from(JSON.stringify({schema:1,issuedAt:Date.now(),expiresAt:Date.now()+180*86400000,releases,chrome:baseline?.chrome??chrome}));
 const privateKey=await readFile(join(folder,'private.pem'),'utf8');

@@ -6,7 +6,7 @@ import {tmpdir,homedir,arch} from 'node:os';
 import {spawn,spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {backupSettings,verifySettings,restoreSettings,localizedNotes,canonicalEntry,transactionState,waitForRecord} from './update-transaction.mjs';
-const feedURL='https://raw.githubusercontent.com/kefen/codex-quota-sidebar/main/docs/updates/latest.json';
+const feedURL='https://raw.githubusercontent.com/kefen/AI-Quota-Board/main/docs/updates/latest.json';
 export const wholeCredits=value=>typeof value==='string'&&/^\d+(\.\d+)?$/.test(value)&&Number.isSafeInteger(Math.floor(Number(value)))?String(Math.floor(Number(value))):'--';
 export const reusableCheck=(state,current,language,now=Date.now())=>state.current===current&&state.language===language&&Number.isFinite(state.checkedAt)&&state.checkedAt<=now&&now-state.checkedAt<21600000;
 export function updateError(error) {
@@ -23,7 +23,7 @@ export function newer(a,b){
  const x=parse(a),y=parse(b);for(let i=0;i<x.length;i++)if(x[i]!==y[i])return x[i]>y[i];return false;
 }
 export function validateAsset(a){
- const u=new URL(a.url);if(u.protocol!=='https:'||u.hostname!=='github.com'||u.username||u.password||u.port||!u.pathname.startsWith('/kefen/codex-quota-sidebar/releases/download/')||u.search||u.hash)throw Error('Untrusted asset');
+ const u=new URL(a.url);if(u.protocol!=='https:'||u.hostname!=='github.com'||u.username||u.password||u.port||!u.pathname.startsWith('/kefen/AI-Quota-Board/releases/download/')||u.search||u.hash)throw Error('Untrusted asset');
  if(!/^[a-f0-9]{64}$/.test(a.sha256)||!Number.isSafeInteger(a.size)||a.size<1||a.size>180000000)throw Error('Invalid asset');newer(a.version,'0.0.0');return a;
 }
 export function verifyFeed(envelope,key,now=Date.now()){
@@ -50,7 +50,7 @@ async function requestBytes(url,limit,asset,fetcher,delay,signal,onBytes){
   let r;
   for(let attempt=0;attempt<(asset?1:2);attempt++){
    try{
-    r=await fetcher(current,{redirect:'manual',signal:signal??AbortSignal.timeout(asset?120000:8000),headers:{'User-Agent':'Codex-Quota-Sidebar-Updater'}});
+    r=await fetcher(current,{redirect:'manual',signal:signal??AbortSignal.timeout(asset?120000:8000),headers:{'User-Agent':'AI-Quota-Board-Updater'}});
     if(r.status===429||r.status>=500)throw Error('E_UPDATE_NETWORK');
     break;
    }catch{if(asset||attempt===1)throw Error('E_UPDATE_NETWORK');await delay(250);}
@@ -92,14 +92,14 @@ async function apply(planPath){
    await new Promise((resolve,reject)=>{child.once('spawn',resolve);child.once('error',reject);});child.unref();
    await state('installed',{settingsPreserved:true});return;
   }
-  const allowed=[join('/Applications','Codex Quota Sidebar.app'),join(homedir(),'Applications','Codex Quota Sidebar.app')];
+  const allowed=[join('/Applications','AI Quota Board.app'),join(homedir(),'Applications','AI Quota Board.app')];
   if(!allowed.includes(plan.destination))throw Error('E_UPDATE_INSTALL_LOCATION');
   const mount=join(dirname(planPath),'mount');await mkdir(mount,{recursive:true});
   const next=plan.destination+'.update-'+plan.id,backup=plan.destination+'.backup-'+plan.id;
   let moved=false,replaced=false;
   try{
    run('/usr/bin/hdiutil',['attach','-readonly','-nobrowse','-mountpoint',mount,plan.file]);
-   const app=join(mount,'Codex Quota Sidebar.app');
+   const app=join(mount,'AI Quota Board.app');
    run('/usr/bin/codesign',['--verify','--deep','--strict',app]);
    const candidateVersion=run('/usr/libexec/PlistBuddy',['-c','Print :CQSReleaseVersion',join(app,'Contents','Info.plist')]).trim();
    if(candidateVersion!==asset.version)throw Error('E_UPDATE_BUNDLE_VERSION');

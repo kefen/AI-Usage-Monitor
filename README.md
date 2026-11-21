@@ -1,11 +1,37 @@
-# Codex Quota Sidebar by KEFEN
+# AI Quota Board
 
-An unofficial local companion that puts quota and Token usage in the Codex
-desktop navigation rail. Not affiliated with or endorsed by OpenAI.
+by KEFEN
 
-**Author: KEFEN.**
+在 Codex 侧边栏看剩余额度和 Token 消耗，不用为了查一个数字打断当前工作。Windows 和 Mac 可查看每日走势、比较本周与本月用量，并记录自己的续费日。Chrome 版独立运行，只显示 ChatGPT 网页实际提供的用量，不读取桌面数据。
 
-[GitHub](https://github.com/kefen/codex-quota-sidebar) | [Security](SECURITY.md) | [MIT license](LICENSE)
+An unofficial quota and token usage companion for Codex desktop, with a separate Chrome extension for ChatGPT. Not affiliated with OpenAI. Usage is not an API invoice.
+
+## 下载 Downloads
+
+| 系统 | 安装包 | 安装方式 |
+| --- | --- | --- |
+| Windows 10 / 11 x64 | [Windows 0.13.6](https://github.com/kefen/AI-Quota-Board/releases/tag/windows/v0.13.6) | 下载未签名的 Setup.exe；升级选择原安装目录。 |
+| Mac · Apple 芯片 | [Apple Silicon DMG](https://github.com/kefen/AI-Quota-Board/releases/download/macos%2Fv0.5.4-alpha.4/AI-Quota-Board-macOS-0.5.4-alpha.4-arm64-unsigned-test.dmg) | M 系列芯片；0.5.4-alpha.4，未公证预发布版。 |
+| Mac · Intel | [Intel DMG](https://github.com/kefen/AI-Quota-Board/releases/download/macos%2Fv0.5.4-alpha.4/AI-Quota-Board-macOS-0.5.4-alpha.4-x86_64-unsigned-test.dmg) | Intel 处理器；同一预发布版本。 |
+| Chrome | [Chrome 0.5.4](https://github.com/kefen/AI-Quota-Board/releases/tag/chrome/v0.5.4) | 解压 ZIP，在扩展管理页选择“加载已解压的扩展程序”；不是商店版。 |
+
+[安装与使用指南](docs/USER-GUIDE.md) · [安全说明](SECURITY.md) · [MIT License](LICENSE)
+
+## 界面 Screenshots
+
+以下为运行界面的示例数据，不代表真实账户额度。
+
+**Windows · 用量概览**：折线查看每日消耗，右侧查看剩余额度。
+
+![Windows 用量概览](docs/screenshots/board-windows.png)
+
+**macOS · 原生操作面板**：同一窗口查看趋势、套餐和设置，连接操作位于右下角。截图来自上一测试构建 alpha.3。
+
+![macOS 原生面板](docs/screenshots/board-mac.png)
+
+**Chrome · 网页用量**：只在网页明确提供本月总量时显示月度 Token。
+
+![Chrome 网页用量示例](docs/screenshots/board-chrome.png)
 
 ## Before Downloading
 
@@ -52,94 +78,6 @@ One x64 installer covers Windows 10/11; separate OS-specific packages are not
 needed. Prefer a currently supported Windows release. Windows 11 ARM64 requires
 a separately built and tested package before native support can be claimed;
 none is currently shipped. Windows 7/8 and 32-bit x86 are not supported.
-
-## Screenshots
-
-**Current versions:** Windows **0.13.5**, macOS **0.5.3-alpha.1**
-(Apple Silicon and Intel), Chrome **0.5.3**.
-
-The V3 desktop overview uses quota rulers and a shared-scale comparison of daily
-tokens with the monthly daily average, followed by weekly and lifetime totals.
-All eleven sidebar display choices are shared with the overview; unchecked items
-are hidden and empty groups collapse. Selected items with missing data retain
-their position. The standalone browser card uses the current web account's visible shared allowance, not the desktop Token source.
-Zero is a real value; missing
-data says **Not returned**, expired data says **Data expired**, and disconnected
-desktop views say **Not connected**. Weekly calculations are unchanged.
-Plan-family detection reads supported metadata from the verified desktop renderer,
-never the CLI account. If needed, it briefly opens the official usage menu to read
-an exact quota-source label and restores the menu it opened. It never reads chat
-content or guesses from a profile name. Unsupported or ambiguous labels remain
-**Unknown**, with manual selection available. Manual corrections are locked until you explicitly choose **Detect
-plan** again. Detection never guesses or replaces your specific billing tier,
-purchase date or renewal date. No billing credentials are scraped.
-
-Current Windows and Chrome interfaces, rendered with **synthetic sample data**,
-not a real account. The sidebar screenshot uses a test shell rather than the
-full Codex application. Native window chrome depends on Windows settings.
-
-### Guided installation
-![Windows installer](docs/screenshots/windows-install.png)
-
-### Usage overview
-![Windows usage overview](docs/screenshots/windows-status.png)
-
-### Partial and missing data
-![Windows overview with missing fields and real zero](docs/screenshots/windows-partial.png)
-![Windows connected overview before data arrives](docs/screenshots/windows-empty.png)
-
-### Shared display choices and protected subscription records
-![Eleven shared display choices](docs/screenshots/display-choices.png)
-![Plan family detection, manual correction and optional dates](docs/screenshots/plan-and-dates.png)
-
-### Inline sidebar
-![Sidebar in a generated Codex-style workspace](docs/screenshots/codex-sidebar-overview.png)
-
-Generated Codex-style demonstration using the actual sidebar component and
-synthetic data. Not a capture of the live Codex application or a real account.
-
-### Codex Quota by KEFEN for Chrome
-![Chrome web card, English with synthetic usage data](docs/screenshots/chrome-web-052.png)
-
-### macOS experimental companion
-![Native macOS usage overview](docs/screenshots/mac-settings.png)
-
-![Native macOS overview before data arrives](docs/screenshots/mac-empty.png)
-
-Actual AppKit view captured on a macOS Actions runner with synthetic settings;
-not evidence of live-account connection acceptance.
-
-## Status
-
-| Platform | Version | Availability |
-| --- | --- | --- |
-| Windows 10/11 x64 | 0.13.5 | Monthly Token total in the overview and sidebar; unsigned installer |
-| macOS Apple Silicon / Intel | 0.5.3-alpha.1 | Update icon and download progress; experimental DMGs, not notarized |
-| Chrome MV3 | 0.5.3 | Monthly Token total when explicitly shown by the signed-in account's usage page |
-
-The Windows 0.12.3 interface was accepted by the user on 2026-11-16; 0.12.6 adds
-the requested statistics and read-only balance/reset indicators. A prior
-installer-only fix handles legacy Unicode shortcut cleanup on English Windows.
-Platform versions are
-independent; Windows acceptance does not imply macOS or browser-profile acceptance.
-Mac packages require macOS 13.5+ and a compatible official Codex client. The
-currently audited official download is Apple Silicon only; the Intel companion
-does not make an ARM-only official client compatible with Intel.
-
-## Downloads And Instructions
-
-- [Windows installer and checksums](https://github.com/kefen/codex-quota-sidebar/releases/tag/windows/v0.13.5)
-- [Chrome extension ZIP](https://github.com/kefen/codex-quota-sidebar/releases/tag/chrome/v0.5.3)
-- [macOS experimental installers, both architectures](https://github.com/kefen/codex-quota-sidebar/releases/tag/macos/v0.5.3-alpha.1)
-- **[Step-by-step illustrated user guide](docs/USER-GUIDE.md)**
-- [Release and acceptance record](docs/RELEASES.md)
-
-Use the named setup/extension assets, not GitHub's automatically generated source
-ZIP, to install Windows or Chrome. Only Windows is promoted to stable; Mac and
-browser remain explicitly experimental. Mac's limited user confirmation does not
-establish compatibility with every client version or Intel device.
-
-**Browser setup:** extract the Chrome ZIP and load its folder at `chrome://extensions`. Disable the legacy native-host companion. [Installation and data guide](browser-web/README.md).
 
 ## Features
 
@@ -205,7 +143,7 @@ externally modified files are retained.
 
 ## Chrome Companion
 
-**Codex Quota by KEFEN 0.5.3.** Expand ChatGPT's left sidebar: the compact Mac-style quota ruler is at the bottom. Read the current account's weekly allowance, plan, credits, available resets and reset time where provided. Select **Read full usage** to bring back a confirmed snapshot. Monthly Tokens appear only if the official page explicitly provides the current month's total; the extension does not substitute local desktop data. On desktop, Monthly Tokens sum the returned daily records for the current UTC calendar month; incomplete coverage is marked as partial and is not treated as zero.
+**AI Quota Board 0.5.4.** Expand ChatGPT's left sidebar: the compact Mac-style quota ruler is at the bottom. Read the current account's weekly allowance, plan, credits, available resets and reset time where provided. Select **Read full usage** to bring back a confirmed snapshot. Monthly Tokens appear only if the official page explicitly provides the current month's total; the extension does not substitute local desktop data. On desktop, Monthly Tokens sum the returned daily records for the current UTC calendar month; incomplete coverage is marked as partial and is not treated as zero.
 
 The extension observes changes already rendered by ChatGPT; it does not periodically refresh the site or hit a usage API. A daily public GitHub version check shows a toolbar badge and a link when a newer build exists. GitHub ZIPs must be replaced and reloaded manually.
 
@@ -249,9 +187,11 @@ macOS runners. The user confirmed live connection on Apple Silicon; Intel
 real-account acceptance remains pending. The packages are ad-hoc signed, not
 Developer ID signed or notarized.
 
+**首次更名升级：** 退出旧版 Codex Quota Sidebar.app，手动安装并打开 AI Quota Board.app。确认设置无误后只移除旧 .app，不删除应用支持目录；不要同时运行两份。
+
 **Install once, launch normally:** quit the previous companion, open the correct
-DMG, drag **Codex Quota Sidebar.app** to **Applications** (replace when upgrading),
-then eject the DMG. Open **Finder > Applications > Codex Quota Sidebar** next time;
+DMG, drag **AI Quota Board.app** to **Applications** (replace when upgrading),
+then eject the DMG. Open **Finder > Applications > AI Quota Board** next time;
 optionally choose **Options > Keep in Dock**. Double-clicking the app inside the
 DMG does not install it. Read `READ-ME-FIRST.html` in the DMG before first launch.
 The app's **About project > Show application in Finder** locates the installed copy.
@@ -259,7 +199,7 @@ Closing its window keeps monitoring in the menu bar; **Exit software** stops it.
 
 `mac/trust.json` pins OpenAI's verified Team ID; the launcher also validates the
 bundle identifier, full signature and loopback listener ownership. See the
-[publisher audit](https://github.com/kefen/codex-quota-sidebar/actions/runs/43805495761)
+[publisher audit](https://github.com/kefen/AI-Quota-Board/actions/runs/43805495761)
 and [Mac installation instructions](docs/USER-GUIDE.md#macos-experimental-installation).
 Do not bypass signature checks. Native compilation is not proof of live quota access.
 

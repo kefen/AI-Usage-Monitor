@@ -1,18 +1,20 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Codex Quota by KEFEN - 使用说明</title><style>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AI Quota Board - 使用说明</title><style>
 *{box-sizing:border-box}body{margin:0;background:#fff;color:#252b35;font:15px/1.75 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:0}main{max-width:780px;margin:36px auto;padding:0 24px 40px}header{display:flex;align-items:center;gap:12px;border-bottom:1px solid #dce1e8;padding-bottom:20px}img{width:40px;height:40px}h1{font-size:22px;margin:0}h2{font-size:17px;margin-top:28px}p{margin:10px 0}small{color:#566274}a{color:#255adc}code{font-size:13px;overflow-wrap:anywhere}li{margin-bottom:9px}.notice{border-left:3px solid #187e68;padding-left:14px}details{border-top:1px solid #dce1e8;margin-top:28px;padding-top:16px}summary{cursor:pointer;font-weight:600}@media(prefers-color-scheme:dark){body{background:#20242b;color:#e5e9f0}small{color:#aeb8c8}a{color:#91b5ff}}
+summary{display:inline-block;background:#e6eaf0;border:1px solid #cbd2db;border-radius:5px;padding:3px 12px}summary:focus-visible{outline:2px solid #255adc;outline-offset:2px}@media(prefers-color-scheme:dark){summary{background:#374152;border-color:#526176}}
+.choice{display:flex;justify-content:space-between;align-items:center;padding:12px 0}.choice select,.launch{font:inherit;border-radius:5px;padding:4px 12px}.launch{display:inline-block;color:white;background:#2658c9;text-decoration:none}.choice select{color:inherit;background:#e6eaf0;border:1px solid #a8b4c3}@media(prefers-color-scheme:dark){.choice select{background:#374152}}
 </style></head><body><main>
-<header><img src="icon-128.png" alt=""><div><h1>Codex Quota by KEFEN</h1><small>Chrome · 0.5.3</small></div></header>
-<p class="notice">这是独立的网页内嵌版，不是旧版 Chrome 侧边面板。不需要安装桌面软件、注册辅助程序或运行 PowerShell。从项目的 Chrome Release 下载安装。</p>
+<header><img src="icon-128.png" alt=""><div><h1>AI Quota Board</h1><small>by KEFEN · Chrome · 0.5.4</small></div></header><label class="choice"><span id="lang-label">语言</span><select id="guide-language"><option value="system">跟随系统</option><option value="en">English</option><option value="zh-CN">简体中文</option><option value="zh-TW">繁體中文</option></select></label>
+<section lang="zh-CN" id="cn"><p class="notice">这是独立的网页内嵌版，不是旧版 Chrome 侧边面板。不需要安装桌面软件、注册辅助程序或运行 PowerShell。从项目的 Chrome Release 下载安装。</p>
 <h2>第一次使用</h2><ol>
 <li>将测试 ZIP 解压到一个固定文件夹，不要直接在 ZIP 内运行。</li>
 <li>打开 <code>chrome://extensions</code>，启用“开发者模式”，点击“加载已解压的扩展程序”，选择包含 <code>manifest.json</code> 的文件夹。</li>
 <li>打开并登录 <a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">ChatGPT 网页</a>。已经打开的页面请刷新一次，并展开网页左侧栏。</li>
-<li>左侧栏底部会出现“Codex Quota by KEFEN”。首次读取可能短暂展开官方用量菜单，读取完会还原；不会使用重置额度或购买额度。</li>
+<li>左侧栏底部会出现“AI Quota Board”。首次读取可能短暂展开官方用量菜单，读取完会还原；不会使用重置额度或购买额度。</li>
 </ol>
 <h2>按钮与数据</h2><ul>
 <li><strong>重新读取：</strong>读取当前网页账户的官方用量菜单。若你正在操作其他菜单，请先将其关闭。</li>
-<li><strong>展示内容：</strong>勾选或取消项目，立即保存；不修改桌面软件设置。可在这里切换中英文。</li>
+<li><strong>展示内容：</strong>勾选或取消项目，立即保存；不修改桌面软件设置。底部可选择语言和外观；默认跟随系统，也可手动指定。</li>
 <li><strong>读取完整用量：</strong>在新标签页打开官方“设置 → 用量”。确认账号和工作区无误，在其左侧栏点击“确认同账号，带回读数”，便会返回原聊天标签页。只带回官方明确显示的项目；若原标签页已刷新，请从该页重新开始。</li>
 <li><strong>点击插件工具栏图标：</strong>展开或收起面板。官方左侧栏折叠时，本版不会强行展开或遮挡它。</li>
 </ul>
@@ -27,6 +29,6 @@
 <h2>排查与卸载</h2><p>没有面板：确认网址是 <code>https://chatgpt.com/</code>，已登录、已展开左侧栏；在扩展管理页检查已启用，再刷新网页。本版只适配已验证的新网页侧栏结构，旧版结构不强行注入。</p>
 <p>数据为空：先用官方用量按钮确认账户确实有该项数据，再点击“重新读取”。“--”不等于 0。出现其他官方菜单时，插件不会替你关闭。</p>
 <p>每天最多向 GitHub 检查一次版本。发现新版会在工具栏图标和卡片底部提示；用量读数跟随网页变化，不定时刷网页。升级：覆盖同一解压文件夹，点击扩展管理页的“重新加载”，再刷新网页。卸载：在扩展管理页移除此扩展；不会移除桌面软件或旧插件。</p>
-<details><summary>English instructions</summary><p>Extract the ZIP, open chrome://extensions, enable Developer mode, choose Load unpacked and select the directory containing manifest.json. Sign in at chatgpt.com, reload existing tabs, and expand the website sidebar.</p><p>Read again reads the official usage menu and restores only the menu it opened. Display choices saves local preferences. Read full usage opens the official overview in a separate tab. Verify the account and workspace, then choose “Same account: bring readings back” in its sidebar to return the visible figures to the original chat. This is shared Codex / Work allowance, not Codex-only usage. Token totals and unsupported dates are never estimated.</p><p>No desktop companion or native-host registration is required. Only preferences are persisted; no cookies, credentials, chat text or usage telemetry are collected. Opening the profile menu clears the readout; explicitly read again after switching accounts or workspaces. Menu readings expire after 60 seconds; a confirmed overview snapshot lasts up to five minutes. The card is at the bottom of the website sidebar. The GitHub ZIP checks for versions daily; download, replace and reload when notified. It never silently installs code.</p></details>
-<p><small>非官方软件，与 OpenAI 无隶属或背书关系。未关联官方浏览器商店。</small></p>
-</main></body></html>
+</section><section lang="zh-TW" id="tw" hidden><h2>安裝及首次使用</h2><ol><li>將 ZIP 解壓縮至固定資料夾，在 chrome://extensions 開啟開發人員模式，載入含 manifest.json 的資料夾。</li><li>登入 ChatGPT、重新整理網頁並展開側邊欄。面板會顯示在底部，不需安裝桌面工具。</li><li>「顯示內容」可調整項目、語言與外觀。變更自動儲存。</li></ol><p>讀數只取自目前網頁帳戶的官方用量區域。不讀取 Cookie 或聊天內容；網頁沒提供的數據不會推算。切換帳戶後請重新讀取。</p></section><section lang="en" id="en" hidden><h2>Installation and first use</h2><p>Extract the ZIP, open chrome://extensions, enable Developer mode, choose Load unpacked and select the directory containing manifest.json. Sign in at chatgpt.com, reload existing tabs, and expand the website sidebar.</p><p>Read again reads the official usage menu and restores only the menu it opened. Display choices saves local preferences. Read full usage opens the official overview in a separate tab. Verify the account and workspace, then choose “Same account: bring readings back” in its sidebar to return the visible figures to the original chat. This is shared Codex / Work allowance, not Codex-only usage. Token totals and unsupported dates are never estimated.</p><p>No desktop companion or native-host registration is required. Only preferences are persisted; no cookies, credentials, chat text or usage telemetry are collected. Opening the profile menu clears the readout; explicitly read again after switching accounts or workspaces. Menu readings expire after 60 seconds; a confirmed overview snapshot lasts up to five minutes. The card is at the bottom of the website sidebar. The GitHub ZIP checks for versions daily; download, replace and reload when notified. It never silently installs code.</p></section>
+<p><a class="launch" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">打开 ChatGPT</a></p><p><small id="disclaimer">非官方软件，与 OpenAI 无隶属或背书关系。未关联官方浏览器商店。</small></p>
+</main><script src="guide.js"></script></body></html>

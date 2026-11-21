@@ -16,7 +16,7 @@ async function run(command,args){
 try{
   const extracted=join(temp,'extracted');
   const {windows}=JSON.parse(await readFile(join(source,'versions.json'),'utf8'));
-  await run(join(source,`dist/Codex-Quota-Sidebar-Windows-${windows}-x64-Setup.exe`),['--extract',extracted]);
+  await run(join(source,`dist/AI-Quota-Board-Windows-${windows}-x64-Setup.exe`),['--extract',extracted]);
   const manifest=JSON.parse(await readFile(join(extracted,'FILE-HASHES.json'),'utf8'));
   for(const [name,expected] of Object.entries(manifest)){
     assert.ok(!name.includes('.runtime')&&!/auth\.json|membership\.json|\.log$/.test(name));
