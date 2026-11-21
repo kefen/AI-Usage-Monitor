@@ -39,13 +39,20 @@ test('version comparisons and assets fail closed',()=>{
  assert.throws(()=>newer('garbage','0.1.0'));
  const asset={version:'0.12.5',url:'https://github.com/kefen/AI-Usage-Monitor/releases/download/windows%2Fv0.12.5/app.exe',sha256:'a'.repeat(64),size:123};
  assert.equal(validateAsset(asset).size,123);
+ for(const oldName of ['codex-quota-sidebar','AI-Quota-Board']){
+  const legacy={...asset,url:asset.url.replace('AI-Usage-Monitor',oldName)};
+  assert.deepEqual(validateAsset(legacy),asset);
+  assert.throws(()=>validateAsset({...legacy,url:legacy.url.replace('/kefen/','/other/')}));
+  assert.throws(()=>validateAsset({...legacy,url:legacy.url.replace(oldName,oldName+'-fork')}));
+ }
  assert.throws(()=>validateAsset({...asset,url:'https://evil.example/app.exe'}));
  assert.throws(()=>validateAsset({...asset,size:900000000}));
  assert.equal(wholeCredits('162.8117935000'),'162');assert.equal(wholeCredits('0.99'),'0');assert.equal(wholeCredits(null),'--');
 });
 test('cached checks are invalidated by a new installed version or UI language',async()=>{
  const {reusableCheck}=await import('../src/update.mjs');
- const state={current:'0.13.0',language:'en',checkedAt:1000};
+ const state={current:'0.13.0',version:'0.13.0',available:false,language:'en',checkedAt:1000};
+ assert.equal(reusableCheck({...state,version:'0.12.9'},'0.13.0','en',2000),false);
  assert.equal(reusableCheck(state,'0.13.0','en',2000),true);
  assert.equal(reusableCheck(state,'0.13.1','en',2000),false);
  assert.equal(reusableCheck(state,'0.13.0','zh-CN',2000),false);
@@ -55,6 +62,10 @@ test('cached checks are invalidated by a new installed version or UI language',a
 });
 
 test('update failures remain failures, with sanitized diagnostic codes',async()=>{
+ const {updateAvailable}=await import('../src/update.mjs');
+ assert.throws(()=>updateAvailable('0.13.5','0.13.6'),/E_UPDATE_FEED_BEHIND/);
+ assert.equal(updateAvailable('0.13.6','0.13.6'),false);
+ assert.equal(updateAvailable('0.13.7','0.13.6'),true);
  const {updateError}=await import('../src/update.mjs');
  assert.deepEqual(updateError(new Error('fetch failed')),{error:'E_UPDATE_NETWORK'});
  assert.deepEqual(updateError(new Error('Update signature rejected')),{error:'E_UPDATE_SIGNATURE'});

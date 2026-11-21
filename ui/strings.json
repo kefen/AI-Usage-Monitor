@@ -230,6 +230,7 @@
     "更新检查失败，请稍后重试。",
     "更新檢查失敗，請稍後重試。"
   ],
+  "The signed update list is behind this installation. Check GitHub Releases for the latest version.": ["更新清单比本机版本旧，暂时无法确认最新版。请查看 GitHub 发布页。", "更新清單比本機版本舊，暫時無法確認最新版。請查看 GitHub 發布頁。"],
   "You are up to date.": [
     "当前已是最新版本。",
     "目前已是最新版本。"

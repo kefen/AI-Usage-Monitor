@@ -101,7 +101,12 @@ internal sealed class LaunchWindow : Form {
                 var response=UpdateRunner.Run(AppDomain.CurrentDomain.BaseDirectory,operation);
                 if(IsDisposed)return;BeginInvoke((Action)(()=>{
                     updating=false;updates.Enabled=true;body.Enabled=true;rail.Enabled=true;if(aboutUpdate!=null&&!aboutUpdate.IsDisposed){aboutUpdate.Enabled=true;aboutUpdate.Text=Locale.T("Check for updates");}
-                    if(!response.Success){UpdateOutcome=Locale.T("Update check failed. Please try again later.")+" ("+response.Code+")";footerMessage.Text=UpdateOutcome;if(operation!="auto")MeterTheme.Error(UpdateOutcome);return;}
+                    if(!response.Success){
+                        bool behind=response.Code=="E_UPDATE_FEED_BEHIND";
+                        if(behind)updateAvailable=updateSlot.Visible=updates.Visible=false;
+                        UpdateOutcome=Locale.T(behind?"The signed update list is behind this installation. Check GitHub Releases for the latest version.":"Update check failed. Please try again later.")+" ("+response.Code+")";
+                        footerMessage.Text=UpdateOutcome;if(operation!="auto")MeterTheme.Error(UpdateOutcome);return;
+                    }
                     if(footerMessage.Text==UpdateOutcome)footerMessage.Text="";UpdateOutcome=null;
                     try{
                         var result=response.Data;

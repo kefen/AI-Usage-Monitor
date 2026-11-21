@@ -8,7 +8,10 @@ import {fileURLToPath} from 'node:url';
 import {backupSettings,verifySettings,restoreSettings,localizedNotes,canonicalEntry,transactionState,waitForRecord} from './update-transaction.mjs';
 const feedURL='https://raw.githubusercontent.com/kefen/AI-Usage-Monitor/main/docs/updates/latest.json';
 export const wholeCredits=value=>typeof value==='string'&&/^\d+(\.\d+)?$/.test(value)&&Number.isSafeInteger(Math.floor(Number(value)))?String(Math.floor(Number(value))):'--';
-export const reusableCheck=(state,current,language,now=Date.now())=>state.current===current&&state.language===language&&Number.isFinite(state.checkedAt)&&state.checkedAt<=now&&now-state.checkedAt<21600000;
+export function reusableCheck(state,current,language,now=Date.now()){
+ if(!state||state.current!==current||state.language!==language||!Number.isFinite(state.checkedAt)||state.checkedAt>now||now-state.checkedAt>=21600000)return false;
+ try{return state.available===updateAvailable(state.version,current);}catch{return false;}
+}
 export function updateError(error) {
  const message=String(error?.message||'');
  const code=/^E_UPDATE_[A-Z_]+$/.test(message)?message:
@@ -23,8 +26,15 @@ export function newer(a,b){
  const x=parse(a),y=parse(b);for(let i=0;i<x.length;i++)if(x[i]!==y[i])return x[i]>y[i];return false;
 }
 export function validateAsset(a){
- const u=new URL(a.url);if(u.protocol!=='https:'||u.hostname!=='github.com'||u.username||u.password||u.port||!u.pathname.startsWith('/kefen/AI-Usage-Monitor/releases/download/')||u.search||u.hash)throw Error('Untrusted asset');
- if(!/^[a-f0-9]{64}$/.test(a.sha256)||!Number.isSafeInteger(a.size)||a.size<1||a.size>180000000)throw Error('Invalid asset');newer(a.version,'0.0.0');return a;
+ const u=new URL(a.url);
+ // Never fetch from a retired repository name: the old slug could be reused.
+ u.pathname=u.pathname.replace(/^\/kefen\/(?:codex-quota-sidebar|AI-Quota-Board)\/releases\/download\//,'/kefen/AI-Usage-Monitor/releases/download/');
+ if(u.protocol!=='https:'||u.hostname!=='github.com'||u.username||u.password||u.port||!u.pathname.startsWith('/kefen/AI-Usage-Monitor/releases/download/')||u.search||u.hash)throw Error('Untrusted asset');
+ if(!/^[a-f0-9]{64}$/.test(a.sha256)||!Number.isSafeInteger(a.size)||a.size<1||a.size>180000000)throw Error('Invalid asset');newer(a.version,'0.0.0');return {...a,url:u.href};
+}
+export function updateAvailable(advertised,current){
+ if(newer(current,advertised))throw Error('E_UPDATE_FEED_BEHIND');
+ return newer(advertised,current);
 }
 export function verifyFeed(envelope,key,now=Date.now()){
  if(typeof envelope.payload!=='string'||envelope.payload.length>90000||typeof envelope.signature!=='string')throw Error('Invalid update envelope');
@@ -143,9 +153,8 @@ async function main(){
  if(command==='auto'&&reusableCheck(previous,current,language)){console.log(JSON.stringify({...previous,prepared:false}));return;}
  const key=await readFile(new URL('./update-public-key.pem',import.meta.url),'utf8');
  const envelope=JSON.parse((await bytes(feedURL,100000)).toString());const feed=verifyFeed(envelope,key);
- const asset=feed.releases[target];const available=newer(asset.version,current);
- // Historical signed entries can predate the repository rename; never fetch them.
- if(available)validateAsset(asset);
+ const entry=feed.releases[target];const available=updateAvailable(entry.version,current);
+ const asset=available?validateAsset(entry):entry;
  const state={checkedAt:Date.now(),current,language,available,version:asset.version,notes:localizedNotes(asset.notesByLocale||asset.notes,language),ready:false};
  const file=join(cache,process.platform==='win32'?'update.exe':'update.dmg');
  if(available&&['download','prepare'].includes(command)){

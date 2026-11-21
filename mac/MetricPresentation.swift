@@ -26,6 +26,7 @@ enum MetricPresentation {
         return value.boolValue
     }
     static let updateFailureReasons = [
+        "E_UPDATE_FEED_BEHIND": "The signed update list is behind this installation. Check GitHub Releases for the latest version.",
         "E_UPDATE_NETWORK": "Cannot reach the update server. Check your connection and try again.",
         "E_UPDATE_SIGNATURE": "The update signature could not be verified. No update was installed.",
         "E_UPDATE_CHECKSUM": "The update file failed verification. No update was installed.",

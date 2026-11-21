@@ -1,0 +1,42 @@
+name: Check live macOS update delivery
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/updates/latest.json'
+      - '.github/workflows/mac-update-delivery.yml'
+      - 'tools/verify-mac-update-path.mjs'
+  workflow_run:
+    workflows: ['AI Usage Monitor release']
+    types: [completed]
+    branches: [main]
+permissions: {contents: read}
+jobs:
+  previous-client:
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {arch: arm64, runner: macos-15}
+          - {arch: x64, runner: macos-15-intel}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {fetch-depth: 0, persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24.16.0'}
+      - name: Check with the previous version's updater
+        shell: bash
+        run: |
+          set -euo pipefail
+          target=$(jq -er .macos versions.json)
+          prior=''
+          for rev in $(git log --first-parent --format=%H -- versions.json); do
+            previous=$(git show "$rev:versions.json" | jq -er .macos)
+            if [[ "$previous" != "$target" ]]; then prior=$rev; break; fi
+          done
+          test -n "$prior"
+          git worktree add --detach "$RUNNER_TEMP/previous-client" "$prior"
+          node tools/verify-mac-update-path.mjs "$RUNNER_TEMP/previous-client" "$target" "${{ matrix.arch }}"
