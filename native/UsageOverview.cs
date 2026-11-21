@@ -76,11 +76,13 @@ internal sealed class UsageOverview : UserControl {
         bool plot=selected[2]||selected[11], comparison=selected[2]||selected[5],hasLeft=plot||comparison;
         bool stack=hasLeft&&hasRight&&w<540;
         float rw=hasRight&&hasLeft&&!stack?Math.Max(220,w*.30f):w,left=hasRight&&hasLeft&&!stack?w-rw-22:w;
-        float y=31;
+        bool compact=!stack&&Height/s<445;
+        float y=compact?26:31;
         Bounds(month,0,0,w-33,20,s);Bounds(scope,w-33,0,33,20,s);
         Bounds(tokenTitle,0,y,Math.Max(60,left-180),28,s);Bounds(dailyMode,left-172,y,84,26,s);Bounds(cumulativeMode,left-84,y,84,26,s);
         if(plot){
-            y+=39;Bounds(trend,0,y,left,213,s);y+=213;Bounds(readout,0,y,left,33,s);y+=47;
+            float graphHeight=compact?Math.Max(145,Math.Min(193,Height/s-205)):213;
+            y+=compact?32:39;Bounds(trend,0,y,left,graphHeight,s);y+=graphHeight;Bounds(readout,0,y,left,33,s);y+=compact?37:47;
         }
         if(comparison){
             int n=0,count=(selected[2]?1:0)+(selected[5]?1:0);float cell=(left-(count-1)*12)/count;
@@ -93,8 +95,8 @@ internal sealed class UsageOverview : UserControl {
             }
             y+=labelHeight+14;
         }
-        float panelY=stack?y+8:31;
-        float inner=Math.Max(0,rw-20),py=37;
+        float panelY=stack?y+8:compact?26:31;
+        float inner=Math.Max(0,rw-20),py=compact?32:37;
         Bounds(quotaTitle,10,7,inner,22,s);
         if(quotaCount>0){
             int n=0;float cell=inner/quotaCount;
@@ -104,7 +106,7 @@ internal sealed class UsageOverview : UserControl {
                 Bounds(names[i],0,61,cell,18,s);names[i].TextAlign=ContentAlignment.MiddleCenter;
                 Bounds(captions[i],0,80,cell,20,s);captions[i].TextAlign=ContentAlignment.MiddleCenter;
             }
-            py+=106;
+            py+=compact?100:106;
         }
         foreach(int i in rightKeys)if(selected[i]){
             float h=i==11?37:25;
