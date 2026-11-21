@@ -4,10 +4,57 @@ on:
     branches: [main, candidate/ai-usage-monitor-release]
     paths: ['.github/workflows/board-release.yml', 'versions.json', 'browser-web/manifest.json']
   workflow_dispatch:
+    inputs:
+      platform:
+        type: choice
+        options: [windows, macos, chrome, all]
+        default: windows
+        description: Platform to build
 permissions:
   contents: read
 jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      windows: ${{ steps.plan.outputs.windows }}
+      macos: ${{ steps.plan.outputs.macos }}
+      chrome: ${{ steps.plan.outputs.chrome }}
+      win_version: ${{ steps.plan.outputs.win_version }}
+      mac_version: ${{ steps.plan.outputs.mac_version }}
+      web_version: ${{ steps.plan.outputs.web_version }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {fetch-depth: 0, persist-credentials: false}
+      - id: plan
+        env:
+          BEFORE: ${{ github.event.before }}
+          PLATFORM: ${{ inputs.platform }}
+        run: |
+          set -euo pipefail
+          base=${BEFORE:-HEAD^}
+          if [[ "$base" =~ ^0+$ ]]; then base=HEAD^; fi
+          for platform in windows macos chrome; do
+            file=versions.json; key=$platform
+            case "$platform" in
+              windows) out=win_version ;;
+              macos) out=mac_version ;;
+              chrome) file=browser-web/manifest.json; key=version; out=web_version ;;
+            esac
+            version=$(jq -er --arg k "$key" '.[$k]' "$file")
+            [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-z]+\.[0-9]+)?$ ]]
+            echo "$out=$version" >> "$GITHUB_OUTPUT"
+            changed=false
+            if [[ -n "$PLATFORM" ]]; then
+              if [[ "$PLATFORM" == "$platform" || "$PLATFORM" == all ]]; then changed=true; fi
+            else
+              old=$(git show "$base:$file" | jq -er --arg k "$key" '.[$k]')
+              if [[ "$old" != "$version" ]]; then changed=true; fi
+            fi
+            echo "$platform=$changed" >> "$GITHUB_OUTPUT"
+          done
   windows:
+    needs: plan
+    if: needs.plan.outputs.windows == 'true'
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -28,6 +75,8 @@ jobs:
             dist/AI-Usage-Monitor-source-*.zip
           if-no-files-found: error
   mac:
+    needs: plan
+    if: needs.plan.outputs.macos == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -55,6 +104,8 @@ jobs:
           path: dist/AI-Usage-Monitor-*unsigned-test.dmg
           if-no-files-found: error
   chrome:
+    needs: plan
+    if: needs.plan.outputs.chrome == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -67,11 +118,11 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: board-chrome
-          path: dist/chrome-web-0.5.4/AI-Usage-Monitor-Chrome-0.5.4.zip
+          path: dist/chrome-web-${{ needs.plan.outputs.web_version }}/AI-Usage-Monitor-Chrome-${{ needs.plan.outputs.web_version }}.zip
           if-no-files-found: error
   publish:
-    needs: [windows, mac, chrome]
-    if: github.repository == 'kefen/AI-Usage-Monitor' && github.ref == 'refs/heads/main'
+    needs: [plan, windows, mac, chrome]
+    if: always() && !cancelled() && !contains(needs.*.result, 'failure') && (needs.windows.result == 'success' || needs.mac.result == 'success' || needs.chrome.result == 'success') && github.repository == 'kefen/AI-Usage-Monitor' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions: {contents: write}
     steps:
@@ -79,6 +130,12 @@ jobs:
         with: {pattern: 'board-*', path: dist, merge-multiple: true}
       - working-directory: dist
         env:
+          WIN: ${{ needs.plan.outputs.win_version }}
+          MAC: ${{ needs.plan.outputs.mac_version }}
+          WEB: ${{ needs.plan.outputs.web_version }}
+          BUILD_WIN: ${{ needs.plan.outputs.windows }}
+          BUILD_MAC: ${{ needs.plan.outputs.macos }}
+          BUILD_WEB: ${{ needs.plan.outputs.chrome }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
@@ -96,6 +153,12 @@ jobs:
             for f in "$@" "$sums"; do cmp "$f" "$check/$f"; done
             gh release edit "$tag" --draft=false "$flag"
           }
-          publish 'macos/v0.5.4-alpha.4' 'macOS 0.5.4-alpha.4' '--prerelease' 'Apple Silicon: arm64; Intel: x86_64. 未公证的 Mac 预发布版。退出旧版后将 AI Usage Monitor.app 拖入应用程序。首次更名升级请手动安装；不删除设置目录。' AI-Usage-Monitor-macOS-0.5.4-alpha.4-{arm64,x86_64}-unsigned-test.dmg
-          publish 'chrome/v0.5.4' 'Chrome 0.5.4' '--latest=false' 'Standalone ChatGPT sidebar extension by KEFEN. 解压 ZIP 后在 Chrome 扩展管理页加载。非 Chrome 网上应用店发行版。' AI-Usage-Monitor-Chrome-0.5.4.zip
-          publish 'windows/v0.13.6' 'Windows 0.13.6' '--latest' 'Windows 10/11 x64 · by KEFEN. 下载 Setup.exe，核对 SHA-256 后安装；升级请使用原安装目录以保留设置。安装包未签名。' AI-Usage-Monitor-Windows-0.13.6-x64-Setup.exe AI-Usage-Monitor-source-windows-0.13.6-macos-0.5.4-alpha.4.zip
+          if [[ "$BUILD_MAC" == true ]]; then
+            publish "macos/v$MAC" "macOS $MAC" '--prerelease' '未公证预发布版。根据芯片选择 arm64 或 x86_64 DMG。' AI-Usage-Monitor-macOS-"$MAC"-{arm64,x86_64}-unsigned-test.dmg
+          fi
+          if [[ "$BUILD_WEB" == true ]]; then
+            publish "chrome/v$WEB" "Chrome $WEB" '--latest=false' '解压 ZIP 后在 Chrome 扩展管理页加载。非商店版。' "AI-Usage-Monitor-Chrome-$WEB.zip"
+          fi
+          if [[ "$BUILD_WIN" == true ]]; then
+            publish "windows/v$WIN" "Windows $WIN" '--latest' 'Windows 10/11 x64 · by KEFEN。套餐与续费日期现在分组显示，小窗口自动紧凑排列。安装包未签名；升级请选择原安装目录。' "AI-Usage-Monitor-Windows-$WIN-x64-Setup.exe" "AI-Usage-Monitor-source-windows-$WIN-macos-$MAC.zip"
+          fi

@@ -26,7 +26,7 @@ internal sealed class UsageOverview : UserControl {
     internal UsageOverview(){
         Name="usageOverview";Dock=DockStyle.Fill;Height=560;AutoScroll=true;BackColor=MeterTheme.Surface;
         canvas=new Panel();Controls.Add(canvas);
-        string[] labels={"5-hour remaining","Weekly remaining","Daily tokens","Weekly tokens","Lifetime tokens","Monthly daily average","Quota reset date","Reset count","Credits","Plan","Renewal","Monthly tokens"};
+        string[] labels={"5-hour remaining","Weekly remaining","Daily tokens","Weekly tokens","Lifetime tokens","Monthly daily average","Quota reset date","Reset count","Credits","Plan","Renewal date","Monthly tokens"};
         quotaTitle=Label("Quota remaining",11,MeterTheme.Ink);tokenTitle=Label("Usage trend",11,MeterTheme.Ink);
         scope=Label("UTC",8,MeterTheme.Muted);scope.TextAlign=ContentAlignment.MiddleRight;
         month=Label("",9,MeterTheme.Muted);month.Name="usageMonth";
@@ -40,13 +40,15 @@ internal sealed class UsageOverview : UserControl {
         details=new Panel{BackColor=MeterTheme.Tint(Color.FromArgb(243,247,254))};meta=new Panel();canvas.Controls.Add(details);canvas.Controls.Add(meta);
         details.Controls.Add(quotaTitle);
         details.Paint+=(s,e)=>{using(var pen=new Pen(MeterTheme.Tint(Color.FromArgb(220,230,246))))e.Graphics.DrawRectangle(pen,0,0,details.Width-1,details.Height-1);};
-        meta.Paint+=(s,e)=>{using(var pen=new Pen(MeterTheme.Line))e.Graphics.DrawLine(pen,0,0,meta.Width,0);};
+        meta.Controls.Add(source);
+        meta.Paint+=(s,e)=>{if(selected[9]||selected[10])using(var pen=new Pen(MeterTheme.Line))e.Graphics.DrawLine(pen,0,0,meta.Width,0);};
         for(int i=0;i<keys.Length;i++){
             selected[i]=true;var group=groups[i]=new Panel{Name="group-"+keys[i]};
             (i==9||i==10?meta:i==2||i==5?(Control)canvas:details).Controls.Add(group);
             names[i]=MeterTheme.Label(labels[i],i<2?8:9,MeterTheme.Muted);names[i].Dock=DockStyle.None;group.Controls.Add(names[i]);
             values[i]=MeterTheme.Label("--",i<2?14:i==11?14:i>=9?9:i>=6?9:11,MeterTheme.Ink);values[i].Name="metric"+i;values[i].Dock=DockStyle.None;group.Controls.Add(values[i]);
             captions[i]=MeterTheme.Label("Not returned",8,MeterTheme.Muted);captions[i].Name="metricCaption"+i;captions[i].Dock=DockStyle.None;group.Controls.Add(captions[i]);
+            if(i==9||i==10){names[i].Font=MeterTheme.Font(8.5f);values[i].Font=new Font("Segoe UI Semibold",11.25f);values[i].AutoEllipsis=true;}
         }
         int[] chartGroups={0,1,2,5,3,4};
         for(int i=0;i<charts.Length;i++){charts[i]=new LinearScale(i<2);charts[i].Name="linearScale"+i;groups[chartGroups[i]].Controls.Add(charts[i]);}
@@ -118,21 +120,27 @@ internal sealed class UsageOverview : UserControl {
         }
         Bounds(details,stack||!hasLeft?0:left+22,panelY,rw,py+9,s);
         if(hasRight)y=Math.Max(y,panelY+py+9);
-        y+=11;Bounds(meta,0,y,w,27,s);
+        y+=11;
+        bool hasSubscription=selected[9]||selected[10];
+        bool stackedText=hasSubscription&&(Height/s-y>=56||stack);
+        float rowHeight=stackedText?56:26;
         float mx=0;
         foreach(int i in new[]{9,10})if(selected[i]){
-            float cell=Math.Min(210,w/(selected[9]&&selected[10]?2:1));
-            Bounds(groups[i],mx,3,cell,24,s);Bounds(names[i],0,0,cell*.43f,23,s);Bounds(values[i],cell*.43f,0,cell*.57f,23,s);captions[i].Visible=false;mx+=cell;
+            float cell=Math.Min(stackedText?168:210,w/(selected[9]&&selected[10]?2:1));
+            Bounds(groups[i],mx,stackedText?6:2,cell,rowHeight-(stackedText?6:2),s);
+            if(stackedText){Bounds(names[i],0,0,cell-8,20,s);Bounds(values[i],0,20,cell-8,28,s);}
+            else{float labelWidth=Math.Min(cell*.46f,TextRenderer.MeasureText(names[i].Text,names[i].Font).Width/s+6);Bounds(names[i],0,0,labelWidth,24,s);Bounds(values[i],labelWidth,0,cell-labelWidth-4,24,s);}
+            captions[i].Visible=false;mx+=cell;
         }
         float sourceLeft=mx==0?0:Math.Min(mx,w);
         bool inline=mx==0||w-sourceLeft>=(syncTime.HasValue?174:75);
-        if(!inline)y+=29;
-        Bounds(source,inline?sourceLeft:0,y,w-(inline?sourceLeft:0),23,s);Bounds(empty,0,20,w,40,s);
+        float footerHeight=rowHeight+(inline?0:22);Bounds(meta,0,y,w,footerHeight,s);
+        Bounds(source,inline?sourceLeft:0,inline?(stackedText?26:2):rowHeight,w-(inline?sourceLeft:0),22,s);Bounds(empty,0,20,w,40,s);
         quotaTitle.Visible=details.Visible=hasRight;tokenTitle.Visible=trend.Visible=readout.Visible=plot;
-        dailyMode.Visible=plot&&selected[2];cumulativeMode.Visible=plot&&selected[11];meta.Visible=mx>0;
-        bool any=Array.Exists(selected,v=>v);empty.Visible=!any;source.Visible=month.Visible=scope.Visible=any;
+        dailyMode.Visible=plot&&selected[2];cumulativeMode.Visible=plot&&selected[11];
+        bool any=Array.Exists(selected,v=>v);meta.Visible=any;empty.Visible=!any;source.Visible=month.Visible=scope.Visible=any;
         for(int i=0;i<groups.Length;i++)groups[i].Visible=selected[i];
-        return (int)Math.Ceiling((any?y+22:64)*s);
+        return (int)Math.Ceiling((any?y+footerHeight:64)*s);
     }
     void RefreshReadout(){readout.Text=trend.SelectedValue.HasValue?trend.Month+"-"+(trend.SelectedDay+1).ToString("00")+"   "+Count(trend.SelectedValue)+" Token"+(trend.NoEntry?"   ·   "+Locale.T("No usage records"):""):Locale.T("No usage records");}
     void SetTrendMode(bool cumulative){trend.Cumulative=cumulative;foreach(var b in new[]{dailyMode,cumulativeMode}){bool on=(b==cumulativeMode)==cumulative;b.BackColor=on?MeterTheme.SoftFill:MeterTheme.Secondary;b.ForeColor=on?MeterTheme.SoftInk:MeterTheme.Ink;b.FlatAppearance.BorderColor=on?MeterTheme.Blue:MeterTheme.Line;b.AccessibleDescription=on?Locale.T("Selected"):"";}RefreshReadout();}

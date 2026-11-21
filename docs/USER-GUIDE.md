@@ -99,7 +99,7 @@ Windows UI using test fixtures, not real account data.
 
 Open [Releases](https://github.com/kefen/AI-Usage-Monitor/releases).
 For Windows 10/11 x64, download the asset ending in
-`Windows-0.13.6-x64-Setup.exe`, plus its SHA256 file if verifying integrity.
+`Windows-0.13.7-x64-Setup.exe`, plus its SHA256 file if verifying integrity.
 
 The Windows overview fits the available screen. Narrow columns move chart
 tracks below their labels; tall narrow windows stack sections. All selected data

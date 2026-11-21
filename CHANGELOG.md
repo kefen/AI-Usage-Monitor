@@ -1,5 +1,8 @@
 # Changelog
 
+## Windows 0.13.7
+- The overview groups plan and renewal date into a two-level subscription summary, with sync time on the right. Short windows keep a compact single row. Mac and Chrome are unchanged.
+
 ## AI Usage Monitor by KEFEN: Windows 0.13.6 / macOS 0.5.4-alpha.4 / Chrome 0.5.4
 - Renamed the apps, installers, extension and project. Existing settings retain their storage locations. The first Mac upgrade across the app rename is manual.
 - Updated the native usage, plan and settings views, action styles and multilingual preferences. Chrome remains standalone and uses only readings offered by the web page.

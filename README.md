@@ -10,7 +10,7 @@ An unofficial quota and token usage companion for Codex desktop, with a separate
 
 | 系统 | 安装包 | 安装方式 |
 | --- | --- | --- |
-| Windows 10 / 11 x64 | [Windows 0.13.6](https://github.com/kefen/AI-Usage-Monitor/releases/tag/windows/v0.13.6) | 下载未签名的 Setup.exe；升级选择原安装目录。 |
+| Windows 10 / 11 x64 | [Windows 0.13.7](https://github.com/kefen/AI-Usage-Monitor/releases/tag/windows/v0.13.7) | 下载未签名的 Setup.exe；升级选择原安装目录。 |
 | Mac · Apple 芯片 | [Apple Silicon DMG](https://github.com/kefen/AI-Usage-Monitor/releases/download/macos%2Fv0.5.4-alpha.4/AI-Usage-Monitor-macOS-0.5.4-alpha.4-arm64-unsigned-test.dmg) | M 系列芯片；0.5.4-alpha.4，未公证预发布版。 |
 | Mac · Intel | [Intel DMG](https://github.com/kefen/AI-Usage-Monitor/releases/download/macos%2Fv0.5.4-alpha.4/AI-Usage-Monitor-macOS-0.5.4-alpha.4-x86_64-unsigned-test.dmg) | Intel 处理器；同一预发布版本。 |
 | Chrome | [Chrome 0.5.4](https://github.com/kefen/AI-Usage-Monitor/releases/tag/chrome/v0.5.4) | 解压 ZIP，在扩展管理页选择“加载已解压的扩展程序”；不是商店版。 |

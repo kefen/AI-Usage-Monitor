@@ -141,10 +141,12 @@ internal static class NativeDpiTest {
                             var planField=overview.Controls.Find("metric9",true)[0].Parent;var renewalField=overview.Controls.Find("metric10",true)[0].Parent;
                             Assert(planField.RectangleToScreen(planField.ClientRectangle).Left==overview.RectangleToScreen(overview.ClientRectangle).Left,"Plan metadata must align with the left data column");
                             Assert(renewalField.Top==planField.Top&&renewalField.Left==planField.Right,"Plan and renewal must share a compact footer row");
+                            var planValue=overview.Controls.Find("metric9",true)[0];var renewalValue=overview.Controls.Find("metric10",true)[0];
+                            Assert(planValue.Top==renewalValue.Top&&planValue.Font.Equals(renewalValue.Font),"Subscription values must share a baseline and type style");
                             var plot=(UsageTrend)overview.Controls.Find("monthlyTrend",true)[0];
                             Assert(plot.Visible&&plot.SelectedValue.HasValue,"Connected layout must show the real trend fixture");
                             foreach(string trackName in new[]{"linearScale2","linearScale3"})Assert(overview.Controls.Find(trackName,true)[0].Width>=64*dpi/96,"Responsive chart disappeared: "+trackName);
-                            foreach(Control label in renewalField.Controls)if(label is Label&&label.Text==Locale.T("Renewal"))using(var g=label.CreateGraphics())Assert(TextRenderer.MeasureText(g,label.Text,label.Font,new Size(Int32.MaxValue,Int32.MaxValue),TextFormatFlags.NoPrefix|TextFormatFlags.SingleLine).Width<=label.Width,"Immediate language switch clipped the renewal label");
+                            foreach(Control label in renewalField.Controls)if(label is Label&&label.Text==Locale.T("Renewal date"))using(var g=label.CreateGraphics())Assert(TextRenderer.MeasureText(g,label.Text,label.Font,new Size(Int32.MaxValue,Int32.MaxValue),TextFormatFlags.NoPrefix|TextFormatFlags.SingleLine).Width<=label.Width,"Immediate language switch clipped the renewal label");
                         }
                         using(var bitmap=new Bitmap(window.Width,window.Height)){using(var g=Graphics.FromImage(bitmap)){IntPtr dc=g.GetHdc();try{Assert(PrintWindow(window.Handle,dc,2),"Native window capture failed");}finally{g.ReleaseHdc(dc);}}bitmap.Save(Path.Combine(args[0],"dpi-"+dpi+"-"+size.Width+"-"+page.Replace(" ","-")+"-"+lang+".png"));}
                     }
