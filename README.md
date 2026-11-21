@@ -17,6 +17,8 @@ An unofficial quota and token usage companion for Codex desktop, with a separate
 
 [安装与使用指南](docs/USER-GUIDE.md) · [安全说明](SECURITY.md) · [MIT License](LICENSE)
 
+从旧名称升级，请从上表手动下载一次。Windows 选择原安装目录；Mac 先退出旧版，再将新应用拖入“应用程序”；Chrome 在原扩展目录替换文件并重新加载。
+
 ## 界面 Screenshots
 
 以下为运行界面的示例数据，不代表真实账户额度。
