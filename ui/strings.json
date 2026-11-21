@@ -1,4 +1,27 @@
 {
+  "Diagnostic report": ["诊断报告", "診斷報告"],
+  "Issue feedback": ["问题反馈", "問題回報"],
+  "Check that Codex can chat. If the sidebar is hidden, enlarge the window before reconnecting.": ["先确认 Codex 能正常聊天。如果侧边栏未显示，请放大窗口后重新连接。", "先確認 Codex 能正常聊天。如果側邊欄未顯示，請放大視窗後重新連線。"],
+  "Includes version, system, connection state and error codes; excludes keys, chats, accounts and paths.": ["包含版本、系统、连接状态和错误码，不含密钥、聊天、账户或路径。", "包含版本、系統、連線狀態和錯誤碼，不含金鑰、聊天、帳戶或路徑。"],
+  "Review the report and hide personal details in screenshots before attaching them to an issue.": ["提交 GitHub 问题前，请检查报告内容，并遮住截图中的个人信息。", "提交 GitHub 問題前，請檢查報告內容，並遮住截圖中的個人資訊。"],
+  "Appearance": ["外观", "外觀"],
+  "System": ["跟随系统", "跟隨系統"],
+  "Light": ["浅色", "淺色"],
+  "Dark": ["深色", "深色"],
+  "Changes are saved automatically and applied to the overview and sidebar.": ["勾选后自动保存，并同步到用量概览和侧边栏。", "勾選後自動儲存，並同步到用量概覽和側邊欄。"],
+  "Permissions": ["安装权限", "安裝權限"],
+  "Upgrade": ["升级安装", "升級安裝"],
+  "Account": ["账户要求", "帳戶需求"],
+  "Not found": ["未检测到", "未偵測到"],
+  "Environment check failed": ["环境检查未通过", "環境檢查未通過"],
+  "Check the installation details before retrying.": ["请查看下方错误，再重试或返回修改安装位置。", "請查看下方錯誤，再重試或返回修改安裝位置。"],
+  "Save your work before connecting. Restarting Codex requires your permission.": ["连接前请保存工作。重新启动 Codex 前会征求你的同意。", "連線前請儲存工作。重新啟動 Codex 前會徵求你的同意。"],
+  "Dates and renewal": ["日期与续费", "日期與續費"],
+  "Discard changes": ["取消更改", "取消變更"],
+  "Unsaved changes": ["未保存", "未儲存"],
+  "Local CLI": ["本机 CLI", "本機 CLI"],
+  "Auto-save": ["自动保存", "自動儲存"],
+  "Invert selection": ["反选", "反選"],
   "Yesterday vs monthly daily average": [
     "昨日与本月日均",
     "昨日與本月日均"
@@ -705,6 +728,10 @@
     "查看发布版本",
     "檢視發布版本"
   ],
+  "Usage trend": ["消耗走势","消耗走勢"],
+  "No usage records": ["暂无用量记录","暫無用量紀錄"],
+  "Daily": ["日用量","每日用量"],
+  "Cumulative": ["累计","累計"],
   "Save": [
     "保存",
     "儲存"

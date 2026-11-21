@@ -2,6 +2,10 @@ import Foundation
 
 @main struct MacV3PresentationTest {
     static func main() {
+        let trend = MetricPresentation.trendPoints([0, NSNull(), "bad", -1, 200, 300], through: 5)
+        precondition(trend.values == [0, 0, nil, nil, 200] && trend.missing == [1])
+        let unavailable = MetricPresentation.trendPoints([NSNull()], through: 1)
+        precondition(unavailable.values == [nil] && unavailable.missing.isEmpty)
         precondition(MetricPresentation.strictBoolean(true) == true)
         precondition(MetricPresentation.strictBoolean(false) == false)
         for invalid in [1, 0, "true", "false", NSNull()] as [Any] {

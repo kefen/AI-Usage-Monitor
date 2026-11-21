@@ -8,6 +8,19 @@ struct MetricDatum {
 }
 
 enum MetricPresentation {
+    static func trendPoints(_ raw: [Any], through day: Int) -> (values: [Double?], missing: Set<Int>) {
+        let days = raw.prefix(max(0, min(31, day)))
+        var values = days.map { value -> Double? in
+            guard let n = number(value), n >= 0, n <= 9007199254740991, n.rounded(.down) == n else { return nil }
+            return n
+        }
+        var missing = Set<Int>()
+        // Only an explicit empty day in a returned series is a zero.
+        if values.contains(where: { $0 != nil }) {
+            for i in days.indices where days[i] is NSNull { values[i] = 0; missing.insert(i) }
+        }
+        return (values, missing)
+    }
     static func strictBoolean(_ value: Any?) -> Bool? {
         guard let value = value as? NSNumber, CFGetTypeID(value) == CFBooleanGetTypeID() else { return nil }
         return value.boolValue
@@ -90,7 +103,9 @@ enum MetricPresentation {
         }
         let plan = member["plan"] as? String ?? ""
         let names = ["free": "Free", "go": "Go", "plus": "Plus", "pro": "Pro", "business": "Business", "enterprise": "Enterprise", "edu": "Edu", "other": "Other / unknown"]
-        result["plan"] = MetricDatum(value: names[plan] ?? "--", caption: names[plan] == nil ? "Not set" : member["planSource"] as? String == "desktop" ? "Desktop detection" : "Manual record (locked)")
+        let tier = member["tier"] as? String ?? "unknown"
+        let refined = tier != "unknown" && tiers(for: plan).contains(tier) ? " " + tier.capitalized : ""
+        result["plan"] = MetricDatum(value: names[plan].map { $0 + refined } ?? "--", caption: names[plan] == nil ? "Not set" : member["planSource"] as? String == "desktop" ? "Desktop detection" : "Manual record (locked)")
         result["renewal"] = MetricDatum(value: renewal(member) ?? "--", caption: renewal(member) == nil ? "Not set" : member["estimated"] as? Bool == true ? "Estimated date" : "Manual date")
         return result.filter { display[$0.key] as? Bool != false }
     }
@@ -100,6 +115,11 @@ enum MetricPresentation {
             return String(format: "%.2f", locale: Locale(identifier: "en_US_POSIX"), value / scale).replacingOccurrences(of: #"\.?0+$"#, with: "", options: .regularExpression) + suffix
         }
         return String(format: "%.0f", value)
+    }
+    static func tiers(for plan: String) -> [String] {
+        if plan == "pro" { return ["unknown", "100", "200", "500"] }
+        if plan == "business" { return ["unknown", "standard", "premium"] }
+        return ["unknown"]
     }
     static func number(_ value: Any?) -> Double? {
         guard let value = value as? NSNumber, CFGetTypeID(value) != CFBooleanGetTypeID(),
