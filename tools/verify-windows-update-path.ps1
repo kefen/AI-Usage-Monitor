@@ -1,13 +1,15 @@
 param(
     [Parameter(Mandatory)][string]$PriorClient,
-    [Parameter(Mandatory)][version]$Version
+    [Parameter(Mandatory)][version]$Version,
+    [string]$InstalledVersions
 )
 $ErrorActionPreference='Stop'
 $prior=(Resolve-Path -LiteralPath $PriorClient).Path
-$priorVersion=(Get-Content -LiteralPath (Join-Path $prior 'versions.json') -Raw | ConvertFrom-Json).windows
+if (!$InstalledVersions) { $InstalledVersions=Join-Path $prior 'versions.json' }
+$priorVersion=(Get-Content -LiteralPath $InstalledVersions -Raw | ConvertFrom-Json).windows
 if ([version]$priorVersion -ge $Version) { throw 'Expected a previous Windows client' }
 $scratch=New-Item -ItemType Directory -Path (Join-Path ([IO.Path]::GetTempPath()) ('aim-update-test-'+[guid]::NewGuid().ToString('N')))
-Copy-Item -LiteralPath (Join-Path $prior 'versions.json') -Destination $scratch.FullName
+Copy-Item -LiteralPath $InstalledVersions -Destination (Join-Path $scratch.FullName 'versions.json')
 $updater=Join-Path $prior 'src/update.mjs'
 foreach ($action in 'auto','check','download') {
     $result=& node $updater $action $scratch.FullName

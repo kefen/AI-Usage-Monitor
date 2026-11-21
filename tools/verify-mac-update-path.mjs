@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
-import {mkdtemp, readFile, copyFile, rm} from 'node:fs/promises';
+import {mkdtemp, mkdir, readFile, copyFile, rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join, resolve} from 'node:path';
 
@@ -34,6 +34,20 @@ try {
   const dmg = await readFile(join(scratch, '.runtime', 'updates', 'update.dmg'));
   assert.equal(dmg.length, asset.size);
   assert.equal('sha256:' + createHash('sha256').update(dmg).digest('hex'), asset.digest);
+  const mount = join(scratch, 'mount');
+  await mkdir(mount);
+  execFileSync('/usr/bin/hdiutil', ['attach', '-readonly', '-nobrowse', '-mountpoint', mount, join(scratch, '.runtime', 'updates', 'update.dmg')]);
+  try {
+    const payload = join(mount, 'AI Usage Monitor.app', 'Contents', 'Resources', 'payload');
+    await copyFile(join(payload, 'versions.json'), join(scratch, 'versions.json'));
+    const check = JSON.parse(execFileSync(join(payload, 'runtime', 'node'),
+      [join(payload, 'src', 'update.mjs'), 'check', scratch], {encoding: 'utf8', timeout: 60000}));
+    assert.equal(check.current, version);
+    assert.equal(check.version, version);
+    assert.equal(check.available, false);
+  } finally {
+    execFileSync('/usr/bin/hdiutil', ['detach', mount]);
+  }
   console.log(`Verified discovery and staged DMG: ${current} -> ${version} (${cpu}); not installed.`);
 } finally {
   await rm(scratch, {recursive: true, force: true});

@@ -1,4 +1,4 @@
-name: Check live macOS update delivery
+name: Check live desktop update delivery
 on:
   workflow_dispatch:
   push:
@@ -7,6 +7,27 @@ on:
       - 'docs/updates/v2.json'
 permissions: {contents: read}
 jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {fetch-depth: 0, persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24.16.0'}
+      - shell: pwsh
+        run: |
+          $target=(Get-Content versions.json -Raw | ConvertFrom-Json).windows
+          $prior=git log --first-parent --format=%H -- versions.json | Where-Object { (git show "${_}:versions.json" | ConvertFrom-Json).windows -ne $target } | Select-Object -First 1
+          if (!$prior) { throw 'No previous Windows version found' }
+          $dir=Join-Path $env:RUNNER_TEMP previous-windows
+          git worktree add --detach $dir $prior
+          if ($LASTEXITCODE) { throw 'Previous checkout failed' }
+          if ($target -eq '0.13.8') {
+            ./tools/verify-windows-update-path.ps1 -PriorClient . -Version $target -InstalledVersions (Join-Path $dir versions.json)
+          } else {
+            ./tools/verify-windows-update-path.ps1 -PriorClient $dir -Version $target
+          }
   previous-client:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 12
