@@ -23,10 +23,8 @@ try {
     assert.equal(result.available, true);
     if (operation === 'download') assert.equal(result.ready, true);
   }
-  const response = await fetch('https://api.github.com/repos/kefen/AI-Usage-Monitor/releases/tags/' +
-    encodeURIComponent('macos/v' + version), {signal: AbortSignal.timeout(15000)});
-  assert.ok(response.ok, `Release HTTP ${response.status}`);
-  const release = await response.json();
+  const release = JSON.parse(await readFile(process.env.RELEASE_JSON, 'utf8'));
+  assert.equal(release.tag_name, 'macos/v' + version);
   assert.equal(release.draft, false);
   const cpu = arch === 'x64' ? 'x86_64' : 'arm64';
   const asset = release.assets.find(a => a.name === `AI-Usage-Monitor-macOS-${version}-${cpu}-unsigned-test.dmg`);

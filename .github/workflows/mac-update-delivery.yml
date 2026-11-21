@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - 'docs/updates/v2.json'
+      - '.github/workflows/mac-update-delivery.yml'
+      - 'tools/verify-mac-update-path.mjs'
+      - 'tools/verify-windows-update-path.ps1'
 permissions: {contents: read}
 jobs:
   windows:
@@ -15,7 +18,14 @@ jobs:
         with: {fetch-depth: 0, persist-credentials: false}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24.16.0'}
+      - name: Read Windows release metadata
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/$GITHUB_REPOSITORY/releases/tags/windows%2Fv$(jq -er .windows versions.json)" > "$RUNNER_TEMP/public-release.json"
       - shell: pwsh
+        env:
+          RELEASE_JSON: ${{ runner.temp }}/public-release.json
         run: |
           $target=(Get-Content versions.json -Raw | ConvertFrom-Json).windows
           $prior=git log --first-parent --format=%H -- versions.json | Where-Object { (git show "${_}:versions.json" | ConvertFrom-Json).windows -ne $target } | Select-Object -First 1
@@ -42,7 +52,13 @@ jobs:
         with: {fetch-depth: 0, persist-credentials: false}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24.16.0'}
+      - name: Read Mac release metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/$GITHUB_REPOSITORY/releases/tags/macos%2Fv$(jq -er .macos versions.json)" > "$RUNNER_TEMP/public-release.json"
       - name: Check with the previous version's updater
+        env:
+          RELEASE_JSON: ${{ runner.temp }}/public-release.json
         shell: bash
         run: |
           set -euo pipefail

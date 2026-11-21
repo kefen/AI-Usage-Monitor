@@ -20,7 +20,8 @@ foreach ($action in 'auto','check','download') {
     }
 }
 if ($state.ready -ne $true) { throw 'Previous client did not verify and stage the download' }
-$release=Invoke-RestMethod -Uri "https://api.github.com/repos/kefen/AI-Usage-Monitor/releases/tags/windows%2Fv$Version"
+$release=if($env:RELEASE_JSON){Get-Content -LiteralPath $env:RELEASE_JSON -Raw | ConvertFrom-Json}else{Invoke-RestMethod -Uri "https://api.github.com/repos/kefen/AI-Usage-Monitor/releases/tags/windows%2Fv$Version"}
+if ($release.tag_name -ne "windows/v$Version"){throw 'Wrong Windows release metadata'}
 $assets=@($release.assets | Where-Object name -eq "AI-Usage-Monitor-Windows-$Version-x64-Setup.exe")
 $download=Get-Item -LiteralPath (Join-Path $scratch.FullName '.runtime/updates/update.exe')
 $digest='sha256:'+(Get-FileHash -Algorithm SHA256 -LiteralPath $download.FullName).Hash.ToLowerInvariant()
