@@ -13,13 +13,13 @@ internal static class DisplayOptions {
         for(int i=0;i<Keys.Length;i++)list.Items.Add(Labels[i],settings==null||!settings.ContainsKey(Keys[i])||settings[Keys[i]]);return list;
     }
     internal static Dictionary<string,bool> Capture(CheckedListBox list){var data=new Dictionary<string,bool>();for(int i=0;i<Keys.Length;i++)data[Keys[i]]=list.GetItemChecked(i);return data;}
-    internal static Control Grouped(CheckedListBox list){
+    internal static Control Grouped(CheckedListBox list,Panel actionHost=null){
         var group=new Panel{Name="displayGroups",Dock=DockStyle.Top,Margin=Padding.Empty};
         var all=MeterTheme.Button("selectAll","Select all",false);
         var count=MeterTheme.Label("",13,MeterTheme.Blue);count.Name="selectionCount";
         var buttons=new[]{all};
         group.Controls.Add(count);
-        foreach(var button in buttons){button.Font=MeterTheme.Font(9);group.Controls.Add(button);}
+        foreach(var button in buttons){button.Font=MeterTheme.Font(9);(actionHost??group).Controls.Add(button);}
         Action refresh=()=>{int n=0;for(int i=0;i<Keys.Length;i++)if(list.GetItemChecked(i))n++;all.Text=Locale.T(n==Keys.Length?"Select none":"Select all");count.Tag=n;count.Text=Locale.T("Selected")+" "+n+" / "+Keys.Length;};
         string[] titles={"Plan and dates","Quota and resets","Token usage"};
         var headings=new Label[3];var rules=new Panel[3];
@@ -37,7 +37,7 @@ internal static class DisplayOptions {
                 for(int j=0;j<groups[i].Length;j++)checks[groups[i][j]].SetBounds(x,top+px(31+j*31),col,px(30));
                 if(stack)top+=px(40+31*groups[i].Length);}
             int bottom=stack?top:top+px(31+5*31+12);
-            all.SetBounds(0,bottom,Math.Max(px(88),TextRenderer.MeasureText(g,all.Text,all.Font).Width+px(22)),px(31));group.Height=all.Bottom+px(10);
+            all.SetBounds(0,actionHost==null?bottom:px(4),Math.Max(px(88),TextRenderer.MeasureText(g,all.Text,all.Font).Width+px(22)),px(31));group.Height=actionHost==null?all.Bottom+px(10):bottom;
         }}finally{arranging=false;}};
         group.SizeChanged+=(s,e)=>arrange();group.HandleCreated+=(s,e)=>arrange();
         count.TextChanged+=(s,e)=>arrange();foreach(var c in buttons)c.TextChanged+=(s,e)=>arrange();foreach(var h in headings)h.TextChanged+=(s,e)=>arrange();arrange();

@@ -21,11 +21,11 @@ An unofficial quota and token usage companion for Codex desktop, with a separate
 
 以下为运行界面的示例数据，不代表真实账户额度。
 
-**Windows · 用量概览**：折线查看每日消耗，右侧查看剩余额度。
+**Windows · 用量概览**：右侧可见剩余额度；没有每日明细时，图区显示「暂无用量记录」，不会编造走势。
 
 ![Windows 用量概览](docs/screenshots/board-windows.png)
 
-**macOS · 原生操作面板**：同一窗口查看趋势、套餐和设置，连接操作位于右下角。截图来自上一测试构建 alpha.3。
+**macOS · 原生操作面板**：同一窗口查看趋势、套餐和设置，连接操作位于右下角。截图来自 Apple 芯片原生构建。
 
 ![macOS 原生面板](docs/screenshots/board-mac.png)
 

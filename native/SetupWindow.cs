@@ -57,6 +57,7 @@ internal sealed class SetupWindow : Form {
         row.Controls.Add(result);row.Controls.Add(caption);row.Paint+=(s,e)=>{using(var pen=new Pen(MeterTheme.Line))e.Graphics.DrawLine(pen,0,row.Height-1,row.Width,row.Height-1);};Append(row);
     }
     void Render(){
+        var oldBar=body.Controls["displayActionBar"];if(oldBar!=null)oldBar.Dispose();
         while(content.Controls.Count>0){var c=content.Controls[0];content.Controls.Remove(c);c.Dispose();}
         for(int i=0;i<4;i++){((SetupStep)steps[i]).Done=i<step||complete;steps[i].BackColor=i==step?MeterTheme.Tint(Color.FromArgb(228,237,253)):rail.BackColor;steps[i].ForeColor=i==step?MeterTheme.Blue:MeterTheme.Muted;steps[i].Invalidate();}
         back.Visible=step>0&&step<3;close.Text=complete?"Close":"Cancel";install.Enabled=back.Enabled=close.Enabled=!busy;title.ForeColor=failed?MeterTheme.Amber:MeterTheme.Ink;progress.Visible=busy;
@@ -84,7 +85,8 @@ internal sealed class SetupWindow : Form {
         }else if(step==2){
             title.Text="Choose sidebar content";detail.Text="You can change these options later in Settings.";install.Text="Install";
             choices=DisplayOptions.List(Path.Combine(Destination,".runtime"));if(SelectedVisibility!=null)for(int i=0;i<DisplayOptions.Keys.Length;i++)choices.SetItemChecked(i,SelectedVisibility[DisplayOptions.Keys[i]]);
-            Append(DisplayOptions.Grouped(choices));
+            var bar=new Panel{Name="displayActionBar",Dock=DockStyle.Bottom,Height=Px(41)};body.Controls.Add(bar);content.BringToFront();
+            Append(DisplayOptions.Grouped(choices,bar));
         }else{
             title.Text=complete?"Installed. Connect next.":failed?"Installation incomplete":"Installing";
             detail.Text=complete?"Installed files are ready. Codex is not connected yet.":failed?"Check the installation details before retrying.":"Verifying files and creating your shortcut.";

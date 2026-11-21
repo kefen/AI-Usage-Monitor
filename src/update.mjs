@@ -143,7 +143,9 @@ async function main(){
  if(command==='auto'&&reusableCheck(previous,current,language)){console.log(JSON.stringify({...previous,prepared:false}));return;}
  const key=await readFile(new URL('./update-public-key.pem',import.meta.url),'utf8');
  const envelope=JSON.parse((await bytes(feedURL,100000)).toString());const feed=verifyFeed(envelope,key);
- const asset=validateAsset(feed.releases[target]);const available=newer(asset.version,current);
+ const asset=feed.releases[target];const available=newer(asset.version,current);
+ // Historical signed entries can predate the repository rename; never fetch them.
+ if(available)validateAsset(asset);
  const state={checkedAt:Date.now(),current,language,available,version:asset.version,notes:localizedNotes(asset.notesByLocale||asset.notes,language),ready:false};
  const file=join(cache,process.platform==='win32'?'update.exe':'update.dmg');
  if(available&&['download','prepare'].includes(command)){
