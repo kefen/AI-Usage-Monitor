@@ -27,7 +27,7 @@ if ! "$stage/runtime/node" --version; then
   exit 1
 fi
 cp -R 'build/AI Usage Monitor.app' "$stage/AI Usage Monitor.app"
-printf '%s\n' 'local-codex-sidebar-meter-0.5.4-alpha.4' > "$stage/installed-by-meter"
+printf '%s\n' 'local-codex-sidebar-meter-0.5.4-alpha.5' > "$stage/installed-by-meter"
 mv "$stage/AI Usage Monitor.app" "$app"
 mv "$stage" "$dest"
 echo 'Installed. Open ~/Applications/AI Usage Monitor.app.'

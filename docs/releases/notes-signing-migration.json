@@ -1,0 +1,5 @@
+{
+  "en":["Desktop updates now use a new signing key. Install this migration release once from GitHub Releases."],
+  "zh-CN":["桌面更新启用新签名。请从 GitHub 下载并安装本次迁移版，此后无需为换签再次手动安装。"],
+  "zh-TW":["桌面更新啟用新簽章。請從 GitHub 下載並安裝本次遷移版，此後無需為換簽再次手動安裝。"]
+}

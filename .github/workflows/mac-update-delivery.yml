@@ -4,13 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'docs/updates/latest.json'
-      - '.github/workflows/mac-update-delivery.yml'
-      - 'tools/verify-mac-update-path.mjs'
-  workflow_run:
-    workflows: ['AI Usage Monitor release']
-    types: [completed]
-    branches: [main]
+      - 'docs/updates/v2.json'
 permissions: {contents: read}
 jobs:
   previous-client:
@@ -39,4 +33,9 @@ jobs:
           done
           test -n "$prior"
           git worktree add --detach "$RUNNER_TEMP/previous-client" "$prior"
-          node tools/verify-mac-update-path.mjs "$RUNNER_TEMP/previous-client" "$target" "${{ matrix.arch }}"
+          if [[ "$target" == '0.5.4-alpha.5' ]]; then
+            # Bootstrap is a manual install. Exercise its new key using a lower version fixture.
+            node tools/verify-mac-update-path.mjs . "$target" "${{ matrix.arch }}" "$RUNNER_TEMP/previous-client/versions.json"
+          else
+            node tools/verify-mac-update-path.mjs "$RUNNER_TEMP/previous-client" "$target" "${{ matrix.arch }}"
+          fi

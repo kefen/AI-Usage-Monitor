@@ -99,7 +99,7 @@ Windows UI using test fixtures, not real account data.
 
 Open [Releases](https://github.com/kefen/AI-Usage-Monitor/releases).
 For Windows 10/11 x64, download the asset ending in
-`Windows-0.13.7-x64-Setup.exe`, plus its SHA256 file if verifying integrity.
+`Windows-0.13.8-x64-Setup.exe`, plus its SHA256 file if verifying integrity.
 
 The Windows overview fits the available screen. Narrow columns move chart
 tracks below their labels; tall narrow windows stack sections. All selected data
@@ -200,7 +200,7 @@ only when space is severely constrained.
 
 ## macOS Experimental Installation
 
-**Current version: 0.5.4-alpha.4.** Download `arm64` for Apple Silicon (M-series)
+**Current version: 0.5.4-alpha.5.** Download `arm64` for Apple Silicon (M-series)
 or `x86_64` for Intel. The companion requires macOS 13.5+ and a compatible official
 client. It is not Developer ID signed or notarized. The user confirmed live
 connection on Apple Silicon; Intel account testing remains pending.

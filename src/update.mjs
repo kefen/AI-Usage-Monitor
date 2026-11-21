@@ -6,7 +6,7 @@ import {tmpdir,homedir,arch} from 'node:os';
 import {spawn,spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {backupSettings,verifySettings,restoreSettings,localizedNotes,canonicalEntry,transactionState,waitForRecord} from './update-transaction.mjs';
-const feedURL='https://raw.githubusercontent.com/kefen/AI-Usage-Monitor/main/docs/updates/latest.json';
+const feedURL='https://raw.githubusercontent.com/kefen/AI-Usage-Monitor/main/docs/updates/v2.json';
 export const wholeCredits=value=>typeof value==='string'&&/^\d+(\.\d+)?$/.test(value)&&Number.isSafeInteger(Math.floor(Number(value)))?String(Math.floor(Number(value))):'--';
 export function reusableCheck(state,current,language,now=Date.now()){
  if(!state||state.current!==current||state.language!==language||!Number.isFinite(state.checkedAt)||state.checkedAt>now||now-state.checkedAt>=21600000)return false;

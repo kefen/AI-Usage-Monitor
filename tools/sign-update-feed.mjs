@@ -8,10 +8,10 @@ const folder=process.env.CQS_SIGNING_DIRECTORY;if(!folder)throw Error('CQS_SIGNI
 const windowsOnly=process.env.CQS_RELEASE_SCOPE==='windows-only';
 const macOnly=process.env.CQS_RELEASE_SCOPE==='mac-only';
 const publicKey=await readFile('src/update-public-key.pem','utf8');
-const baseline=windowsOnly||macOnly?verifyFeed(JSON.parse(await readFile('docs/updates/latest.json','utf8')),publicKey):null;
+const baseline=windowsOnly||macOnly?verifyFeed(JSON.parse(await readFile('docs/updates/v2.json','utf8')),publicKey):null;
 if(windowsOnly&&(baseline.chrome!==chrome||baseline.releases['macos-arm64']?.version!==versions.macos||baseline.releases['macos-x64']?.version!==versions.macos))throw Error('Unchanged platform versions differ from verified baseline');
 const releases=baseline?{...baseline.releases}:{};
-const notesFile=macOnly?(versions.macos==='0.5.2-alpha.1'?'notes-monthly-tokens':'notes-mac-updater'):
+const notesFile=versions.windows==='0.13.8'&&versions.macos==='0.5.4-alpha.5'?'notes-signing-migration':macOnly?(versions.macos==='0.5.2-alpha.1'?'notes-monthly-tokens':'notes-mac-updater'):
  windowsOnly?(versions.windows==='0.13.5'?'notes-monthly-tokens':'notes-windows-responsive'):
  versions.windows==='0.13.6'&&versions.macos==='0.5.4-alpha.4'?'notes-usage-monitor':'notes-ui-fixes';
 const notesByLocale=JSON.parse(await readFile('docs/releases/'+notesFile+'.json','utf8'));
@@ -31,5 +31,5 @@ const privateKey=await readFile(join(folder,'private.pem'),'utf8');
 const envelope={payload:payload.toString('base64'),signature:sign(null,payload,privateKey).toString('base64')};
 verifyFeed(envelope,publicKey);
 await mkdir('docs/updates',{recursive:true});
-await writeFile('docs/updates/latest.json',JSON.stringify(envelope,null,2)+'\n');
+await writeFile('docs/updates/v2.json',JSON.stringify(envelope,null,2)+'\n');
 console.log('Signed public update feed; no private key was exported.');

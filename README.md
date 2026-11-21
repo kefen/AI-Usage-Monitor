@@ -10,16 +10,16 @@ An unofficial quota and token usage companion for Codex desktop, with a separate
 
 | 系统 | 安装包 | 安装方式 |
 | --- | --- | --- |
-| Windows 10 / 11 x64 | [Windows 0.13.7](https://github.com/kefen/AI-Usage-Monitor/releases/tag/windows/v0.13.7) | 下载未签名的 Setup.exe；升级选择原安装目录。 |
-| Mac · Apple 芯片 | [Apple Silicon DMG](https://github.com/kefen/AI-Usage-Monitor/releases/download/macos%2Fv0.5.4-alpha.4/AI-Usage-Monitor-macOS-0.5.4-alpha.4-arm64-unsigned-test.dmg) | M 系列芯片；0.5.4-alpha.4，未公证预发布版。 |
-| Mac · Intel | [Intel DMG](https://github.com/kefen/AI-Usage-Monitor/releases/download/macos%2Fv0.5.4-alpha.4/AI-Usage-Monitor-macOS-0.5.4-alpha.4-x86_64-unsigned-test.dmg) | Intel 处理器；同一预发布版本。 |
+| Windows 10 / 11 x64 | [Windows 0.13.8](https://github.com/kefen/AI-Usage-Monitor/releases/tag/windows/v0.13.8) | 下载未签名的 Setup.exe；升级选择原安装目录。 |
+| Mac · Apple 芯片 | [Apple Silicon DMG](https://github.com/kefen/AI-Usage-Monitor/releases/download/macos%2Fv0.5.4-alpha.5/AI-Usage-Monitor-macOS-0.5.4-alpha.5-arm64-unsigned-test.dmg) | M 系列芯片；0.5.4-alpha.5，未公证预发布版。 |
+| Mac · Intel | [Intel DMG](https://github.com/kefen/AI-Usage-Monitor/releases/download/macos%2Fv0.5.4-alpha.5/AI-Usage-Monitor-macOS-0.5.4-alpha.5-x86_64-unsigned-test.dmg) | Intel 处理器；同一预发布版本。 |
 | Chrome | [Chrome 0.5.4](https://github.com/kefen/AI-Usage-Monitor/releases/tag/chrome/v0.5.4) | 解压 ZIP，在扩展管理页选择“加载已解压的扩展程序”；不是商店版。 |
 
 [安装与使用指南](docs/USER-GUIDE.md) · [安全说明](SECURITY.md) · [MIT License](LICENSE)
 
 从旧名称升级，请从上表手动下载一次。Windows 选择原安装目录；Mac 先退出旧版，再将新应用拖入“应用程序”；Chrome 在原扩展目录替换文件并重新加载。
 
-本次安装包已在 GitHub Releases 提供 SHA-256。桌面应用内的签名更新清单暂未切换到本版；请以上表为准。
+Windows 0.13.8 和 macOS 0.5.4-alpha.5 起使用新的应用内更新签名。旧版不会提示这次迁移，请手动安装一次。后续更新仍须校验签名和安装包 SHA-256；这不等于 Windows 安装程序签名或 Apple 公证。Chrome 不受影响。
 
 ## 界面 Screenshots
 

@@ -10,10 +10,11 @@ assert.equal(process.platform, 'darwin');
 assert.equal(process.arch, arch);
 assert.ok(['x64', 'arm64'].includes(arch));
 const prior = resolve(priorDir);
-const current = JSON.parse(await readFile(join(prior, 'versions.json'))).macos;
+const installedVersions = process.argv[5] ?? join(prior, 'versions.json');
+const current = JSON.parse(await readFile(installedVersions)).macos;
 const scratch = await mkdtemp(join(tmpdir(), 'aim-mac-update-'));
 try {
-  await copyFile(join(prior, 'versions.json'), join(scratch, 'versions.json'));
+  await copyFile(installedVersions, join(scratch, 'versions.json'));
   for (const operation of ['auto', 'check', 'download']) {
     const result = JSON.parse(execFileSync(process.execPath,
       [join(prior, 'src/update.mjs'), operation, scratch], {encoding: 'utf8', timeout: 330000}));

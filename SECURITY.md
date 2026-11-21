@@ -10,6 +10,13 @@ The private signing key is stored outside the source repository and must be back
 up securely. Future release maintainers must sign a new feed with
 tools/sign-update-feed.mjs after verifying all build artifacts.
 
+Windows 0.13.8 and macOS 0.5.4-alpha.5 start a new trust channel at
+`docs/updates/v2.json`. The original feed is left untouched. Older clients must
+bootstrap from GitHub Releases once. On the maintainer machine the v2 signer
+directory is `~/.codex/ai-usage-monitor-release-signing-v2`; set
+`CQS_SIGNING_DIRECTORY` to that directory. Back it up using an encrypted,
+access-controlled backup; never commit or upload its private key.
+
 Updates wait for the companion and monitor to exit; they never kill Codex.
 Windows uses installer-owned file validation and transactional rollback.
 Mac keeps a backup app and restores it if replacement or launch fails.
