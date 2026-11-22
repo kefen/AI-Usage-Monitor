@@ -1,0 +1,43 @@
+name: Previous Mac GUI upgrade
+on:
+  push:
+    branches: ['qa/weekly-native-ui']
+permissions: {contents: read}
+jobs:
+  upgrade:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {runner: macos-15, arch: arm64}
+          - {runner: macos-15-intel, arch: x86_64}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Run released application and click its native controls
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -eu
+          mkdir evidence
+          app="$HOME/Applications/AI Usage Monitor.app"
+          runtime="$HOME/Library/Application Support/CodexSidebarMeter/.runtime"
+          test ! -e "$app" && test ! -e "$runtime" || exit 1
+          swiftc test/MacUpgradeClicks.swift -o "$RUNNER_TEMP/clicks"
+          mkdir -p "$HOME/Applications" "$runtime"
+          printf '{"cdpConsent":true}' > "$runtime/preferences.json"
+          printf '"en"' > "$runtime/language.json"
+          dmg="AI-Usage-Monitor-macOS-0.5.4-alpha.5-$ARCH-unsigned-test.dmg"
+          gh release download macos/v0.5.4-alpha.5 -p "$dmg"
+          hdiutil attach -readonly -nobrowse -mountpoint "$RUNNER_TEMP/meter" "$dmg"
+          ditto "$RUNNER_TEMP/meter/AI Usage Monitor.app" "$app"
+          hdiutil detach "$RUNNER_TEMP/meter"
+          open "$app"
+          "$RUNNER_TEMP/clicks" "$app"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: upgrade-ui-${{ matrix.arch }}
+          path: evidence/
