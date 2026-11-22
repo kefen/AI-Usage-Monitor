@@ -790,7 +790,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         let viewportRect = pageScroll.convert(pageScroll.bounds, to: content)
         require(content.bounds.contains(commandRect) && commandRect.maxY <= viewportRect.minY + 1 &&
             abs(commandRect.maxX - viewportRect.maxX) < 2, "Window commands must stay below the page and align with its trailing edge")
-        if let rowCount = ["data": 5, "help": 5, "authorization": 4, "about": 3][page] {
+        if let rowCount = ["data": 7, "help": 5, "authorization": 4, "about": 3][page] {
             let edges = body.arrangedSubviews.compactMap { child -> CGFloat? in
                 guard child.identifier?.rawValue == "preference-row", let row = child as? NSStackView, let control = row.arrangedSubviews.last else { return nil }
                 return control.superview!.convert(control.alignmentRect(forFrame: control.frame), to: body).maxX
