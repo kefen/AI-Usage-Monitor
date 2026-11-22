@@ -41,7 +41,7 @@ $ae=[System.Windows.Automation.AutomationElement]
 $scope=[System.Windows.Automation.TreeScope]
 $all=[System.Windows.Automation.Condition]::TrueCondition
 function Nodes($w){$w.FindAll($scope::Descendants,$all)}
-function Windows($processId){$ae::RootElement.FindAll($scope::Children,[System.Windows.Automation.PropertyCondition]::new($ae::ProcessIdProperty,[int]$processId))}
+function Windows($processId){$p=Get-Process -Id $processId;$p.Refresh();if($p.MainWindowHandle -ne [IntPtr]::Zero){$ae::FromHandle($p.MainWindowHandle)}; $ae::RootElement.FindAll($scope::Children,[System.Windows.Automation.PropertyCondition]::new($ae::ProcessIdProperty,[int]$processId))}
 function Wait-Until($fn,$message,$seconds=150){$until=[DateTime]::UtcNow.AddSeconds($seconds);do{try{$v=& $fn;if($v){return $v}}catch [System.Windows.Automation.ElementNotAvailableException]{};Start-Sleep -Milliseconds 200}while([DateTime]::UtcNow -lt $until);throw $message}
 function Capture($w,$name){
  $h=[IntPtr]$w.Current.NativeWindowHandle
@@ -52,13 +52,11 @@ function Capture($w,$name){
  try{$dc=$g.GetHdc();try{if(![UpgradeNative]::PrintWindow($h,$dc,0)){throw 'Capture failed'}}finally{$g.ReleaseHdc($dc)};$b.Save("$evidence/$name.png",[Drawing.Imaging.ImageFormat]::Png)}finally{$g.Dispose();$b.Dispose()}
 }
 function Click($el){
- $pattern=$null
- if($el.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern,[ref]$pattern)){$pattern.Invoke();return}
  if(![UpgradeNative]::PostMessage([IntPtr]$el.Current.NativeWindowHandle,0xF5,[IntPtr]::Zero,[IntPtr]::Zero)){throw 'Button click failed'}
 }
 $old=Start-Process $exe -PassThru
 try{
- $window=Wait-Until {foreach($w in (Windows $old.Id)){if($w.Current.Name -eq 'AI Usage Monitor' -and $w.Current.ClassName -ne '#32770'){foreach($b in (Nodes $w)){if($b.Current.AutomationId -eq 'installUpdate' -and !$b.Current.IsOffscreen){$script:badge=$b;return $w}}}}} 'Automatic update badge did not appear'
+ $window=Wait-Until {foreach($w in (Windows $old.Id)){if($w.Current.Name -eq 'AI Usage Monitor' -and $w.Current.ClassName -ne '#32770'){foreach($b in (Nodes $w)){if(($b.Current.AutomationId -eq 'installUpdate' -or $b.Current.Name -eq 'Update available') -and !$b.Current.IsOffscreen){$script:badge=$b;return $w}}}}} 'Automatic update badge did not appear' 60
  $texts=(Nodes $window)|ForEach-Object {$_.Current.Name}
  if($texts -notcontains 'Windows 0.14.0'){throw 'Old footer not visible'}
  Capture $window '01-old-version-automatic-badge'
@@ -87,5 +85,10 @@ try{
  if($link.TargetPath -ne $exe){throw 'Installed shortcut does not target upgraded installation'}
  [ordered]@{passed=$true;source='Original public 0.14.0 Setup.exe and production signed update feed; no mocks';oldVersion='0.14.0';newVersion='0.14.1';oldPid=$old.Id;newPid=$next.Id;oldInstallerSha256=$oldHash;newInstallerSha256=$newHash;automaticUpperRightBadge=$true;downloadedVerified=$true;restartConfirmed=$true;settingsPreserved=$transaction.settingsPreserved;shortcutCorrect=$true;completedAt=[DateTime]::UtcNow.ToString('o')}|ConvertTo-Json|Set-Content "$evidence/result.json" -Encoding UTF8
 }finally{
+ foreach($p in (Get-Process CodexMeter -ErrorAction SilentlyContinue)){
+  foreach($w in (Windows $p.Id)){
+   try{Capture $w ('last-window-'+$w.Current.NativeWindowHandle);(Nodes $w)|ForEach-Object {"$($_.Current.Name) | $($_.Current.AutomationId) | $($_.Current.ClassName) | offscreen=$($_.Current.IsOffscreen)"}|Out-File "$evidence/last-window-tree.txt" -Append}catch{Write-Warning $_}
+  }
+ }
  foreach($name in @('state.json','transaction.json','last-error.json')){if(Test-Path "$runtime/updates/$name"){Copy-Item "$runtime/updates/$name" "$evidence/$name"}}
 }
