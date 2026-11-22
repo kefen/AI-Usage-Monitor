@@ -28,6 +28,11 @@ func wait(_ value: String, excluding: pid_t = 0) -> (AXUIElement, pid_t) {
     fail("Visible native control not found: " + value)
 }
 func capture(_ name: String) {
+    if let app = NSWorkspace.shared.runningApplications.first(where: { $0.bundleURL?.path == appPath }) {
+        app.activate(options: [.activateIgnoringOtherApps])
+    }
+    // AX controls are available before the native alert's opening animation ends.
+    RunLoop.current.run(until: Date().addingTimeInterval(1.0))
     let process = Process()
     process.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
     process.arguments = ["-x", "evidence/" + name + ".png"]
