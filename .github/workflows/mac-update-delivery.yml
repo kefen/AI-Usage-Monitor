@@ -1,78 +1,128 @@
-name: Check live desktop update delivery
+name: Native release upgrade acceptance
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, maintenance/native-release-acceptance]
     paths:
       - 'docs/updates/v2.json'
       - '.github/workflows/mac-update-delivery.yml'
-      - 'tools/verify-mac-update-path.mjs'
-      - 'tools/verify-windows-update-path.ps1'
+      - 'tools/native-upgrade-plan.mjs'
+      - 'test/windows-public-upgrade.ps1'
+      - 'test/MacPublicUpgrade.swift'
 permissions: {contents: read}
+concurrency:
+  group: native-public-upgrade-acceptance
+  cancel-in-progress: false
 jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      windows_prior: ${{ steps.plan.outputs.windows_prior }}
+      windows_target: ${{ steps.plan.outputs.windows_target }}
+      mac_prior: ${{ steps.plan.outputs.mac_prior }}
+      mac_target: ${{ steps.plan.outputs.mac_target }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24.16.0'}
+      - run: node --test test/native-upgrade-plan.test.mjs
+      - id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node tools/native-upgrade-plan.mjs
   windows:
+    needs: plan
     runs-on: windows-2022
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {fetch-depth: 0, persist-credentials: false}
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with: {node-version: '24.16.0'}
-      - name: Read Windows release metadata
-        shell: bash
+        with: {persist-credentials: false}
+      - name: Previous public Setup to production target through native UI
+        shell: powershell
         env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh api "repos/$GITHUB_REPOSITORY/releases/tags/windows%2Fv$(jq -er .windows versions.json)" > "$RUNNER_TEMP/public-release.json"
-      - shell: pwsh
-        env:
-          RELEASE_JSON: ${{ runner.temp }}/public-release.json
-        run: |
-          $target=(Get-Content versions.json -Raw | ConvertFrom-Json).windows
-          $prior=git log --first-parent --format=%H -- versions.json | Where-Object { (git show "${_}:versions.json" | ConvertFrom-Json).windows -ne $target } | Select-Object -First 1
-          if (!$prior) { throw 'No previous Windows version found' }
-          $dir=Join-Path $env:RUNNER_TEMP previous-windows
-          git worktree add --detach $dir $prior
-          if ($LASTEXITCODE) { throw 'Previous checkout failed' }
-          if ($target -eq '0.13.8') {
-            ./tools/verify-windows-update-path.ps1 -PriorClient . -Version $target -InstalledVersions (Join-Path $dir versions.json)
-          } else {
-            ./tools/verify-windows-update-path.ps1 -PriorClient $dir -Version $target
-          }
-  previous-client:
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 12
+          PRIOR_VERSION: ${{ needs.plan.outputs.windows_prior }}
+          TARGET_VERSION: ${{ needs.plan.outputs.windows_target }}
+        run: ./test/windows-public-upgrade.ps1
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: native-upgrade-windows-x64
+          path: evidence/
+          retention-days: 90
+          if-no-files-found: error
+  mac:
+    needs: plan
     strategy:
       fail-fast: false
       matrix:
         include:
-          - {arch: arm64, runner: macos-15}
-          - {arch: x64, runner: macos-15-intel}
+          - {runner: macos-15, arch: arm64}
+          - {runner: macos-15-intel, arch: x86_64}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {fetch-depth: 0, persist-credentials: false}
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with: {node-version: '24.16.0'}
-      - name: Read Mac release metadata
+        with: {persist-credentials: false}
+      - name: Previous public DMG to production target through native UI
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh api "repos/$GITHUB_REPOSITORY/releases/tags/macos%2Fv$(jq -er .macos versions.json)" > "$RUNNER_TEMP/public-release.json"
-      - name: Check with the previous version's updater
-        env:
-          RELEASE_JSON: ${{ runner.temp }}/public-release.json
-        shell: bash
+          ARCH: ${{ matrix.arch }}
+          PRIOR_VERSION: ${{ needs.plan.outputs.mac_prior }}
+          TARGET_VERSION: ${{ needs.plan.outputs.mac_target }}
         run: |
           set -euo pipefail
-          target=$(jq -er .macos versions.json)
-          prior=''
-          for rev in $(git log --first-parent --format=%H -- versions.json); do
-            previous=$(git show "$rev:versions.json" | jq -er .macos)
-            if [[ "$previous" != "$target" ]]; then prior=$rev; break; fi
+          mkdir evidence
+          test "$(uname -m)" = "$ARCH"
+          app="$HOME/Applications/AI Usage Monitor.app"
+          runtime="$HOME/Library/Application Support/CodexSidebarMeter/.runtime"
+          test ! -e "$app" && test ! -e "$runtime"
+          test -z "${NODE_OPTIONS:-}"
+          swiftc test/MacPublicUpgrade.swift -o "$RUNNER_TEMP/clicks"
+          mkdir -p "$HOME/Applications" "$runtime"
+          printf '{"cdpConsent":true}' > "$runtime/preferences.json"
+          printf '"en"' > "$runtime/language.json"
+          dmg="AI-Usage-Monitor-macOS-$PRIOR_VERSION-$ARCH-unsigned-test.dmg"
+          gh api "repos/kefen/AI-Usage-Monitor/releases/tags/macos%2Fv$PRIOR_VERSION" > evidence/previous-release.json
+          gh api "repos/kefen/AI-Usage-Monitor/releases/tags/macos%2Fv$TARGET_VERSION" > evidence/target-release.json
+          gh release download "macos/v$PRIOR_VERSION" -p "$dmg"
+          expected=$(jq -r --arg n "$dmg" '.assets[]|select(.name==$n)|.digest' evidence/previous-release.json)
+          test "sha256:$(shasum -a 256 "$dmg" | cut -d ' ' -f1)" = "$expected"
+          hdiutil attach -readonly -nobrowse -mountpoint "$RUNNER_TEMP/meter" "$dmg"
+          ditto "$RUNNER_TEMP/meter/AI Usage Monitor.app" "$app"
+          hdiutil detach "$RUNNER_TEMP/meter"
+          codesign --verify --deep --strict "$app"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CQSReleaseVersion' "$app/Contents/Info.plist")" = "$PRIOR_VERSION"
+          test ! -e "$runtime/updates"
+          open "$app"
+          "$RUNNER_TEMP/clicks" "$app" "$runtime" || { screencapture -x evidence/last-screen.png || true; exit 1; }
+      - name: Preserve update transactions and startup acknowledgement
+        if: always()
+        run: |
+          runtime="$HOME/Library/Application Support/CodexSidebarMeter/.runtime"
+          mkdir -p evidence
+          for name in state transaction ack download-progress last-error; do
+            if test -f "$runtime/updates/$name.json"; then cp "$runtime/updates/$name.json" "evidence/$name.json"; fi
           done
-          test -n "$prior"
-          git worktree add --detach "$RUNNER_TEMP/previous-client" "$prior"
-          if [[ "$target" == '0.5.4-alpha.5' ]]; then
-            # Bootstrap is a manual install. Exercise its new key using a lower version fixture.
-            node tools/verify-mac-update-path.mjs . "$target" "${{ matrix.arch }}" "$RUNNER_TEMP/previous-client/versions.json"
-          else
-            node tools/verify-mac-update-path.mjs "$RUNNER_TEMP/previous-client" "$target" "${{ matrix.arch }}"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: native-upgrade-macos-${{ matrix.arch }}
+          path: evidence/
+          retention-days: 90
+          if-no-files-found: error
+  acceptance:
+    needs: [plan, windows, mac]
+    if: always()
+    runs-on: ubuntu-latest
+    env:
+      RESULTS: ${{ toJSON(needs) }}
+    steps:
+      - name: Require all three native upgrade paths
+        run: |
+          if ! jq -e 'all(.[]; .result == "success")' <<< "$RESULTS"; then
+            echo '## NOT ACCEPTED: a native upgrade path failed or did not run' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
           fi
+          echo '## ACCEPTED: Windows x64, Mac Apple Silicon and Intel native upgrades passed' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Review automatic badge, verified installer and restarted-version screenshots in all three evidence artifacts (90 day retention).' >> "$GITHUB_STEP_SUMMARY"
