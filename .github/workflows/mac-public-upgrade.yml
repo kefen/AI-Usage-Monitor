@@ -1,0 +1,65 @@
+name: Clean Mac public GUI upgrade
+on:
+  push:
+    branches: [qa/mac-public-upgrade]
+permissions: {contents: read}
+jobs:
+  upgrade:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {runner: macos-15, arch: arm64}
+          - {runner: macos-15-intel, arch: x86_64}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - name: Install previous public DMG and exercise native update UI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          mkdir evidence
+          test "$(uname -m)" = "$ARCH"
+          app="$HOME/Applications/AI Usage Monitor.app"
+          runtime="$HOME/Library/Application Support/CodexSidebarMeter/.runtime"
+          test ! -e "$app" && test ! -e "$runtime"
+          test -z "${NODE_OPTIONS:-}"
+          swiftc test/MacPublicUpgrade.swift -o "$RUNNER_TEMP/clicks"
+          mkdir -p "$HOME/Applications" "$runtime"
+          printf '{"cdpConsent":true}' > "$runtime/preferences.json"
+          printf '"en"' > "$runtime/language.json"
+          dmg="AI-Usage-Monitor-macOS-0.5.4-alpha.5-$ARCH-unsigned-test.dmg"
+          gh api repos/kefen/AI-Usage-Monitor/releases/tags/macos%2Fv0.5.4-alpha.5 > evidence/previous-release.json
+          gh api repos/kefen/AI-Usage-Monitor/releases/tags/macos%2Fv0.6.0-alpha.1 > evidence/target-release.json
+          gh release download macos/v0.5.4-alpha.5 -p "$dmg"
+          expected=$(jq -r --arg n "$dmg" '.assets[]|select(.name==$n)|.digest' evidence/previous-release.json)
+          test "sha256:$(shasum -a 256 "$dmg" | cut -d ' ' -f1)" = "$expected"
+          hdiutil attach -readonly -nobrowse -mountpoint "$RUNNER_TEMP/meter" "$dmg"
+          ditto "$RUNNER_TEMP/meter/AI Usage Monitor.app" "$app"
+          hdiutil detach "$RUNNER_TEMP/meter"
+          codesign --verify --deep --strict "$app"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CQSReleaseVersion' "$app/Contents/Info.plist")" = '0.5.4-alpha.5'
+          test ! -e "$runtime/updates"
+          open "$app"
+          "$RUNNER_TEMP/clicks" "$app" "$runtime" || {
+            screencapture -x evidence/last-screen.png || true
+            exit 1
+          }
+      - name: Preserve installation evidence
+        if: always()
+        run: |
+          runtime="$HOME/Library/Application Support/CodexSidebarMeter/.runtime"
+          mkdir -p evidence
+          for name in state transaction ack download-progress last-error; do
+            if test -f "$runtime/updates/$name.json"; then cp "$runtime/updates/$name.json" "evidence/$name.json"; fi
+          done
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: mac-public-upgrade-${{ matrix.arch }}
+          path: evidence/
+          if-no-files-found: error
