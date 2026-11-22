@@ -1,0 +1,35 @@
+name: Claude Code isolated feasibility (no account)
+on:
+  push:
+    branches: [qa/claude-feasibility]
+permissions: {contents: read}
+jobs:
+  probe:
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, macos-15, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24.16.0'}
+      - name: Install official pinned CLI only inside disposable VM
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/claude-feasibility" --no-audit --no-fund --save-exact @anthropic-ai/claude-code@2.1.330
+      - name: Signed-out CLI and explicitly synthetic local data contract
+        env:
+          CLAUDE_SANDBOX_PREFIX: ${{ runner.temp }}/claude-feasibility
+        run: node test/claude-vm-feasibility.mjs
+      - name: Privacy, missing-field and expired-window tests
+        run: node --test test/claude-data-probe.test.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: claude-feasibility-${{ matrix.os }}
+          path: evidence/
+          if-no-files-found: error
