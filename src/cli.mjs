@@ -4,8 +4,8 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { readLimits, readUsage, readSnapshot } from './rpc.mjs';
 import { normalizeUsage, observeAvailability } from './usage.mjs';
 import {version} from './version.mjs';
-import { nextUsageRefresh, readMembership } from './settings.mjs';
-import { normalizeLimits } from './core.mjs';
+import { nextUsageRefresh, readMembership, queueWeeklyAlert } from './settings.mjs';
+import { normalizeLimits, weekPace } from './core.mjs';
 import { listTargets, evaluate, watchOverview } from './cdp.mjs';
 import { rendererExpression } from './renderer-expression.mjs';
 import { recordStatus } from './status.mjs';
@@ -53,7 +53,8 @@ if (args[0] === 'usage') {
         const membership=await readMembership(membershipPath);
         const display=await readDisplay(new URL('../.runtime/',import.meta.url));
         try {const path=fileURLToPath(new URL('../.runtime/browser-state.json',import.meta.url));await writeFile(path+'.tmp',JSON.stringify(browserSnapshot(state,usage,Date.now(),display)),{mode:0o600});await rename(path+'.tmp',path);}catch{}
-        const expression=rendererExpression(widget,{...state,...display,usage:{...usage,observations:observation.records||[]},membership});
+        const buckets=state.buckets.map(b=>({...b,windows:b.windows.map(w=>w.minutes===10080?{...w,pace:weekPace(w)}:w)}));
+        const expression=rendererExpression(widget,{...state,buckets,...display,usage:{...usage,observations:observation.records||[]},membership});
         const known=cachedTargets.find(t=>t.id===mainTargetId);
         for(const target of known?[known]:cachedTargets){
           try{
@@ -93,7 +94,8 @@ if (args[0] === 'usage') {
           }
           connectedOnce=true;
           lastConnection = Date.now();
-          if(Date.now()>=nextRead && Date.now()>=nextUsage) {
+          const sampledQuota=Date.now()>=nextRead;
+          if(sampledQuota && Date.now()>=nextUsage) {
             try {
               const snapshot=await readSnapshot({command});
               state=snapshot.limits ? normalizeLimits(snapshot.limits) : {...state,error:snapshot.limitsError};
@@ -112,6 +114,7 @@ if (args[0] === 'usage') {
             nextRead = Date.now() + 60000;
           }
           if (shouldStop()) break;
+          if(sampledQuota)await queueWeeklyAlert(fileURLToPath(new URL('../.runtime/',import.meta.url)),state).catch(()=>console.log('Weekly reminder could not be saved.'));
           if(Date.now()>=nextUsage) {
             try {
               usage=normalizeUsage(await readUsage({command}));

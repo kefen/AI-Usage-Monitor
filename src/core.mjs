@@ -1,5 +1,13 @@
 const finite = x => typeof x === 'number' && Number.isFinite(x);
 
+export function weekPace(w, now=Date.now()) {
+  if(w.minutes!==10080 || !Number.isSafeInteger(w.resetsAt) || !finite(w.remaining) || w.remaining<0 || w.remaining>100)return null;
+  const fraction=(w.resetsAt*1000-now)/604800000;
+  if(fraction<=0 || fraction>1)return null;
+  const delta=fraction*100-w.remaining;
+  return delta>5?'fast':delta < -5?'slow':'steady';
+}
+
 export function normalizeLimits(result, now = Date.now()) {
   const source = result?.rateLimitsByLimitId;
   const entries = source && typeof source === 'object' && !Array.isArray(source) && Object.keys(source).length

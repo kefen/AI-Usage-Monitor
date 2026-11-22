@@ -1,4 +1,5 @@
 import AppKit
+import UserNotifications
 import Darwin
 
 private let fills = NSMapTable<NSView, NSColor>.weakToStrongObjects()
@@ -231,7 +232,11 @@ final class MonthTrendView: NSView {
     }
 }
 
-final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextFieldDelegate {
+final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextFieldDelegate, UNUserNotificationCenterDelegate {
+    weak var weeklyThresholdControl: NSPopUpButton?
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .list])
+    }
     let root = CommandLine.arguments.contains("--ui-smoke") ? FileManager.default.temporaryDirectory.appendingPathComponent("cqs-ui-test-" + UUID().uuidString) : FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/CodexSidebarMeter")
     var runtime: URL { root.appendingPathComponent(".runtime") }
     var window: NSWindow!
@@ -370,6 +375,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         MetricPresentation.recordDate(text)
     }
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if Bundle.main.bundleURL.pathExtension == "app" { UNUserNotificationCenter.current().delegate = self }
         if CommandLine.arguments.contains("--ui-smoke") { fputs("UI smoke: launch\n", stderr) }
         guard checkInstallLocation() else { NSApp.terminate(nil); return }
         do { try Bootstrap.install(at: root); try FileManager.default.createDirectory(at: runtime, withIntermediateDirectories: true) }
@@ -1397,7 +1403,51 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         if let lastRow = body.arrangedSubviews.dropLast().last { divider.widthAnchor.constraint(equalTo: lastRow.widthAnchor).isActive = true }
         languagePicker.item(at: 0)?.title = CqsLocale.t("System")
         languagePicker.selectItem(at: CqsLocale.modes.firstIndex(of: CqsLocale.mode) ?? 0)
-        setting("Language", languagePicker); setting("Appearance", picker); present()
+        setting("Language", languagePicker); setting("Appearance", picker)
+        let prefs = read("weekly-alert.json"), enabled = prefs["enabled"] as? Bool ?? false
+        let toggle = NSSwitch(); toggle.state = enabled ? .on : .off
+        toggle.target = self; toggle.action = #selector(changeWeeklyReminder(_:))
+        toggle.setAccessibilityLabel(CqsLocale.t("Low weekly quota reminder"))
+        setting("Low weekly quota reminder", toggle)
+        let threshold = NSPopUpButton(frame: .zero, pullsDown: false)
+        threshold.addItems(withTitles: stride(from: 5, through: 50, by: 5).map { "\($0)%" })
+        threshold.selectItem(withTitle: "\(prefs["threshold"] as? Int ?? 20)%")
+        threshold.isEnabled = enabled; threshold.target = self; threshold.action = #selector(changeWeeklyThreshold(_:))
+        threshold.setAccessibilityLabel(CqsLocale.t("Reminder threshold"))
+        weeklyThresholdControl = threshold; setting("Reminder threshold", threshold); present()
+    }
+    @objc func changeWeeklyThreshold(_ sender: NSPopUpButton) {
+        var prefs = read("weekly-alert.json"); prefs["threshold"] = (sender.indexOfSelectedItem + 1) * 5
+        do { try write("weekly-alert.json", prefs) } catch { alert(error.localizedDescription) }
+    }
+    @objc func changeWeeklyReminder(_ sender: NSSwitch) {
+        let enable = sender.state == .on
+        func commit(_ allowed: Bool) {
+            let prefs = self.read("weekly-alert.json")
+            do { try self.write("weekly-alert.json", ["enabled":allowed, "threshold":prefs["threshold"] as? Int ?? 20]) }
+            catch { self.alert(error.localizedDescription) }
+            let saved = self.read("weekly-alert.json")["enabled"] as? Bool ?? false
+            sender.state = saved ? .on : .off; sender.isEnabled = true; self.weeklyThresholdControl?.isEnabled = saved
+        }
+        guard enable else { commit(false); return }
+        sender.isEnabled = false
+        UNUserNotificationCenter.current().requestAuthorization(options:[.alert,.sound]) { ok,_ in
+            DispatchQueue.main.async { commit(ok); if !ok { self.alert(CqsLocale.t("Allow notifications in System Settings to enable reminders.")) } }
+        }
+    }
+    func deliverWeeklyNotice() {
+        let url = runtime.appendingPathComponent("weekly-notice.json")
+        guard FileManager.default.fileExists(atPath:url.path) else { return }
+        let n = read("weekly-notice.json")
+        guard (try? FileManager.default.removeItem(at:url)) != nil else { return }
+        let prefs = read("weekly-alert.json"), now = Date().timeIntervalSince1970
+        guard prefs["enabled"] as? Bool == true, let threshold = prefs["threshold"] as? Int,
+              let left = n["remaining"] as? Double, left >= 0, left <= Double(threshold),
+              let reset = n["reset"] as? Double, reset > now,
+              let stamp = n["observed"] as? Double, (0..<180).contains(now-stamp/1000) else { return }
+        let message = UNMutableNotificationContent(); message.title = "AI Usage Monitor"
+        message.body = CqsLocale.t("Weekly quota remaining") + ": " + NSNumber(value:left).stringValue + "%"
+        UNUserNotificationCenter.current().add(UNNotificationRequest(identifier:"weekly-\(Int(reset))",content:message,trigger:nil))
     }
     @objc func backupSettings() {
         let panel = NSSavePanel(); panel.nameFieldStringValue = "AI-Usage-Monitor-settings.json"
@@ -1569,6 +1619,7 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTextF
         } catch { child = nil; try? log?.close(); log = nil; stage = "failed"; errorText = error.localizedDescription; tick() }
     }
     func tick() {
+        deliverWeeklyNotice()
         let request = runtime.appendingPathComponent("background-open.request")
         if FileManager.default.fileExists(atPath: request.path) { try? FileManager.default.removeItem(at: request); present() }
         retry.isEnabled = runtimeProbe == nil && !stopping && !reconnecting && stage != "starting"

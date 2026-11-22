@@ -37,6 +37,19 @@ internal static class TrayHost {
         window.UpdateState("starting",new Dictionary<string,object>());
     }
     static DateTime lastReport=DateTime.MinValue;
+    static void WeeklyNotice(){
+        string path=Path.Combine(Runtime,"weekly-notice.json");
+        if(!File.Exists(path))return;
+        try {
+            var notice=Read("weekly-notice.json");File.Delete(path);
+            var prefs=MeterPreferences.Read(Path.Combine(Runtime,"weekly-alert.json"));
+            if(!Object.Equals(prefs["enabled"],true))return;
+            double now=(DateTime.UtcNow-new DateTime(1970,1,1,0,0,0,DateTimeKind.Utc)).TotalMilliseconds;
+            double left=Convert.ToDouble(notice["remaining"]),age=now-Convert.ToDouble(notice["observed"]);
+            if(age<0||age>=180000||Convert.ToDouble(notice["reset"])*1000<=now||left<0||left>Convert.ToInt32(prefs["threshold"]))return;
+            tray.ShowBalloonTip(8000,Title,Locale.T("Weekly quota remaining")+": "+left.ToString("0.#")+"%",ToolTipIcon.Info);
+        } catch(IOException){} catch(KeyNotFoundException){} catch(FormatException){} catch(ArgumentException){}
+    }
     static StreamWriter output, errors;
     static string Q(string s) { return "\"" + s.Replace("\"", "\\\"") + "\""; }
     static string LockName(string kind) {
@@ -122,6 +135,7 @@ internal static class TrayHost {
             string settings=Path.Combine(Runtime,"settings.request");
             if(File.Exists(settings)){File.Delete(settings);window.ShowPage("Codex subscription record");window.Present();}
             if(!preparing && child!=null && !stopping){
+                WeeklyNotice();
                 Dictionary<string,object> state=null;try{state=Read("status.json");}catch{}
                 DateTime updated;
                 if(state!=null && state.ContainsKey("stage") && state.ContainsKey("updatedAt") && DateTime.TryParse(Convert.ToString(state["updatedAt"]),out updated) && updated.ToUniversalTime()>=monitorStarted && (DateTime.UtcNow-updated.ToUniversalTime()).TotalSeconds<40){

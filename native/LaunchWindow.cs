@@ -251,6 +251,15 @@ internal sealed class LaunchWindow : Form {
             };
             preference("Language",Locale.Picker());
             var appearance=new ComboBox{Name="appearance",AccessibleName=Locale.T("Appearance"),DropDownStyle=ComboBoxStyle.DropDownList,Width=190};appearance.Items.AddRange(new object[]{Locale.T("System"),Locale.T("Light"),Locale.T("Dark")});appearance.SelectedIndex=MeterTheme.Mode;appearance.SelectedIndexChanged+=(s,e)=>{if(!Locale.IsTranslating&&appearance.SelectedIndex>=0)MeterTheme.SetMode(appearance.SelectedIndex);};preference("Appearance",appearance);
+            var path=System.IO.Path.Combine(root,"weekly-alert.json");var prefs=MeterPreferences.Read(path);
+            var check=new CheckBox{Name="weeklyAlert",Text=Locale.T("Low weekly quota reminder"),AutoSize=true,Margin=new Padding(0,8,0,8),Checked=prefs.ContainsKey("enabled")&&Object.Equals(prefs["enabled"],true)};
+            var threshold=new ComboBox{Name="weeklyThreshold",AccessibleName=Locale.T("Reminder threshold"),DropDownStyle=ComboBoxStyle.DropDownList};
+            for(int n=5;n<=50;n+=5)threshold.Items.Add(n+"%");
+            int percent;if(!prefs.ContainsKey("threshold")||!Int32.TryParse(Convert.ToString(prefs["threshold"]),out percent)||percent<5||percent>50)percent=20;
+            threshold.SelectedIndex=(percent-5)/5;threshold.Enabled=check.Checked;
+            Action persist=()=>{if(threshold.SelectedIndex<0)return;try{MeterPreferences.Write(path,new {enabled=check.Checked,threshold=5+5*threshold.SelectedIndex});}catch(Exception ex){MeterTheme.Error(ex.Message);}};
+            check.CheckedChanged+=(s,e)=>{threshold.Enabled=check.Checked;persist();};threshold.SelectedIndexChanged+=(s,e)=>persist();
+            content.Controls.Add(check);preference("Reminder threshold",threshold);
         }else if(key=="Diagnostics"){
             if(!String.IsNullOrEmpty(UpdateOutcome))text(UpdateOutcome);
             actionRow("Connection status","Check that Codex can chat. If the sidebar is hidden, enlarge the window before reconnecting.","Reconnect",reconnectAction);

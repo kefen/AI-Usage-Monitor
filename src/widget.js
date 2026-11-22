@@ -121,6 +121,12 @@
         const used=Math.round((100-w.remaining)*10)/10;
         const detail = `${bucket.id} / ${w.minutes} min\n\u5269\u4f59 ${w.remaining}% / \u5df2\u7528 ${used}%\n${resetText(w.resetsAt)}`;
         block.title = detail + (w.resetsAt ? '\n\u5317\u4eac\u65f6\u95f4 ' + beijingTime(w.resetsAt*1000) : '');
+        if(showWindow && w.minutes===10080){
+          const pace=({fast:['用得偏快','Using faster than pace','用得偏快'],steady:['节奏平稳','On pace','節奏平穩'],slow:['用得较慢','Using slower than pace','用得較慢']})[w.pace];
+          const lang=state.language==='en'?1:state.language==='zh-TW'?2:0;
+          block.title=freshness==='fresh'&&pace ? resetText(w.resetsAt)+'\n'+pace[lang] : ['暂无法判断节奏','Pace unavailable','暫無法判斷節奏'][lang];
+          block.tabIndex=0;block.setAttribute('aria-label',label+' '+w.remaining+'%, '+block.title);
+        }
         hints.push(detail);
         const track = text('div', '', 'track');
         track.setAttribute('role','progressbar'); track.setAttribute('aria-label', label + ' \u5269\u4f59');

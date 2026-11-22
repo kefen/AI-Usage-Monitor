@@ -1,4 +1,23 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile, rename } from 'node:fs/promises';
+import { join } from 'node:path';
+import { freshness, weekPace } from './core.mjs';
+
+export async function queueWeeklyAlert(root,state,now=Date.now()) {
+  if(freshness(state,now)!=='fresh'||state.fetchedAt>now)return false;
+  let prefs;
+  try {prefs=JSON.parse(await readFile(join(root,'weekly-alert.json'),'utf8'));}catch{return false;}
+  if(prefs?.enabled!==true||!Number.isInteger(prefs.threshold)||prefs.threshold<5||prefs.threshold>50)return false;
+  const bucket=state.buckets.find(b=>b.id==='codex')||(state.buckets.length===1?state.buckets[0]:null);
+  const w=bucket?.windows.find(w=>weekPace(w,now)&&w.remaining<=prefs.threshold);
+  if(!w)return false;
+  // The read-only quota feed has no verified account ID. Claim by installation
+  // and server reset, so switching accounts can never duplicate the same window.
+  const marker=join(root,'weekly-claimed-'+w.resetsAt);
+  try {await writeFile(marker,'',{flag:'wx',mode:0o600});}catch(e){if(e.code==='EEXIST')return false;throw e;}
+  const dest=join(root,'weekly-notice.json'),tmp=dest+'.'+process.pid+'.tmp';
+  await writeFile(tmp,JSON.stringify({remaining:w.remaining,reset:w.resetsAt,observed:state.fetchedAt}),{mode:0o600});
+  await rename(tmp,dest);return true;
+}
 
 export function nextUsageRefresh(now=Date.now()) {
   return now+3600000;

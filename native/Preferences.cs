@@ -30,7 +30,7 @@ internal static class MeterPreferences {
             Write(path,data);
         }finally{if(lease!=null){lease.Dispose();File.Delete(lockPath);}}
     }
-    static void Write(string path,object data){string temp=path+"."+Guid.NewGuid().ToString("N")+".tmp";try{File.WriteAllText(temp,Json.Serialize(data),new UTF8Encoding(false));if(File.Exists(path))File.Replace(temp,path,null);else File.Move(temp,path);}finally{if(File.Exists(temp))File.Delete(temp);}}
+    internal static void Write(string path,object data){string temp=path+"."+Guid.NewGuid().ToString("N")+".tmp";try{File.WriteAllText(temp,Json.Serialize(data),new UTF8Encoding(false));if(File.Exists(path))File.Replace(temp,path,null);else File.Move(temp,path);}finally{if(File.Exists(temp))File.Delete(temp);}}
     internal static bool EnsureReady(string root){
         var prefs=Read(Path.Combine(root,"preferences.json"));
         if(Value(prefs,"cdpConsent","")!="True"){if(!MeterTheme.Consent())return false;prefs["cdpConsent"]=true;Save(Path.Combine(root,"preferences.json"),prefs);}

@@ -1,4 +1,8 @@
 {
+  "Low weekly quota reminder": ["周额度不足提醒", "週額度不足提醒"],
+  "Reminder threshold": ["提醒阈值", "提醒門檻"],
+  "Weekly quota remaining": ["本周剩余额度", "本週剩餘額度"],
+  "Allow notifications in System Settings to enable reminders.": ["请在系统设置中允许通知，再开启提醒。", "請在系統設定中允許通知，再開啟提醒。"],
   "Diagnostic report": ["诊断报告", "診斷報告"],
   "Issue feedback": ["问题反馈", "問題回報"],
   "Check that Codex can chat. If the sidebar is hidden, enlarge the window before reconnecting.": ["先确认 Codex 能正常聊天。如果侧边栏未显示，请放大窗口后重新连接。", "先確認 Codex 能正常聊天。如果側邊欄未顯示，請放大視窗後重新連線。"],
