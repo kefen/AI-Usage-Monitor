@@ -1,0 +1,22 @@
+name: Clean Windows public upgrade
+on:
+  push:
+    branches: [qa/windows-public-upgrade]
+permissions: {contents: read}
+jobs:
+  upgrade:
+    runs-on: windows-2022
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Test released 0.14.0 through public update source
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./test/windows-public-upgrade.ps1
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: windows-public-upgrade-evidence
+          path: evidence/
+          if-no-files-found: error
