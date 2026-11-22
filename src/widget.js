@@ -1,5 +1,5 @@
 (() => {
-  if (window.__localCodexMeter?.version === '0.14.0') return;
+  if (window.__localCodexMeter?.version === '0.14.1') return;
   if (window.__localCodexMeter?.controllerId === 'local-codex-sidebar-meter-v1') window.__localCodexMeter.dispose();
   else if (window.__localCodexMeter) return;
   const id = 'local-codex-sidebar-meter';
@@ -314,7 +314,7 @@
     delete window.__localCodexMeter;
   }
   window.__localCodexMeter = {
-    version:'0.14.0',
+    version:'0.14.1',
     controllerId:'local-codex-sidebar-meter-v1',
     receive(value) { state = value; heartbeat = Date.now(); render(); mount(); },
     dispose,
