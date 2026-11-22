@@ -23,6 +23,10 @@ This is an unofficial companion, not an OpenAI product. Token usage is not an AP
 
 English interfaces with sample data, not live account readings.
 
+**Codex sidebar.** The narrow strip on the far left shows the five-hour and weekly quota remaining, reset and renewal dates, and token usage without opening the dashboard. This preview uses the actual sidebar component in a simulated Codex workspace. [View the sidebar up close](docs/screenshots/sidebar-demo.png).
+
+![Codex workspace preview with quota bars and token counts in the left rail beside the project list](docs/screenshots/codex-sidebar-overview.png)
+
 **macOS: Usage overview.** Compare daily or cumulative tokens with your remaining five-hour and weekly allowances.
 
 ![English macOS dashboard with a daily token chart and remaining quota](docs/screenshots/macos-overview-en.png)

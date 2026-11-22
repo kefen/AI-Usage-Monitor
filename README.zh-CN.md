@@ -25,6 +25,10 @@ Windows 0.13.8 和 macOS 0.5.4-alpha.5 起使用新的应用内更新签名。�
 
 以下为运行界面的示例数据，不代表真实账户额度。
 
+**Codex 侧边栏**：项目列表左侧的窄栏显示 5 小时和本周剩余额度、重置及续费日期、Token 用量，无需打开控制面板。下图是在模拟 Codex 工作区中渲染的实际侧边栏组件。[查看侧边栏近景](docs/screenshots/sidebar-demo.png)。
+
+![英文 Codex 工作区示意图，项目列表左侧显示剩余额度进度条和 Token 用量](docs/screenshots/codex-sidebar-overview.png)
+
 **Windows · 套餐与日期**：记录套餐和续费日，和额度重置日期分开显示。
 
 ![Windows 套餐与日期（英文界面）](docs/screenshots/windows-plan-en.png)
