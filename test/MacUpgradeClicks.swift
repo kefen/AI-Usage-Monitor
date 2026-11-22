@@ -14,7 +14,7 @@ func wait(_ value:String, excluding:pid_t=0)->(AXUIElement,pid_t) {
     for _ in 0..<180 {
         if let app=NSWorkspace.shared.runningApplications.first(where:{$0.bundleURL?.path==appPath && $0.processIdentifier != excluding}),
            let found=match(AXUIElementCreateApplication(app.processIdentifier),value){return (found,app.processIdentifier)}
-        Thread.sleep(forTimeInterval:0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
     }
     fail("Visible control not found: "+value)
 }
