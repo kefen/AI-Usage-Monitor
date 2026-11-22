@@ -35,7 +35,14 @@ jobs:
           ditto "$RUNNER_TEMP/meter/AI Usage Monitor.app" "$app"
           hdiutil detach "$RUNNER_TEMP/meter"
           open "$app"
-          "$RUNNER_TEMP/clicks" "$app"
+          "$RUNNER_TEMP/clicks" "$app" || {
+            screencapture -x evidence/last-screen.png || true
+            for f in transaction last-error; do
+              if test -f "$runtime/updates/$f.json"; then jq '{stage,code,error,version}' "$runtime/updates/$f.json"; fi
+            done
+            /usr/libexec/PlistBuddy -c 'Print :CQSReleaseVersion' "$app/Contents/Info.plist"
+            exit 1
+          }
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
