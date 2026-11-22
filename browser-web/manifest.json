@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AI Usage Monitor",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "Your current web account's Codex / Work allowance at the bottom of the ChatGPT sidebar.",
   "author": "KEFEN",
   "permissions": ["storage","alarms"],

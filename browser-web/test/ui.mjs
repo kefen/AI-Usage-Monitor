@@ -12,7 +12,7 @@ async function setup(page,language){
  await page.goto('https://chatgpt.com/');
  await page.evaluate(({language,icon})=>{
    globalThis.savedPrefs=[];
-   globalThis.chrome={runtime:{id:'test-extension',getURL:()=>icon,getManifest:()=>({version:'0.5.4'}),onMessage:{addListener(){}}},storage:{local:{get:async()=>({cqsWebPreferences:{language}}),set:async obj=>{savedPrefs.push(obj);}}}};
+   globalThis.chrome={runtime:{id:'test-extension',getURL:()=>icon,getManifest:()=>({version:'0.5.5'}),onMessage:{addListener(){}}},storage:{local:{get:async()=>({cqsWebPreferences:{language}}),set:async obj=>{savedPrefs.push(obj);}}}};
    document.getElementById('usage-trigger').addEventListener('click',()=>{
     const trigger=document.getElementById('usage-trigger'),open=trigger.getAttribute('aria-expanded')==='true';trigger.setAttribute('aria-expanded',String(!open));
     document.getElementById('portal').innerHTML=open?'':'<div id="usage-menu" role="menu" aria-labelledby="usage-trigger"><div>Usage source: Your Pro plan</div><div role="menuitem">Weekly limit 30% left</div><div><div>额度</div><div>额度：<span>163.9</span></div></div></div>';

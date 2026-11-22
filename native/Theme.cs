@@ -204,10 +204,27 @@ internal sealed class NavigationItem : Control {
         float s=g.DpiX/96f;var flags=TextFormatFlags.NoPadding|TextFormatFlags.NoPrefix|TextFormatFlags.SingleLine|TextFormatFlags.VerticalCenter;
         int icon=(int)(20*s),left=String.IsNullOrEmpty(Text)?Math.Max(0,(Width-icon)/2):(int)(8*s);
         if(CenterContent&&!String.IsNullOrEmpty(Text)){int text=TextRenderer.MeasureText(g,Text,Font,new Size(Int32.MaxValue,Height),flags).Width;left=Math.Max(0,(Width-icon-(int)(8*s)-text)/2);}
-        using(var font=new Font("Segoe MDL2 Assets",11))TextRenderer.DrawText(g,Glyph,font,new Rectangle(left,0,icon,Height),ForeColor,flags|TextFormatFlags.HorizontalCenter);
+        if(!DrawNav(g,left+2*s,(Height-16*s)/2,s))
+            using(var font=new Font("Segoe MDL2 Assets",11))TextRenderer.DrawText(g,Glyph,font,new Rectangle(left,0,icon,Height),ForeColor,flags|TextFormatFlags.HorizontalCenter);
         int textLeft=CenterContent?left+icon+(int)(8*s):(int)(36*s);
         TextRenderer.DrawText(g,Text,Font,new Rectangle(textLeft,0,Math.Max(0,Width-textLeft-(int)(4*s)),Height),ForeColor,flags);
         if(Focused&&ShowFocusCues)ControlPaint.DrawFocusRectangle(g,new Rectangle(4,4,Width-8,Height-8));
+    }
+    bool DrawNav(Graphics g,float x,float y,float scale){
+        var saved=g.Save();
+        try{g.TranslateTransform(x,y);g.ScaleTransform(scale,scale);
+            using(var p=new Pen(ForeColor,1.35f)){
+                switch(Glyph){
+                    case "chart":g.DrawLines(p,new[]{new Point(1,1),new Point(1,14),new Point(15,14)});g.DrawLines(p,new[]{new Point(3,10),new Point(7,6),new Point(10,8),new Point(15,3)});break;
+                    case "sidebar":g.DrawRectangle(p,1,2,14,12);g.DrawLine(p,6,2,6,14);break;
+                    case "calendar":g.DrawRectangle(p,1,3,14,12);g.DrawLine(p,1,7,15,7);g.DrawLine(p,5,1,5,4);g.DrawLine(p,11,1,11,4);g.DrawLine(p,5,10,7,10);g.DrawLine(p,9,10,11,10);break;
+                    case "sliders":for(int i=0;i<3;i++){int h=3+5*i,k=i==1?10:5;g.DrawLine(p,1,h,k-2,h);g.DrawEllipse(p,k-2,h-2,4,4);g.DrawLine(p,k+2,h,15,h);}break;
+                    case "lifepreserver":g.DrawEllipse(p,1,1,14,14);g.DrawEllipse(p,5,5,6,6);foreach(int a in new[]{-1,1})foreach(int b in new[]{-1,1})g.DrawLine(p,8+a*2,8+b*2,8+a*5,8+b*5);break;
+                    case "info":case "\uE946":g.DrawEllipse(p,1,1,14,14);g.DrawLine(p,8,7,8,12);g.DrawLine(p,8,4,8,5);break;
+                    default:return false;
+                }
+            }return true;
+        }finally{g.Restore(saved);}
     }
 }
 

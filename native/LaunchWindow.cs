@@ -124,7 +124,7 @@ internal sealed class LaunchWindow : Form {
         checkUpdate=check;updates.Click+=(s,e)=>check("download");
         var updateTimer=new System.Windows.Forms.Timer{Interval=21600000};updateTimer.Tick+=(s,e)=>check("auto");Disposed+=(s,e)=>updateTimer.Dispose();updateTimer.Start();
         Shown+=(s,e)=>{if(System.IO.File.Exists(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"installation.json")))check("auto");};
-        string[] glyphs={"\uE80F","\uE8A0","\uE77B","\uE713","\uE897","\uE946"};int navIndex=0;
+        string[] glyphs={"chart","sidebar","calendar","sliders","lifepreserver","info"};int navIndex=0;
         foreach(string label in new[]{"Usage overview","Sidebar content","Codex subscription record","Data and settings","Diagnostics","About project"}){
             string key=label;var b=new NavigationItem{Name=key,Text=PageName(key),Glyph=glyphs[navIndex++],Font=MeterTheme.Font(9.25f),Width=156,Height=36,Margin=new Padding(0,0,0,4),BackColor=rail.BackColor,ForeColor=MeterTheme.Muted};
             b.Click+=(s,e)=>ShowPage(key);if(key=="About project"){b.Dock=DockStyle.Bottom;rail.Controls.Add(b);}else nav.Controls.Add(b);navigation[b]=key;

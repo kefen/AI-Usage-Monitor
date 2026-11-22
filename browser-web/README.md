@@ -1,4 +1,4 @@
-# AI Usage Monitor 0.5.4
+# AI Usage Monitor 0.5.5
 
 **Monthly tokens** shows an explicit current-month count only when the signed-in ChatGPT usage page provides it. Otherwise the panel shows that the page does not provide the value. The extension does not read desktop CLI data or estimate a count from quota percentages.
 

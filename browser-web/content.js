@@ -166,7 +166,7 @@
     details=E('details');details.open=true;const summary=E('summary'),image=E('img');image.src=chrome.runtime.getURL('icon-32.png');image.alt='';image.width=image.height=16;
     summary.append(image,E('span',t('title'),'title'));details.append(summary,E('p',t('shared'),'shared'));
     body=E('section');body.setAttribute('aria-label',t('title'));form=E('section');form.hidden=true;details.append(body,form);
-    const tools=E('div',undefined,'tools');refreshButton=command(t('refresh'),probe);settingsButton=command(t('settings'),()=>{editing=true;rendered='';render();renderSettings();form.querySelector('input')?.focus();});refreshButton.className='soft';tools.append(refreshButton,settingsButton);
+    const tools=E('div',undefined,'tools');refreshButton=command(t('refresh'),probe);settingsButton=command(t('settings'),()=>{editing=true;rendered='';render();renderSettings();form.querySelector('input')?.focus();});settingsButton.className='sliders';refreshButton.className='soft';tools.append(refreshButton,settingsButton);
     status=E('div',undefined,'status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
     const meta=E('div',undefined,'meta'),update=E('a','','update');update.hidden=true;update.target='_blank';update.rel='noopener noreferrer';
     meta.append(E('span','Web '+chrome.runtime.getManifest().version,'version'),update);
@@ -186,6 +186,7 @@
     :host([data-appearance="light"]){color-scheme:light;--ink:#252b35;--muted:#566274;--line:#dce1e8;--surface:#fff;--blue:#255adc;--green:#187e68}
     :host([data-appearance="dark"]){color-scheme:dark;--ink:#e5e9f0;--muted:#aeb8c8;--line:#3b4350;--surface:#20242b;--blue:#91b5ff;--green:#50b89b}
     button{background:color-mix(in srgb,var(--muted) 14%,var(--surface))}button.soft{background:color-mix(in srgb,var(--blue) 14%,var(--surface));color:var(--blue)}button.primary{background:#2658c9;color:#fff}button:hover:enabled{border-color:var(--muted)}.language{padding:6px 0;border-top:1px solid var(--line)}.check:has(input:focus-visible){outline:1px solid var(--blue)}
+    .sliders::before{content:'';display:inline-block;width:14px;height:14px;margin-inline-end:5px;vertical-align:-2px;background:currentColor;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.35'%3E%3Cpath d='M1 3h2m4 0h8M1 8h7m4 0h3M1 13h2m4 0h8'/%3E%3Ccircle cx='5' cy='3' r='2'/%3E%3Ccircle cx='10' cy='8' r='2'/%3E%3Ccircle cx='5' cy='13' r='2'/%3E%3C/svg%3E") center/contain no-repeat}
     details{padding:6px 12px}.shared{margin:0 0 5px}.metrics{gap:5px 12px;margin:0 0 6px}.week{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 8px}.week dd{font-size:20px;line-height:24px}.week .track{grid-column:1/-1;margin-top:0}.history{display:flex;justify-content:space-between;gap:6px;padding:4px 0}.foot{padding-top:4px}.tools{margin-top:5px}.status:empty{display:none}
     details{border:1px solid var(--line);border-radius:8px;margin:4px 6px 6px;padding:8px 10px;max-height:min(52dvh,440px)}
     summary{font:600 14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;min-height:28px}
