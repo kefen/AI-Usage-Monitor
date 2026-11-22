@@ -1,0 +1,5 @@
+{
+  "en":["Hover over weekly remaining quota to see usage pace and time until reset.","Optional weekly low-quota reminders default to off with a 20% threshold. Restarting does not repeat a reminder for the same reset window.","Navigation icons follow the Mac design."],
+  "zh-CN":["悬停周余可查看使用节奏和距重置时间。","周额度提醒默认关闭，默认阈值 20%；重启不会重复提醒同一窗口。","导航图标与 Mac 设计统一。"],
+  "zh-TW":["游標移至週餘可查看使用節奏和距重設時間。","週額度提醒預設關閉，預設門檻 20%；重新啟動不會重複提醒同一視窗。","導覽圖示與 Mac 設計統一。"]
+}

@@ -11,7 +11,7 @@ const publicKey=await readFile('src/update-public-key.pem','utf8');
 const baseline=windowsOnly||macOnly?verifyFeed(JSON.parse(await readFile('docs/updates/v2.json','utf8')),publicKey):null;
 if(windowsOnly&&(baseline.chrome!==chrome||baseline.releases['macos-arm64']?.version!==versions.macos||baseline.releases['macos-x64']?.version!==versions.macos))throw Error('Unchanged platform versions differ from verified baseline');
 const releases=baseline?{...baseline.releases}:{};
-const notesFile=versions.windows==='0.13.8'&&versions.macos==='0.5.4-alpha.5'?'notes-signing-migration':macOnly?(versions.macos==='0.5.2-alpha.1'?'notes-monthly-tokens':'notes-mac-updater'):
+const notesFile=versions.windows==='0.14.0'&&versions.macos==='0.6.0-alpha.1'?'notes-weekly-pace':versions.windows==='0.13.8'&&versions.macos==='0.5.4-alpha.5'?'notes-signing-migration':macOnly?(versions.macos==='0.5.2-alpha.1'?'notes-monthly-tokens':'notes-mac-updater'):
  windowsOnly?(versions.windows==='0.13.5'?'notes-monthly-tokens':'notes-windows-responsive'):
  versions.windows==='0.13.6'&&versions.macos==='0.5.4-alpha.4'?'notes-usage-monitor':'notes-ui-fixes';
 const notesByLocale=JSON.parse(await readFile('docs/releases/'+notesFile+'.json','utf8'));
