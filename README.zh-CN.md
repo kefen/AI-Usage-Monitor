@@ -24,7 +24,7 @@ Chrome 0.6.0：同一面板展开与收起。截图是拍摄时的读数，并�
 
 旧版的窄栏在 **Codex 窗口内部**，不是当前的桌面贴边栏。公开记录中的 Codex 内嵌系列包括 Windows **0.13.6、0.13.7、0.13.8、0.14.0、0.14.1**，macOS **0.5.4-alpha.4、0.5.4-alpha.5、0.6.0-alpha.1**。历史兼容性不代表能适配今天的 Codex。
 
-**Claude Code 的工具内显示是终端状态行，不是 Claude 桌面窗口侧栏。** 本地 0.15.x 曾提供工具内展示方案；未核实对应的公开 Claude 内嵌发行标签，因此不把上述 Codex 版本标为同时支持 Claude。
+**Claude Code：本地桌面版 0.15.2** 的安装包中包含终端状态行输出。它在 Claude Code 终端内显示，不是 Claude 桌面窗口里的独立侧栏。未找到 0.15.2 对应的公开 Release；上面列举的 Codex 标签不代表同期也支持 Claude。
 
 [旧版完整说明与截图](README.legacy.zh-CN.md) · [历史下载](https://github.com/kefen/AI-Usage-Monitor/releases) · [安全与隐私](SECURITY.md)
 

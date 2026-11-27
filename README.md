@@ -18,7 +18,7 @@ Chrome runs independently and shows only what the current ChatGPT web account pr
 
 The old **in-Codex sidebar** was inside the host window, unlike the current desktop panel. Published versions in that line include Windows **0.13.6, 0.13.7, 0.13.8, 0.14.0 and 0.14.1**, and macOS **0.5.4-alpha.4, 0.5.4-alpha.5 and 0.6.0-alpha.1**. Compatibility with current host versions is not guaranteed.
 
-Claude Code in-tool display refers to its terminal status line, not an embedded sidebar in the Claude desktop app. The local 0.15.x series explored in-tool display; no matching public Claude release tag has been verified.
+**Claude Code: local desktop build 0.15.2** includes terminal status-line output, not an embedded sidebar in the Claude desktop app. No corresponding public 0.15.2 release was found; the Codex tags above do not establish Claude support.
 
 [Archived guide and screenshots](README.legacy.md) · [Past releases](https://github.com/kefen/AI-Usage-Monitor/releases) · [Security](SECURITY.md)
 
