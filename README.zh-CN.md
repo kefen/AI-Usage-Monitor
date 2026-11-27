@@ -7,8 +7,8 @@ by KEFEN · [English](README.md)
 
 | 平台 | 下载 | 安装 |
 | --- | --- | --- |
-| Windows x64 | [0.16.13 安装程序](https://github.com/kefen/AI-Usage-Monitor/releases/tag/windows%2Fv0.16.13) | 运行 Setup.exe |
-| macOS | [0.16.13，r2 DMG](https://github.com/kefen/AI-Usage-Monitor/releases/tag/macos%2Fv0.16.13) | M 系列选 Apple Silicon，Intel 选 Intel |
+| Windows x64 | [0.16.14 安装程序](https://github.com/kefen/AI-Usage-Monitor/releases/tag/windows%2Fv0.16.14) | 运行 Setup.exe |
+| macOS | [0.16.14，r2 DMG](https://github.com/kefen/AI-Usage-Monitor/releases/tag/macos%2Fv0.16.14) | M 系列选 Apple Silicon，Intel 选 Intel |
 | Chrome | [0.6.0 ZIP](https://github.com/kefen/AI-Usage-Monitor/releases/tag/chrome%2Fv0.6.0) | 解压后加载；升级请覆盖原目录并重新加载 |
 
 桌面端分开显示 Codex 和 Claude Code 的数据。Claude Code 通过状态行回调接入；配置存在不等于已经收到回调，未返回的额度不当作零。Chrome 插件独立运行，只读取当前 ChatGPT 网页给出的用量，折叠时仍显示周余。

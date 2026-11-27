@@ -5,7 +5,7 @@ by KEFEN · [简体中文](README.zh-CN.md)
 
 Open the workbench to see Codex and Claude Code usage over time, or dock the compact desktop panel on any screen edge. Hover to expand it, pin it in place, or keep it on top. Both views share the glass appearance setting. Claude Code readings come from its status line; missing quota is not zero.
 
-[Windows 0.16.13 (x64)](https://github.com/kefen/AI-Usage-Monitor/releases/tag/windows%2Fv0.16.13) · [macOS 0.16.13 (r2 DMGs for Apple Silicon and Intel)](https://github.com/kefen/AI-Usage-Monitor/releases/tag/macos%2Fv0.16.13) · [Chrome 0.6.0](https://github.com/kefen/AI-Usage-Monitor/releases/tag/chrome%2Fv0.6.0)
+[Windows 0.16.14 (x64)](https://github.com/kefen/AI-Usage-Monitor/releases/tag/windows%2Fv0.16.14) · [macOS 0.16.14 (r2 DMGs for Apple Silicon and Intel)](https://github.com/kefen/AI-Usage-Monitor/releases/tag/macos%2Fv0.16.14) · [Chrome 0.6.0](https://github.com/kefen/AI-Usage-Monitor/releases/tag/chrome%2Fv0.6.0)
 
 ![Windows 0.16.13 workbench showing quota and token history](docs/screenshots/workbench-0.16.13.png)
 
