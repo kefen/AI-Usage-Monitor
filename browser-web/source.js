@@ -12,8 +12,10 @@
   function credit(text){
     const number='((?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\\.[0-9]+)?)';
     const m=clean(text).match(new RegExp('^(?:(?:Credits\\s+)?'+number+'\\s+credits|(?:Credits|Remaining credits|Credit balance)\\s*:\\s*'+number+'(?:\\s+credits)?|(?:剩[余餘][额額]度[：:]|[额額]度\\s*[：:]?)\\s*'+number+'(?:\\s*[额額]度)?)$','i'));
-    if(!m)return null;const n=BigInt((m[1]||m[2]||m[3]).split('.')[0].replaceAll(',',''));
-    return n<=BigInt(Number.MAX_SAFE_INTEGER)?String(n):null;
+    if(!m)return null;
+    const [integer,fraction='']=(m[1]||m[2]||m[3]).replaceAll(',','').split('.');
+    const n=BigInt(integer),tail=fraction.replace(/0+$/,'');
+    return n>BigInt(Number.MAX_SAFE_INTEGER)?null:String(n)+(tail?'.'+tail:'');
   }
   function plan(text){
     const m=clean(text).match(/^(?:ChatGPT (Free|Go|Plus|Pro(?: (?:100|200|500))?|Business|Enterprise|Edu)|Usage source: Your (Free|Go|Plus|Pro|Business|Enterprise|Edu) plan|[额額]度来源[：:]\s*你的 (Free|Go|Plus|Pro|Business|Enterprise|Edu) 套餐)$/);
@@ -25,15 +27,19 @@
     return Number.isSafeInteger(value)?value:null;
   }
   function parse(input={},now=Date.now()){
-    const x={...blank(),at:now},menu=Array.isArray(input.menu)?input.menu:[],o=input.overview||{};
+    const x={...blank(),at:now,conflicts:[]},menu=Array.isArray(input.menu)?input.menu:[],o=input.overview||{};
+    const field=(key,values)=>{
+      x[key]=one(values);
+      if(x[key]===null&&values.some(v=>v!=null))x.conflicts.push(key);
+    };
     const overviewWeeks=(o.weeks||[]).map(w=>/^剩[余餘]用量$|^Remaining usage$/i.test(clean(w.label))&&Number(w.max)===100?percent(w.value):null);
-    x.week=one([weekly(input.description),...menu.map(weekly),...overviewWeeks]);
-    x.monthly=one([...menu,...(o.monthly||[])].map(monthly));
-    x.credits=one([...menu,...(o.credits||[])].map(credit));
+    field('week',[weekly(input.description),...menu.map(weekly),...overviewWeeks]);
+    field('monthly',[...menu,...(o.monthly||[])].map(monthly));
+    field('credits',[...menu,...(o.credits||[])].map(credit));
     const plans=[...menu,...(o.plans||[])].map(plan).filter(Boolean);
-    x.plan=one(plans.filter(p=>p!=='Pro'||!plans.some(v=>/^Pro \d+$/.test(v))));
-    x.resets=one((o.resets||[]).map(label=>{const m=clean(label).match(/^(?:Available\s+|可用\s*)(\d+)$/i);const n=m?Number(m[1]):null;return Number.isSafeInteger(n)?n:null;}));
-    x.reset=one((o.resetTimes||[]).map(clean).filter(t=>t.length<=90&&(/^[0-9].*(?:后重置|後重置|後重設)$/.test(t)||/^Resets? in [0-9].*$/i.test(t))));
+    field('plan',plans.filter(p=>p!=='Pro'||!plans.some(v=>/^Pro \d+$/.test(v))));
+    field('resets',(o.resets||[]).map(label=>{const m=clean(label).match(/^(?:Available\s+|可用\s*)(\d+)$/i);const n=m?Number(m[1]):null;return Number.isSafeInteger(n)?n:null;}));
+    field('reset',(o.resetTimes||[]).map(clean).filter(t=>t.length<=90&&(/^[0-9].*(?:后重置|後重置|後重設)$/.test(t)||/^Resets? in [0-9].*$/i.test(t))));
     return x;
   }
   const visible=(x,now=Date.now(),blocked=false)=>!x||blocked||!Number.isFinite(x.at)||x.at>now||now-x.at>=60000?blank():Object.fromEntries(fields.map(key=>[key,x[key]??null]));
@@ -76,5 +82,11 @@
     }
     return input;
   }
-  globalThis.CQSWebSource=Object.freeze({parse,visible,collect,trigger});
+  const lifetime=cell=>cell.confirmed?300000:60000;
+  function readingState(cell,now=Date.now()){
+    if(!cell||cell.value==null)return 'missing';
+    if(!Number.isFinite(cell.at)||cell.at>now||now-cell.at>=lifetime(cell))return 'expired';
+    return cell.cached||cell.confirmed?'previous':'current';
+  }
+  globalThis.CQSWebSource=Object.freeze({parse,visible,collect,trigger,readingState,lifetime});
 })();

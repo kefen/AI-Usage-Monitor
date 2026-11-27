@@ -2,7 +2,7 @@ $ErrorActionPreference='Stop'
 $source=$PSScriptRoot
 $project=Split-Path $source -Parent
 $manifest=Get-Content (Join-Path $source 'manifest.json') -Raw | ConvertFrom-Json
-if($manifest.version -notmatch '^0\.5\.\d+$' -or ($manifest.permissions -join ',') -ne 'storage,alarms'){throw 'Unexpected web preview scope'}
+if($manifest.version -notmatch '^0\.6\.\d+$' -or ($manifest.permissions -join ',') -ne 'storage,alarms'){throw 'Unexpected web preview scope'}
 $version=$manifest.version
 $folder=Join-Path $project "dist/chrome-web-$version"
 $extension=Join-Path $folder 'extension'

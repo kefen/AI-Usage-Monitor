@@ -4,7 +4,7 @@ import '../source.js';
 const {parse,visible}=globalThis.CQSWebSource;
 test('reads only explicitly labeled current values and preserves zero',()=>{
  const x=parse({description:'每周用量：剩余 0%',menu:['Usage source: Your Pro plan','Weekly limit 0% left','Credits 162.811 credits']},1000);
- assert.equal(x.week,0);assert.equal(x.credits,'162');assert.equal(x.plan,'Pro');
+ assert.equal(x.week,0);assert.equal(x.credits,'162.811');assert.equal(x.plan,'Pro');
  assert.equal(x.short,null);assert.equal(x.tokens,null);
 });
 test('reads the current overview without converting historical usage',()=>{
@@ -28,9 +28,11 @@ test('three locales accept exact official labels, never infer billing tiers',()=
 });
 test('official menu supports colon-form credit balances and explicit zero',()=>{
  for(const label of ['额度：824.75','額度：824.75','Credits: 824.75','Credits: 824.75 credits','Remaining credits: 824.75']){
-  assert.equal(parse({menu:[label]}).credits,'824',label);
+  assert.equal(parse({menu:[label]}).credits,'824.75',label);
  }
  assert.equal(parse({menu:['额度：0']}).credits,'0');
+ assert.equal(parse({menu:['Credits: 1,000.090','Credits: 1000.09']}).credits,'1000.09');
+ assert.equal(parse({menu:['Credits: 10.01','Credits: 10.02']}).credits,null);
  assert.equal(parse({menu:['购买额度：824']}).credits,null);
 });
 test('overview tier refines matching menu family; conflicts stay unknown',()=>{
@@ -46,6 +48,13 @@ test('monthly tokens require an explicit current-month total from the current pa
  assert.equal(parse({menu:['Monthly daily average: 200','This month tokens: 20%','Lifetime tokens: 400','This month tokens: 5M']}).monthly,null);
 });
 test('all snapshots expire and blocked account contexts reveal no previous data',()=>{
+ const {readingState}=globalThis.CQSWebSource,cell={value:0,at:1000};
+ assert.equal(readingState(null,2000),'missing');
+ assert.equal(readingState(cell,2000),'current');
+ assert.equal(readingState({...cell,cached:true},60999),'previous');
+ assert.equal(readingState(cell,61000),'expired');
+ assert.equal(readingState({...cell,confirmed:true},300999),'previous');
+ assert.equal(readingState({...cell,confirmed:true},301000),'expired');
  const x=parse({description:'Weekly usage: 30% left'},1000);
  assert.equal(visible(x,61000).week,null);
  assert.equal(visible(x,999).week,null);

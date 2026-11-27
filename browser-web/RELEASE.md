@@ -1,6 +1,6 @@
 # AI Usage Monitor
 
-Chrome 0.5.4 adds a Monthly tokens display choice. Only an explicit current-month Token count from the current web account is shown. Unsupported accounts stay unavailable; no local CLI data or estimated counts are substituted.
+Chrome 0.6.0 local test build: compact weekly glance, remembered fold state, source-aware last readings, exact decimal credits and a desktop-style refresh action. No additional permissions.
 
 1. A collapsible Mac-style quota ruler at the bottom of the ChatGPT sidebar.
 2. Weekly allowance, plan, credits and reset details from visible official web surfaces. No local helper. Token history is not inferred.

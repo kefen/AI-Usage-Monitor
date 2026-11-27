@@ -1,3 +1,4 @@
+import {fileURLToPath} from 'node:url';
 import assert from 'node:assert/strict';
 import {readFile,mkdir} from 'node:fs/promises';
 import {createRequire} from 'node:module';
@@ -12,7 +13,7 @@ async function setup(page,language){
  await page.goto('https://chatgpt.com/');
  await page.evaluate(({language,icon})=>{
    globalThis.savedPrefs=[];
-   globalThis.chrome={runtime:{id:'test-extension',getURL:()=>icon,getManifest:()=>({version:'0.5.5'}),onMessage:{addListener(){}}},storage:{local:{get:async()=>({cqsWebPreferences:{language}}),set:async obj=>{savedPrefs.push(obj);}}}};
+   globalThis.chrome={runtime:{id:'test-extension',getURL:()=>icon,getManifest:()=>({version:'0.6.0'}),onMessage:{addListener(){}}},storage:{local:{get:async()=>({cqsWebPreferences:{language}}),set:async obj=>{savedPrefs.push(obj);}}}};
    document.getElementById('usage-trigger').addEventListener('click',()=>{
     const trigger=document.getElementById('usage-trigger'),open=trigger.getAttribute('aria-expanded')==='true';trigger.setAttribute('aria-expanded',String(!open));
     document.getElementById('portal').innerHTML=open?'':'<div id="usage-menu" role="menu" aria-labelledby="usage-trigger"><div>Usage source: Your Pro plan</div><div role="menuitem">Weekly limit 30% left</div><div><div>额度</div><div>额度：<span>163.9</span></div></div></div>';
@@ -28,7 +29,9 @@ try{
   const host=page.locator('#cqs-web-usage-preview');
   assert.equal(await host.locator('[data-metric=week] dd').innerText(),'30%');
   assert.equal(await host.locator('[data-metric=monthly] dd').innerText(),{en:'Not provided by this page','zh-CN':'此网页未提供','zh-TW':'此網頁未提供'}[language]);
-  assert.equal(await host.locator('.history .hint').innerText(),{en:'Not provided by this page','zh-CN':'此网页未提供','zh-TW':'此網頁未提供'}[language]);
+  assert.equal(await host.locator('[data-metric=credits] dd').innerText(),'163.9');
+  assert.equal(await host.locator('[data-metric=credits]').getAttribute('data-state'),'previous');
+  await host.locator('summary').click();assert.match(await host.locator('.glance').innerText(),/30%/);await host.locator('summary').click();
   assert.equal(await page.locator('[role=menu]').count(),0,'own usage probe must restore the menu');
   assert.equal(await host.evaluate(el=>el.parentElement.className),'secondary');
   assert.ok(await host.locator('img').evaluate(img=>img.complete&&img.naturalWidth===32),'brand image did not render');
@@ -40,7 +43,7 @@ try{
   const theme=host.locator('.language select').last(),lang=host.locator('.language select').first();
   await theme.selectOption('dark');assert.equal(await host.getAttribute('data-appearance'),'dark');
   await lang.selectOption('system');assert.equal(await page.evaluate(()=>savedPrefs.at(-1).cqsWebPreferences.language),'system');
-  if(language==='zh-CN'&&width===360)await page.screenshot({path:new URL('../../verification/browser-web/preferences-dark-360.png',import.meta.url).pathname.replace(/^\/([A-Za-z]:)/,'$1')});
+  if(language==='zh-CN'&&width===360)await page.screenshot({path:fileURLToPath(new URL('../../verification/browser-web/preferences-dark-360.png',import.meta.url))});
   await theme.selectOption('system');
   const bulk=host.locator('form button.soft,section button.soft').first();
   await bulk.click();assert.equal(await host.locator('input:checked').count(),0);await bulk.click();
@@ -51,7 +54,7 @@ try{
   await page.getByRole('button',{name:'Open profile menu',exact:true}).click();
   assert.equal(await host.locator('[data-metric=week] dd').innerText(),'--','previous account quota leaked');
   await buttons.first().click();await host.locator('[data-metric=week] dd').filter({hasText:'30%'}).waitFor();
-  await page.screenshot({path:new URL('../../verification/browser-web/'+language+'-'+width+'.png',import.meta.url).pathname.replace(/^\/([A-Za-z]:)/,'$1'),fullPage:true});
+  await page.screenshot({path:fileURLToPath(new URL('../../verification/browser-web/'+language+'-'+width+'.png',import.meta.url)),fullPage:true});
   // A user-owned menu must remain open after a manual refresh.
   await page.getByRole('button',{name:'Usage',exact:true}).click();await buttons.first().click();assert.equal(await page.locator('[role=menu]').count(),1);
   await page.close();
@@ -66,7 +69,7 @@ try{
  await page.evaluate(()=>window.dispatchEvent(new PopStateEvent('popstate')));
  await page.locator('[data-metric=resets] dd').filter({hasText:'3'}).waitFor();
  assert.equal(await page.locator('[data-metric=monthly] dd').innerText(),'123,456');
- await page.locator('#cqs-web-usage-preview').screenshot({path:new URL('../../verification/browser-web/monthly-usage-en.png',import.meta.url).pathname.replace(/^\/([A-Za-z]:)/,'$1')});
+ await page.locator('#cqs-web-usage-preview').screenshot({path:fileURLToPath(new URL('../../verification/browser-web/monthly-usage-en.png',import.meta.url))});
  await page.evaluate(()=>{document.querySelector('progress').value=37;document.querySelector('#usage-trigger').setAttribute('aria-description','Weekly usage: 37% left');});
  await page.locator('[data-metric=week] dd').filter({hasText:'37%'}).waitFor({timeout:2000});
  await page.close();
