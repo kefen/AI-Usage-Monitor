@@ -1,0 +1,49 @@
+name: Mac unresponsive workspace rollback
+on:
+  push:
+    branches: [codex/desktop-update-01616-hang]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  hung:
+    runs-on: macos-15
+    timeout-minutes: 6
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: 46106677067
+          name: accepted-macos-15
+      - name: Never retire a backup for a process without a workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          img=AI-Usage-Monitor-0.16.16-r2-macOS-Apple-Silicon.dmg
+          echo "ffe64ad5c1b96384dacd2e655debcb481409859ed04a7f89f411f7111aa1b4bd  $img" | shasum -a 256 -c -
+          base="$HOME/Applications"; dest="$base/AI Usage Monitor.app"
+          mkdir -p "$base" "$RUNNER_TEMP/mnt"; test ! -e "$dest"
+          hdiutil attach -readonly -nobrowse -mountpoint "$RUNNER_TEMP/mnt" "$img"
+          ditto "$RUNNER_TEMP/mnt/AI Usage Monitor.app" "$dest"
+          hdiutil detach "$RUNNER_TEMP/mnt"
+          stage=$(mktemp -d "$base/.aum-update-XXXXXX")
+          nonce=$(openssl rand -hex 24)
+          printf '0.16.16:%s' "$nonce" > "$stage/expected"
+          cp "$dest/Contents/Resources/app/desktop/demo8/replace-mac.sh" "$stage/replace.sh"
+          mkdir -p "$stage/next.app/Contents/MacOS"
+          printf '#!/bin/sh\nexec /bin/sleep 180\n' > "$stage/next.app/Contents/MacOS/Electron"
+          chmod +x "$stage/next.app/Contents/MacOS/Electron"
+          /usr/bin/true & gone=$!; wait "$gone"
+          /bin/sh "$stage/replace.sh" "$gone" "$dest" "$stage" 0.16.16 "$nonce" & helper=$!
+          sleep 4
+          test -d "$stage/previous.app"
+          test ! -f "$stage/ready"
+          kill -0 "$helper"
+          wait "$helper" && exit 1 || test "$?" = 1
+          test -d "$stage/failed.app" && test ! -d "$stage/previous.app"
+          codesign --verify --deep --strict "$dest"
+          active="$HOME/Library/Application Support/AI-Usage-Monitor-Demo8-QA-r13/local/active-build.json"
+          for try in {1..20}; do test ! -f "$active" || break; sleep 1; done
+          test "$(jq -r .version "$active")" = 0.16.16
+          kill -0 "$(jq -r .pid "$active")"
+          echo 'Hung candidate retained backup, timed out, rolled back and reopened previous app.'
