@@ -1,0 +1,30 @@
+name: Standalone update acceptance
+on:
+  push:
+    branches: [codex/desktop-update-01616-qa]
+permissions:
+  contents: read
+jobs:
+  upgrade:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: windows-2022, platform: windows, suffix: Windows-x64-Setup.exe}
+          - {os: macos-15, platform: macos, suffix: r2-macOS-Apple-Silicon.dmg}
+          - {os: macos-15-intel, platform: macos, suffix: r2-macOS-Intel.dmg}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fetch unpublished candidate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "${{ matrix.platform }}/v0.16.16" -p "AI-Usage-Monitor-0.16.16-${{ matrix.suffix }}"
+      - name: Download, install, restart, check preferences and rollback
+        run: node test/standalone-upgrade-qa.mjs "AI-Usage-Monitor-0.16.16-${{ matrix.suffix }}"
