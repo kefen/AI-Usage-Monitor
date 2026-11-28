@@ -50,4 +50,17 @@ jobs:
           name: native-candidates
           path: .
       - name: Download, install, restart, check preferences and rollback
+        if: runner.os != 'macOS'
         run: node test/standalone-upgrade-qa.mjs "AI-Usage-Monitor-0.16.16-${{ matrix.suffix }}"
+      - name: Native Apple DMG encoding
+        if: runner.os == 'macOS'
+        run: python3 test/native-udif.py "AI-Usage-Monitor-0.16.16-${{ matrix.suffix }}"
+      - name: Verify final Mac package through app update
+        if: runner.os == 'macOS'
+        run: node test/standalone-upgrade-qa.mjs "AI-Usage-Monitor-0.16.16-${{ matrix.suffix }}"
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'macOS'
+        with:
+          name: accepted-${{ matrix.os }}
+          path: AI-Usage-Monitor-0.16.16-${{ matrix.suffix }}
+          compression-level: 0
