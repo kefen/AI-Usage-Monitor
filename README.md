@@ -1,11 +1,14 @@
 # AI Usage Monitor
+
 by KEFEN · [简体中文](README.zh-CN.md)
 
 ## Current: desktop and web
 
+Desktop 0.16.16 adds verified in-app downloads and restart-to-install. On macOS a failed or unresponsive new workspace rolls back to the previous app. Earlier public desktop builds require one manual upgrade. [Native upgrade tests](https://github.com/kefen/AI-Usage-Monitor/actions/runs/46106677067) · [No-window rollback](https://github.com/kefen/AI-Usage-Monitor/actions/runs/46106937599)
+
 Open the workbench to see Codex and Claude Code usage over time, or dock the compact desktop panel on any screen edge. Hover to expand it, pin it in place, or keep it on top. Both views share the glass appearance setting. Claude Code readings come from its status line; missing quota is not zero.
 
-[Windows 0.16.14 (x64)](https://github.com/kefen/AI-Usage-Monitor/releases/tag/windows%2Fv0.16.14) · [macOS 0.16.15 (r2 DMGs for Apple Silicon and Intel)](https://github.com/kefen/AI-Usage-Monitor/releases/tag/macos%2Fv0.16.15) · [Chrome 0.6.0](https://github.com/kefen/AI-Usage-Monitor/releases/tag/chrome%2Fv0.6.0)
+[Windows 0.16.16 (x64)](https://github.com/kefen/AI-Usage-Monitor/releases/tag/windows%2Fv0.16.16) · [macOS 0.16.16 (r2 DMGs for Apple Silicon and Intel)](https://github.com/kefen/AI-Usage-Monitor/releases/tag/macos%2Fv0.16.16) · [Chrome 0.6.0](https://github.com/kefen/AI-Usage-Monitor/releases/tag/chrome%2Fv0.6.0)
 
 ![Windows 0.16.13 workbench showing quota and token history](docs/screenshots/workbench-0.16.13.png)
 
