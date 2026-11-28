@@ -8,7 +8,7 @@ test('first-party metadata uses KEFEN attribution',async()=>{
   assert.equal(data.author,'KEFEN',path);
  }
  const readme=await readFile(new URL('README.md',root),'utf8');
- assert.ok(readme.replace(/\r\n/g,'\n').startsWith('# AI Usage Monitor\n\nby KEFEN'));
+ assert.match(readme.replace(/\r\n/g,'\n'),/^# AI Usage Monitor\n(?:[ \t]*\n)*by KEFEN(?:[ \t·]|\n|$)/);
 });
 test('browser registration and client agree on the KEFEN native host',async()=>{
  const expected='org.kefen.codex_quota_sidebar';
