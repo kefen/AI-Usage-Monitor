@@ -1,6 +1,12 @@
 name: Candidate Checks
 on:
   push:
+    branches-ignore:
+      - 'codex/desktop-update-*'
+      - 'codex/desktop-stage-*'
+      - 'codex/publish-tested-*'
+    tags-ignore:
+      - '**'
   pull_request:
   workflow_dispatch:
 permissions:
