@@ -5,7 +5,32 @@ on:
 permissions:
   contents: read
 jobs:
+  fetch-candidates:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # GitHub only exposes drafts to writers. No checkout or candidate execution here.
+    steps:
+      - name: Retrieve and verify draft assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=20" > "$RUNNER_TEMP/releases.json"
+          mkdir packages
+          for spec in windows:Windows-x64-Setup.exe macos:r2-macOS-Intel.dmg macos:r2-macOS-Apple-Silicon.dmg; do
+            tag="${spec%%:*}/v0.16.16"; name="AI-Usage-Monitor-0.16.16-${spec#*:}"
+            asset=$(jq -ce --arg t "$tag" --arg n "$name" '.[]|select(.tag_name==$t and .draft)|.assets[]|select(.name==$n and .state=="uploaded")' "$RUNNER_TEMP/releases.json")
+            gh api -H 'Accept: application/octet-stream' "repos/$GITHUB_REPOSITORY/releases/assets/$(jq -r .id <<< "$asset")" > "packages/$name"
+            test "sha256:$(sha256sum "packages/$name" | cut -d' ' -f1)" = "$(jq -r .digest <<< "$asset")"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-candidates
+          path: packages
+          compression-level: 0
+          retention-days: 1
   upgrade:
+    needs: fetch-candidates
     strategy:
       fail-fast: false
       matrix:
@@ -20,11 +45,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Fetch unpublished candidate
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release download "${{ matrix.platform }}/v0.16.16" -p "AI-Usage-Monitor-0.16.16-${{ matrix.suffix }}"
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-candidates
+          path: .
       - name: Download, install, restart, check preferences and rollback
         run: node test/standalone-upgrade-qa.mjs "AI-Usage-Monitor-0.16.16-${{ matrix.suffix }}"
