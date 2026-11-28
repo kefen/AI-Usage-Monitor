@@ -34,5 +34,30 @@ with tempfile.TemporaryDirectory() as temp:
     subprocess.run(["hdiutil", "convert", str(raw), "-imagekey", "diskimage-class=CRawDiskImage",
                     "-format", "UDZO", "-o", str(final)], check=True)
     subprocess.run(["hdiutil", "verify", str(final)], check=True)
-    os.replace(final, image)
+    mount, volume = Path(temp)/"mounted", Path(temp)/"volume"
+    mount.mkdir(); volume.mkdir()
+    app = volume / "AI Usage Monitor.app"
+    subprocess.run(["hdiutil","attach","-readonly","-nobrowse","-mountpoint",str(mount),str(final)],check=True)
+    try:
+        subprocess.run(["ditto","--norsrc","--noextattr",str(mount/app.name),str(app)],check=True)
+        (volume/".VolumeIcon.icns").write_bytes((mount/".VolumeIcon.icns").read_bytes())
+    finally:
+        subprocess.run(["hdiutil","detach",str(mount)],check=True)
+    for helper in (app/"Contents/Frameworks").glob("*.app"):
+        info = helper/"Contents/Info.plist"
+        p = plistlib.loads(info.read_bytes())
+        if not p.get("CFBundleExecutable"):
+            assert (helper/"Contents/MacOS"/helper.stem).is_file()
+            p["CFBundleExecutable"]=helper.stem
+            info.write_bytes(plistlib.dumps(p))
+    subprocess.run(["xattr","-cr",str(app)],check=True)
+    subprocess.run(["codesign","--force","--deep","--sign","-",str(app)],check=True)
+    subprocess.run(["codesign","--verify","--deep","--strict",str(app)],check=True)
+    (volume/"Applications").symlink_to("/Applications")
+    subprocess.run(["SetFile","-a","C",str(volume)],check=True)
+    release = Path(temp)/"release.dmg"
+    subprocess.run(["hdiutil","create","-fs","HFS+","-volname","AI Usage Monitor","-srcfolder",str(volume),
+                    "-format","UDZO",str(release)],check=True)
+    subprocess.run(["hdiutil","verify",str(release)],check=True)
+    os.replace(release, image)
     print("Native DMG", image.name, hashlib.sha256(image.read_bytes()).hexdigest(), flush=True)
