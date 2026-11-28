@@ -1,0 +1,25 @@
+name: Stage tested Mac images
+on:
+  push:
+    branches: [codex/desktop-stage-01616]
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    permissions: {actions: read, contents: write}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Stage only the two exact tested images in the private draft
+        run: |
+          set -euo pipefail
+          repo=$GITHUB_REPOSITORY
+          for id in 46106677067 46106937599; do
+            test "$(gh api "repos/$repo/actions/runs/$id" --jq .conclusion)" = success
+          done
+          test "$(gh release view macos/v0.16.16 -R "$repo" --json isDraft --jq .isDraft)" = true
+          gh run download 46106677067 -R "$repo" -n accepted-macos-15 -D images
+          gh run download 46106677067 -R "$repo" -n accepted-macos-15-intel -D images
+          cd images
+          echo "ffe64ad5c1b96384dacd2e655debcb481409859ed04a7f89f411f7111aa1b4bd  AI-Usage-Monitor-0.16.16-r2-macOS-Apple-Silicon.dmg" | sha256sum -c -
+          echo "5c17131610f1475aaadb1beaeeeda42229864247359d90888f231a4d16d6f312  AI-Usage-Monitor-0.16.16-r2-macOS-Intel.dmg" | sha256sum -c -
+          gh release upload macos/v0.16.16 -R "$repo" --clobber *.dmg
