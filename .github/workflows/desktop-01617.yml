@@ -1,0 +1,69 @@
+name: Desktop 0.16.17 native acceptance
+on:
+  push:
+    branches: [codex/desktop-update-01617-qa]
+permissions: {contents: read}
+jobs:
+  accept:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: windows-2022, platform: windows, suffix: Windows-x64-Setup.exe, sha: 23bf85f0d4f625cb7277168ec8ef97d2360a3b26021c106b7480fc17b276935d}
+          - {os: macos-15, platform: macos, suffix: r2-macOS-Apple-Silicon.dmg, sha: ffe64ad5c1b96384dacd2e655debcb481409859ed04a7f89f411f7111aa1b4bd}
+          - {os: macos-15-intel, platform: macos, suffix: r2-macOS-Intel.dmg, sha: 5c17131610f1475aaadb1beaeeeda42229864247359d90888f231a4d16d6f312}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      PRIOR: AI-Usage-Monitor-0.16.16-${{ matrix.suffix }}
+      NEXT: AI-Usage-Monitor-0.16.17-${{ matrix.suffix }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - name: Verify prior public installer
+        shell: bash
+        run: |
+          curl --fail --retry 3 -L "https://github.com/kefen/AI-Usage-Monitor/releases/download/${{ matrix.platform }}%2Fv0.16.16/$PRIOR" -o "$PRIOR"
+          python -c "import hashlib,sys; assert hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest()=='${{ matrix.sha }}'" "$PRIOR"
+      - name: Build Windows setup
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          $stage="$pwd/candidate/demo8/build/windows-0.16.17-stage"
+          New-Item -ItemType Directory "$pwd/candidate/demo8/build" | Out-Null
+          $p=Start-Process ".\$env:PRIOR" -WindowStyle Hidden -ArgumentList "--test-install `"$stage`"" -Wait -PassThru
+          if ($p.ExitCode) { throw 'Old setup failed' }
+          foreach ($item in 'assets','desktop','docs','package.json') { Copy-Item "candidate/demo8/$item" -Destination "$stage/resources/app" -Recurse -Force }
+          Push-Location candidate
+          ./tools/build-compact-windows.ps1
+          Pop-Location
+          Move-Item "candidate/$env:NEXT" $env:NEXT
+      - name: Build native Mac DMG
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          volume="$RUNNER_TEMP/volume"; mount="$RUNNER_TEMP/base"; mkdir "$volume" "$mount"
+          app="$volume/AI Usage Monitor.app"
+          hdiutil attach -readonly -nobrowse -mountpoint "$mount" "$PRIOR"
+          ditto "$mount/AI Usage Monitor.app" "$app"
+          cp "$mount/.VolumeIcon.icns" "$volume/.VolumeIcon.icns"
+          hdiutil detach "$mount"
+          ditto candidate/demo8 "$app/Contents/Resources/app"
+          for field in CFBundleVersion CFBundleShortVersionString; do /usr/libexec/PlistBuddy -c "Set :$field 0.16.17" "$app/Contents/Info.plist"; done
+          codesign --force --sign - "$app"
+          codesign --verify --deep --strict "$app"
+          ln -s /Applications "$volume/Applications"
+          SetFile -a C "$volume"
+          hdiutil create -fs HFS+ -volname 'AI Usage Monitor' -srcfolder "$volume" -format UDZO "$NEXT"
+          hdiutil verify "$NEXT"
+      - name: Native update, restart, settings, four edges and failure recovery
+        shell: bash
+        run: node test/standalone-upgrade-qa.mjs "$NEXT" "$PRIOR"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: accepted-${{ matrix.os }}
+          path: ${{ env.NEXT }}
+          compression-level: 0
