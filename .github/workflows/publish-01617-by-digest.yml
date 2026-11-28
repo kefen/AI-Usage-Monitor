@@ -1,0 +1,37 @@
+name: Publish accepted desktop 0.16.17
+on:
+  push:
+    branches: [codex/publish-tested-01617]
+permissions: {actions: read, contents: write}
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RUN: '46122784292'
+      COMMIT: f8880d53d419b05fdc9a431e690a6f2f0c6ee50f
+    steps:
+      - name: Publish only the exact tested artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/$GH_REPO/actions/runs/$RUN" | jq -e --arg sha "$COMMIT" '.head_sha==$sha and .conclusion=="success"'
+          gh api "repos/$GH_REPO/actions/runs/$RUN/artifacts" > artifacts.json
+          for spec in windows-2022:windows:Windows-x64-Setup.exe macos-15:macos:r2-macOS-Apple-Silicon.dmg macos-15-intel:macos:r2-macOS-Intel.dmg; do
+            IFS=: read -r runner platform suffix <<< "$spec"
+            asset=$(jq -ce --arg name "accepted-$runner" '.artifacts[]|select(.name==$name and .expired==false)' artifacts.json)
+            gh api "repos/$GH_REPO/actions/artifacts/$(jq -r .id <<< "$asset")/zip" > package.zip
+            test "sha256:$(sha256sum package.zip | cut -d' ' -f1)" = "$(jq -r .digest <<< "$asset")"
+            file="AI-Usage-Monitor-0.16.17-$suffix"
+            test "$(unzip -Z1 package.zip)" = "$file"; unzip -o package.zip
+            tag="$platform/v0.16.17"
+            if ! gh release view "$tag" >/dev/null 2>&1; then
+              gh release create "$tag" --target "$COMMIT" --draft --latest=false --title "AI Usage Monitor 0.16.17 ($platform)" --notes "修复侧栏收起、返回工作台和退出时的窗口生命周期问题。0.16.16 可直接在应用内更新。[三端原生验收记录](https://github.com/$GH_REPO/actions/runs/$RUN)"
+            fi
+            gh release view "$tag" --json isDraft | jq -e .isDraft
+            gh release upload "$tag" "$file"
+            digest="sha256:$(sha256sum "$file"|cut -d' ' -f1)"
+            gh release view "$tag" --json assets | jq -e --arg n "$file" --arg d "$digest" --argjson s "$(stat -c%s "$file")" '.assets[]|select(.name==$n and .size==$s and .digest==$d)'
+          done
+          for platform in windows macos; do gh release edit "$platform/v0.16.17" --draft=false --latest=false; done
